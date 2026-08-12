@@ -1,0 +1,18 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+a {
+  text-decoration: none;
+}
+
+main {
+  min-height: 70vh;
+}
