@@ -1,24 +1,48 @@
 import MapView from '../map/MapView'
+import LayerPanel from '../map/LayerPanel'
 
 function WebGIS() {
   return (
-    <div>
+    <div className="webgis-page">
 
-      <section className="container py-4">
+      <section className="webgis-header">
 
-        <h1 className="fw-bold">
-          WebGIS Aceh
-        </h1>
+        <div className="container">
 
-        <p className="text-muted">
-          Peta interaktif informasi geospasial Aceh.
-        </p>
+          <div className="webgis-header-content">
+
+            <div>
+              <span className="webgis-label">
+                GEOPORTAL ACEH
+              </span>
+
+              <h1>
+                WebGIS Aceh
+              </h1>
+
+              <p>
+                Jelajahi informasi geospasial Provinsi Aceh
+                melalui peta interaktif.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
 
       </section>
 
-      <div className="container-fluid px-0">
-        <MapView />
-      </div>
+      <section className="webgis-map-section">
+
+        <div className="webgis-map-wrapper">
+
+          <MapView />
+
+          <LayerPanel />
+
+        </div>
+
+      </section>
 
     </div>
   )

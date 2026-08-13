@@ -3,7 +3,10 @@ import {
     TileLayer,
     Marker,
     Popup,
+    ZoomControl,
   } from 'react-leaflet'
+
+  import MapControls from './MapControls'
   
   import 'leaflet/dist/leaflet.css'
   
@@ -14,13 +17,18 @@ import {
       <MapContainer
         center={center}
         zoom={8}
-        style={{ height: '600px', width: '100%' }}
+        className="map-container"
+        zoomControl={false}
       >
   
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+<ZoomControl position="topright" />
+
+<MapControls />
   
   <Marker position={[5.55, 95.32]}>
   <Popup>
