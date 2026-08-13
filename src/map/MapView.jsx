@@ -22,12 +22,19 @@ import {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
   
-        <Marker position={center}>
-          <Popup>
-            Aceh
-          </Popup>
-        </Marker>
+  <Marker position={[5.55, 95.32]}>
+  <Popup>
+    Banda Aceh
+  </Popup>
+</Marker>
+
+<Marker position={[5.18, 97.15]}>
+  <Popup>
+    Lhokseumawe
+  </Popup>
+</Marker>
   
+
       </MapContainer>
     )
   }
