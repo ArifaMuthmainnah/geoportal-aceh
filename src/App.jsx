@@ -8,7 +8,9 @@ import Katalog from './pages/Katalog'
 import WebGIS from './pages/WebGIS'
 import Aplikasi from './pages/Aplikasi'
 import JIGN from './pages/JIGN'
-import Informasi from './pages/Informasi'
+import Berita from './pages/Berita'
+import Agenda from './pages/Agenda'
+import Pemberitahuan from './pages/Pemberitahuan'
 
 function App() {
   return (
@@ -24,7 +26,12 @@ function App() {
           <Route path="/webgis" element={<WebGIS />} />
           <Route path="/aplikasi" element={<Aplikasi />} />
           <Route path="/jign" element={<JIGN />} />
-          <Route path="/informasi" element={<Informasi />} />
+          <Route path="/informasi/berita" element={<Berita />} />
+          <Route path="/informasi/agenda" element={<Agenda />} />
+          <Route
+            path="/informasi/pemberitahuan"
+            element={<Pemberitahuan />}
+          />
 
         </Routes>
       </main>
