@@ -15,8 +15,6 @@ a {
 
 main {
   min-height: 70vh;
-<<<<<<< Updated upstream
-=======
 }
 
 /* =========================================================
@@ -3311,6 +3309,4 @@ main {
   .information-card-meta {
     flex-wrap: wrap;
   }
-
->>>>>>> Stashed changes
 }
