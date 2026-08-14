@@ -28,15 +28,16 @@ function Pemberitahuan() {
   })
 
   return (
-    <main className="bg-light min-vh-100">
+    <main className="information-page">
 
       {/* Header */}
-      <section className="bg-white border-bottom">
-        <div className="container py-5">
+      <section className="information-header">
 
-          <div className="mb-2">
+        <div className="container information-header-inner">
 
-            <span className="text-muted small">
+          <div className="information-breadcrumb">
+
+            <span className="text-muted">
               Informasi
             </span>
 
@@ -44,96 +45,76 @@ function Pemberitahuan() {
               /
             </span>
 
-            <span className="text-primary small">
+            <span className="current">
               Pemberitahuan
             </span>
 
           </div>
 
-          <h1 className="fw-bold mb-2">
+          <h1>
             Pemberitahuan
           </h1>
 
-          <p className="text-muted mb-0">
+          <p>
             Informasi pemberitahuan dan pengumuman terkait layanan
             geospasial Aceh.
           </p>
 
         </div>
+
       </section>
 
 
       {/* Search */}
-      <section className="container">
+      <section className="container information-toolbar-wrapper">
 
-        <div
-          className="bg-white border rounded-3 p-3"
-          style={{
-            marginTop: '-20px',
-            position: 'relative',
-            zIndex: 2,
-          }}
-        >
+        <div className="information-toolbar">
 
-          <div className="row g-3">
+          <input
+            type="text"
+            className="information-search"
+            placeholder="Cari pemberitahuan..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-            <div className="col-12">
-
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Cari pemberitahuan..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-
-            </div>
-
-          </div>
-
-          {/* Jumlah data */}
-          <div className="mt-2">
-
-            <small className="text-muted">
-              Menampilkan {filteredNotifications.length} pemberitahuan
-            </small>
-
-          </div>
+          <small className="information-result-count">
+            Menampilkan {filteredNotifications.length} pemberitahuan
+          </small>
 
         </div>
 
       </section>
 
 
-      {/* Category */}
-      <section className="container pt-5 pb-4">
+      {/* Content */}
+      <section className="container information-content">
 
-        <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
+        {/* Heading + Filter */}
+        <div className="information-section-heading">
 
           <div>
 
-            <h2 className="fw-bold mb-1">
+            <h2>
               Pemberitahuan Terbaru
             </h2>
 
-            <p className="text-muted small mb-0">
+            <p>
               Temukan pemberitahuan berdasarkan kategori informasi.
             </p>
 
           </div>
 
 
-          <div className="d-flex flex-wrap gap-2">
+          <div className="information-categories">
 
             {categories.map((item) => (
 
               <button
                 key={item}
                 type="button"
-                className={`btn btn-sm px-3 ${
-                  category === item
-                    ? 'btn-primary'
-                    : 'btn-outline-secondary'
+                className={`information-category ${
+                  category === item ? 'active' : ''
                 }`}
                 onClick={() => setCategory(item)}
               >
@@ -146,80 +127,74 @@ function Pemberitahuan() {
 
         </div>
 
-      </section>
 
-
-      {/* Notification Cards */}
-      <section className="container pb-5">
-
+        {/* Notification Cards */}
         {filteredNotifications.length > 0 ? (
 
-          <div className="row g-4">
+          <div className="information-list">
 
             {filteredNotifications.map((item) => (
 
-              <div
-                className="col-md-6 col-lg-4"
+              <article
+                className="information-card"
                 key={item.id}
               >
 
-                <article className="card h-100 border-0 shadow-sm">
+                {/* Visual */}
+                <div className="information-card-visual">
 
-                  {/* Card Header */}
-                  <div
-                    className="d-flex align-items-center justify-content-center"
-                    style={{
-                      height: '180px',
-                      background:
-                        'linear-gradient(135deg, #e9f5ef, #d1e7dd)',
-                    }}
-                  >
+                  <div className="information-card-label">
 
-                    <span className="text-success fw-semibold">
-                      PEMBERITAHUAN
+                    PEMBERITAHUAN
+
+                    <small>
+                      GEOPORTAL ACEH
+                    </small>
+
+                  </div>
+
+                </div>
+
+
+                {/* Content */}
+                <div className="information-card-body">
+
+                  <div className="information-card-meta">
+
+                    <span className="information-card-category">
+                      {item.category}
+                    </span>
+
+                    <span className="information-card-date">
+                      {item.date}
                     </span>
 
                   </div>
 
 
-                  {/* Card Body */}
-                  <div className="card-body p-4 d-flex flex-column">
-
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-
-                      <span className="text-primary small fw-semibold">
-                        {item.category}
-                      </span>
-
-                      <span className="text-muted small">
-                        {item.date}
-                      </span>
-
-                    </div>
+                  <h5 className="information-card-title">
+                    {item.title}
+                  </h5>
 
 
-                    <h5 className="fw-semibold mb-3">
-                      {item.title}
-                    </h5>
+                  <p className="information-card-description">
+                    {item.description}
+                  </p>
 
 
-                    <p className="text-muted small flex-grow-1">
-                      {item.description}
-                    </p>
+                  <button
+                    type="button"
+                    className="information-card-link"
+                  >
+                    Baca selengkapnya
+                    <span>
+                      →
+                    </span>
+                  </button>
 
+                </div>
 
-                    <button
-                      type="button"
-                      className="btn btn-link text-primary text-decoration-none p-0 text-start fw-semibold mt-3"
-                    >
-                      Baca selengkapnya
-                    </button>
-
-                  </div>
-
-                </article>
-
-              </div>
+              </article>
 
             ))}
 
@@ -227,13 +202,13 @@ function Pemberitahuan() {
 
         ) : (
 
-          <div className="bg-white border rounded-3 text-center py-5">
+          <div className="information-empty">
 
-            <h5 className="fw-semibold">
+            <h5>
               Pemberitahuan tidak ditemukan
             </h5>
 
-            <p className="text-muted small mb-0">
+            <p>
               Coba gunakan kata kunci atau kategori yang berbeda.
             </p>
 
