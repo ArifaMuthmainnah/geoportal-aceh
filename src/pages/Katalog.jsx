@@ -6,9 +6,11 @@ function Katalog() {
   const [category, setCategory] = useState('Semua')
 
   const filteredDatasets = datasets.filter((dataset) => {
-    const matchSearch = dataset.title
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    const keyword = search.toLowerCase().trim()
+
+    const matchSearch =
+      dataset.title.toLowerCase().includes(keyword) ||
+      dataset.description.toLowerCase().includes(keyword)
 
     const matchCategory =
       category === 'Semua' ||
@@ -17,141 +19,173 @@ function Katalog() {
     return matchSearch && matchCategory
   })
 
+  const categories = [
+    'Semua',
+    'Administrasi',
+    'Infrastruktur',
+    'Lingkungan',
+    'Sosial',
+  ]
+
   return (
-    <div className="container py-5">
+    <main className="katalog-page">
 
       {/* Header */}
-      <div className="mb-4">
-        <h1 className="fw-bold">
-          Katalog Data
-        </h1>
+      <section className="information-header">
+        <div className="container information-header-inner">
 
-        <p className="text-muted mb-0">
-          Temukan dan jelajahi data geospasial Aceh.
-        </p>
-      </div>
+          <div className="information-breadcrumb">
+            <span className="text-muted">
+              Data
+            </span>
+
+            <span className="text-muted mx-2">
+              /
+            </span>
+
+            <span className="current">
+              Katalog
+            </span>
+          </div>
+
+          <h1>
+            Katalog Data
+          </h1>
+
+          <p>
+            Temukan dan jelajahi data geospasial Aceh.
+          </p>
+
+        </div>
+      </section>
 
 
-      {/* Search & Filter */}
-      <div className="row g-3 mb-3">
+      {/* Search */}
+      <section className="container information-toolbar-wrapper">
 
-        <div className="col-md-8">
+        <div className="information-toolbar">
+
           <input
             type="text"
-            className="form-control"
+            className="information-search"
             placeholder="Cari dataset..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+
+          <small className="information-result-count">
+            Menampilkan {filteredDatasets.length} dataset
+          </small>
+
         </div>
 
-        <div className="col-md-4">
-          <select
-            className="form-select"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="Semua">
-              Semua Kategori
-            </option>
-
-            <option value="Administrasi">
-              Administrasi
-            </option>
-
-            <option value="Infrastruktur">
-              Infrastruktur
-            </option>
-
-            <option value="Lingkungan">
-              Lingkungan
-            </option>
-
-            <option value="Sosial">
-              Sosial
-            </option>
-          </select>
-        </div>
-
-      </div>
+      </section>
 
 
-      {/* Dataset Count */}
-      <div className="mb-4">
+      {/* Content */}
+      <section className="container information-content">
 
-        <span className="text-muted small">
-          Menampilkan {filteredDatasets.length} dataset
-        </span>
+        {/* Heading + Filter */}
+        <div className="information-section-heading">
 
-      </div>
+          <div>
+            <h2>
+              Dataset Terbaru
+            </h2>
 
-
-      {/* Dataset Cards */}
-      <div className="row g-4">
-
-        {filteredDatasets.map((dataset) => (
-
-          <div
-            className="col-md-6 col-lg-4"
-            key={dataset.id}
-          >
-
-            <div className="card h-100 shadow-sm">
-
-              <div className="card-body">
-
-                {/* Category */}
-                <span className="badge text-bg-light mb-3">
-                  {dataset.category}
-                </span>
+            <p>
+              Temukan dataset berdasarkan kategori informasi.
+            </p>
+          </div>
 
 
-                {/* Title */}
-                <h5 className="card-title">
-                  {dataset.title}
-                </h5>
+          <div className="information-categories">
 
+            {categories.map((item) => (
 
-                {/* Description */}
-                <p className="card-text text-muted">
-                  {dataset.description}
-                </p>
+              <button
+                key={item}
+                type="button"
+                className={`information-category ${
+                  category === item ? 'active' : ''
+                }`}
+                onClick={() => setCategory(item)}
+              >
+                {item}
+              </button>
 
-
-                {/* Format */}
-                <small className="text-muted">
-                  Format: {dataset.format}
-                </small>
-
-              </div>
-
-            </div>
+            ))}
 
           </div>
 
-        ))}
+        </div>
 
 
-        {/* Empty State */}
-        {filteredDatasets.length === 0 && (
+        {/* Dataset Cards */}
+        {filteredDatasets.length > 0 ? (
 
-          <div className="col-12">
+          <div className="row g-4">
 
-            <div className="text-center py-5">
+            {filteredDatasets.map((dataset) => (
 
-              <p className="text-muted mb-0">
-                Tidak ada dataset yang ditemukan.
-              </p>
+              <div
+                className="col-md-6 col-lg-4"
+                key={dataset.id}
+              >
 
-            </div>
+                <article className="card katalog-card h-100">
+
+                  <div className="card-body p-4 d-flex flex-column">
+
+                    <span className="text-primary small fw-semibold mb-3">
+                      {dataset.category}
+                    </span>
+
+                    <h5 className="fw-semibold mb-3">
+                      {dataset.title}
+                    </h5>
+
+                    <p className="text-muted small flex-grow-1 mb-4">
+                      {dataset.description}
+                    </p>
+
+                    <div className="pt-3 border-top">
+
+                      <small className="text-muted">
+                        Format: {dataset.format}
+                      </small>
+
+                    </div>
+
+                  </div>
+
+                </article>
+
+              </div>
+
+            ))}
+
+          </div>
+
+        ) : (
+
+          <div className="information-empty">
+
+            <h5>
+              Dataset tidak ditemukan
+            </h5>
+
+            <p>
+              Coba gunakan kata kunci atau kategori yang berbeda.
+            </p>
 
           </div>
 
         )}
 
-      </div>
+      </section>
 
-    </div>
+    </main>
   )
 }
 
