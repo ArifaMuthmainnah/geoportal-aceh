@@ -6,6 +6,7 @@ import BackToTop from './components/BackToTop'
 
 import Home from './pages/Home'
 import Katalog from './pages/Katalog'
+import DatasetDetail from './pages/DatasetDetail'
 import WebGIS from './pages/WebGIS'
 import Aplikasi from './pages/Aplikasi'
 import JIGN from './pages/JIGN'
@@ -24,6 +25,7 @@ function App() {
 
           <Route path="/" element={<Home />} />
           <Route path="/katalog" element={<Katalog />} />
+          <Route path="/katalog/:id" element={<DatasetDetail />} />
           <Route path="/webgis" element={<WebGIS />} />
           <Route path="/aplikasi" element={<Aplikasi />} />
           <Route path="/jign" element={<JIGN />} />
@@ -39,7 +41,7 @@ function App() {
 
       <Footer />
       <BackToTop />
-      
+
     </BrowserRouter>
   )
 }
