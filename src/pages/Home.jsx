@@ -1,7 +1,39 @@
+import { useEffect, useState } from 'react'
 import { statistics } from '../data/home'
-import datasets from '../data/datasets'
 import applications from '../data/applications'
+import { getDatasets } from '../api/datasetApi'
 import AnimatedCounter from '../components/AnimatedCounter'
+
+function stripHtml(html) {
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return doc.body.textContent || ''
+}
+
+const CATEGORY_MAP = {
+  society: 'Sosial',
+  biota: 'Lingkungan',
+  environment: 'Lingkungan',
+  imagery_basemaps_earth_cover: 'Infrastruktur',
+  location: 'Administrasi',
+  boundaries: 'Administrasi',
+  planning_cadastre: 'Administrasi',
+  structure: 'Infrastruktur',
+  transportation: 'Infrastruktur',
+  utilities_communication: 'Infrastruktur',
+  economy: 'Sosial',
+  farming: 'Lingkungan',
+  health: 'Sosial',
+  intelligence_military: 'Administrasi',
+  ocean: 'Lingkungan',
+  climatology_meteorology_atmosphere: 'Lingkungan',
+  geoscientific_information: 'Lingkungan',
+  elevation: 'Lingkungan',
+}
+
+function mapCategory(identifier) {
+  return CATEGORY_MAP[identifier] || 'Umum'
+}
 
 function Home() {
   const latestDatasets = datasets.slice(0, 3)
