@@ -1,3 +1,5 @@
+import { useEffect } from 'react'
+import { getOwners } from '../api/jignApi'
 import {
   jignStatistics,
   jignServices,
@@ -6,6 +8,20 @@ import {
 } from '../data/jign'
 
 function JIGN() {
+
+  useEffect(() => {
+    async function fetchOwners() {
+      try {
+        const data = await getOwners()
+        console.log('Owners API:', data)
+      } catch (err) {
+        console.error('Gagal mengambil data owners:', err)
+      }
+    }
+
+    fetchOwners()
+  }, [])
+
   return (
     <div className="jign-page">
 
@@ -40,7 +56,7 @@ function JIGN() {
               </a>
 
               <a href="#simpul-jaringan" className="jign-secondary-button">
-                Lihat Simpul
+                Lihat Instansi
               </a>
             </div>
 
@@ -245,7 +261,7 @@ function JIGN() {
 
           <div className="jign-node-more">
             <button type="button">
-              Lihat Semua Simpul
+              Lihat Semua Instansi
               <span>→</span>
             </button>
           </div>
