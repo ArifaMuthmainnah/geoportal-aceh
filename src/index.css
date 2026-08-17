@@ -2551,58 +2551,7 @@ main {
   }
 }
 
-/* =========================
-   WEBGIS - LAYER PANEL
-========================= */
 
-.webgis-map-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.layer-panel {
-  position: absolute;
-  left: 20px;
-  top: 20px;
-  z-index: 1000;
-  width: 230px;
-  background: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-}
-
-.layer-panel-header {
-  padding: 12px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.layer-panel-header h6 {
-  margin: 0;
-  font-weight: 600;
-}
-
-.layer-panel-body {
-  padding: 12px 16px;
-}
-
-.layer-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.layer-item:last-child {
-  margin-bottom: 0;
-}
-
-.layer-item input {
-  cursor: pointer;
-}
 
 /* =========================
    WEBGIS - MAP CONTROLS
@@ -2629,104 +2578,6 @@ main {
 .map-control-button:hover {
   background: #f3f3f3;
 }
-
-/* =========================
-   WEBGIS HEADER
-========================= */
-
-.webgis-page {
-  min-height: 100vh;
-  background: #f8f9fa;
-}
-
-.webgis-header {
-  padding: 40px 0 30px;
-  background: white;
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.webgis-header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.webgis-label {
-  display: inline-block;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #6c757d;
-}
-
-.webgis-header h1 {
-  margin: 0 0 8px;
-  font-size: 32px;
-  font-weight: 700;
-}
-
-.webgis-header p {
-  margin: 0;
-  color: #6c757d;
-  font-size: 15px;
-}
-
-.webgis-map-section {
-  padding: 20px;
-}
-
-.webgis-map-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  overflow: hidden;
-  border-radius: 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
-}
-
-@media (max-width: 768px) {
-
-  .webgis-header {
-    padding: 25px 0 20px;
-  }
-
-  .webgis-header h1 {
-    font-size: 26px;
-  }
-
-  .webgis-header p {
-    font-size: 14px;
-  }
-
-  .webgis-map-section {
-    padding: 10px;
-  }
-
-  .layer-panel {
-    top: 10px;
-    left: 10px;
-    width: 190px;
-  }
-
-  .layer-item {
-    font-size: 13px;
-  }
-
-}
-
-.map-container {
-  height: 600px;
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  .map-container {
-    height: 500px;
-  }
-}
-
 
 /* =========================================================
    JIGN PAGE
@@ -3799,3 +3650,683 @@ main {
     border-radius: 18px;
   }
 }
+
+/* 
+==========================================================================
+   WEBGIS PAGE & HERO SECTION (KERJAAN THAHIRA)
+   Desain disamakan dengan gaya Home Portal Aceh
+========================================================================== 
+*/
+
+.webgis-page {
+  min-height: 100vh;
+  background: #f8f9fa; /* Latar belakang halaman abu-abu sangat muda */
+}
+
+/* HEADER BARU: Gradasi Biru sesuai Home */
+.webgis-hero-section {
+  position: relative;
+  overflow: hidden;
+  padding: 60px 0 50px; 
+  background: linear-gradient(135deg, #07386d 0%, #0b5cab 55%, #1677c8 100%);
+  color: #ffffff;
+}
+
+/* Dekorasi Lingkaran (Adaptasi dari Home Hero) */
+.webgis-hero-section::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  right: -100px;
+  top: -200px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.webgis-hero-section::after {
+  content: '';
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  left: -100px;
+  bottom: -100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.webgis-hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+}
+
+/* Label Kecil di atas judul (Eyebrow) */
+.webgis-eyebrow {
+  display: inline-flex;
+  padding: 6px 14px;
+  margin-bottom: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+}
+
+.webgis-hero-content h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.webgis-hero-content h1 span {
+  color: #cce8ff; /* Warna biru muda highlight */
+}
+
+.webgis-hero-content p {
+  margin: 15px 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 600px;
+}
+
+/* BAGIAN WRAPPER PETA */
+.webgis-map-section {
+  padding: 30px 20px 60px;
+  background: #f8f9fa;
+}
+
+.map-container {
+  height: 600px;
+  width: 100%;
+}
+
+/* RESPONSIVE UNTUK MOBILE */
+@media (max-width: 768px) {
+  .webgis-hero-section {
+    padding: 40px 0 35px;
+    text-align: center;
+  }
+
+  .webgis-hero-content {
+    margin: 0 auto;
+  }
+
+  .webgis-hero-content h1 {
+    font-size: 26px;
+  }
+
+  .webgis-hero-content p {
+    font-size: 14px;
+    margin: 10px auto 0;
+  }
+
+  .webgis-map-section {
+    padding: 15px 10px;
+  }
+
+  .map-container {
+    height: 450px;
+  }
+
+  /* Penyesuaian Panel di Mobile */
+  .webgis-sidebar-left {
+    top: 10px;
+    left: 10px;
+    width: calc(100% - 20px); /* Melebar di layar kecil */
+    max-width: 220px;
+  }
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   WEBGIS & MAP SECTION - WORK BY THAHIRA
+========================================================================== 
+*/
+/* LIVE COORDINATE STYLE */
+.mouse-coordinate-display {
+  position: absolute;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 15px;
+  border-radius: 30px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  font-size: 13px;
+  font-weight: 700;
+  color: #041d38;
+}
+
+/* 
+
+/* LAYER PANEL CONTAINER */
+.layer-panel {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1000; /* Harus di atas peta */
+  width: 260px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.layer-panel-header {
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  border-radius: 10px 10px 0 0;
+}
+
+.layer-panel-header h6 {
+  margin: 0;
+  font-weight: 700;
+  color: #041d38;
+}
+
+/* TOOLBAR 4 KOTAK */
+.layer-toolbar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px;
+  background: #ffffff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tool-box {
+  aspect-ratio: 1/1;
+  border: 1px solid #e0e0e0;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: all 0.2s ease;
+}
+
+.tool-box:hover {
+  background: #f0f7ff;
+  border-color: #4da6df;
+  transform: translateY(-2px);
+}
+
+/* LIST LAYER BODY */
+.layer-panel-body {
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto; /* Jika layer banyak, bisa di scroll */
+  background: white;
+  border-radius: 0 0 10px 10px;
+}
+
+.layer-item-wrapper {
+  margin-bottom: 12px;
+}
+
+.layer-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #444;
+  font-weight: 500;
+}
+
+.layer-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.loading-text {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin: 10px 0;
+}
+
+/* MODAL BASEMAP (ATM DARK THEME RUJUKAN) */
+.basemap-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999; /* Pastikan di atas segalanya */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+
+.basemap-modal {
+  background: #1e1e1e; /* Warna gelap sperti Kalsel */
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  border: 1px solid #4da6df;
+  color: white;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.basemap-modal-header {
+  padding: 12px 18px;
+  background: #2d2d2d;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #3d3d3d;
+}
+
+.close-btn {
+  background: #e74c3c;
+  border: none;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.basemap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 20px;
+}
+
+.basemap-option-card {
+  display: flex;
+  align-items: center;
+  background: #2d2d2d;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #3d3d3d;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.basemap-option-card:hover {
+  background: #3d3d3d;
+  border-color: #4da6df;
+}
+
+.basemap-option-card.active {
+  background: #004a7c;
+  border-color: #4da6df;
+}
+
+.basemap-thumb-placeholder {
+  width: 45px;
+  height: 45px;
+  background: #444;
+  margin-right: 12px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* 
+==========================================================================
+   MODAL & POPUP SYSTEM - WORK BY THAHIRA
+========================================================================== 
+*/
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.aceh-modal.dark-theme {
+  background: #1a1a1a;
+  color: #efefef;
+  border: 1px solid #444;
+  width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.aceh-modal.large {
+  width: 550px;
+}
+
+.aceh-modal-header {
+  padding: 12px 18px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.close-btn-x { background: none; border: none; color: #888; cursor: pointer; font-size: 18px; }
+
+/* TABS */
+.modal-tabs {
+  display: flex;
+  background: #252525;
+  padding: 5px 10px 0;
+}
+.tab {
+  padding: 8px 15px;
+  background: #333;
+  color: #bbb;
+  border: none;
+  font-size: 11px;
+  font-weight: bold;
+  margin-right: 5px;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+.tab.active { background: #4da6df; color: white; }
+
+/* BODY & LIST */
+.modal-body { padding: 15px; }
+.modal-body.scrollable { max-height: 300px; overflow-y: auto; }
+
+.search-box-container { display: flex; gap: 5px; margin-bottom: 15px; }
+.search-box-container input {
+  flex: 1; background: #333; border: 1px solid #444; padding: 8px; color: white; border-radius: 4px;
+}
+.btn-search { background: #f39c12; border: none; padding: 0 15px; border-radius: 4px; font-weight: bold; }
+
+.dataset-list { height: 250px; overflow-y: auto; background: #222; border-radius: 4px; padding: 10px; }
+
+.dataset-card {
+  display: flex; gap: 12px; padding: 10px; border-bottom: 1px solid #333; cursor: pointer; transition: 0.2s;
+}
+.dataset-card:hover { background: #2a2a2a; }
+.dataset-card.selected { background: #004a7c; border-left: 4px solid #4da6df; }
+
+.dataset-info h6 { margin: 0 0 5px; color: #4da6df; font-size: 13px; }
+.dataset-info p { margin: 0; font-size: 11px; color: #aaa; }
+
+.selected-label { margin-top: 15px; padding: 8px; background: #333; font-size: 11px; border-radius: 4px; }
+.highlight { color: #f1c40f; font-weight: bold; }
+
+/* FOOTER BUTTONS */
+.modal-footer {
+  padding: 12px; background: #252525; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #333;
+}
+.btn-close-modal, .btn-close-red { background: #c0392b; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.btn-add-modal { background: #27ae60; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+.btn-delete { background: #8e44ad; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+/* REMOVE LIST ITEMS */
+.remove-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #333; cursor: pointer; }
+.remove-item:hover { background: #252525; }
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   BASIS DESA MODAL STYLE - WORK BY THAHIRA
+========================================================================== 
+*/
+
+.village-modal {
+  width: 450px !important;
+  border-top: 3px solid #f1c40f !important; /* Aksen kuning sperti rujukan */
+}
+
+.village-header {
+  background: #222 !important;
+  color: #f1c40f !important; /* Teks kuning */
+  border-bottom: 1px solid #333 !important;
+}
+
+.village-search-bar {
+  display: flex;
+  gap: 10px;
+  background: #111;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.village-search-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #2ecc71; /* Warna teks hijau neon sperti rujukan */
+  font-family: 'Courier New', Courier, monospace;
+  outline: none;
+  font-size: 14px;
+}
+
+.btn-cari-village {
+  background: #f1c40f;
+  border: none;
+  color: #000;
+  padding: 5px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid #000;
+}
+
+.village-results-container {
+  margin-top: 20px;
+  min-height: 200px;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.village-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border-bottom: 1px solid #222;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.village-result-item:hover {
+  background: #252525;
+}
+
+.pin-icon {
+  font-size: 18px;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
+}
+
+.location-text {
+  color: #eee;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.modal-footer-village {
+  padding: 15px;
+  background: #111;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid #333;
+}
+
+.btn-close-village {
+  background: #222;
+  border: 1px solid #444;
+  color: white;
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.btn-close-village:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+.no-result {
+  text-align: center;
+  color: #666;
+  font-size: 13px;
+  margin-top: 50px;
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   SIDEBAR & SEARCH PANEL - WORK BY THAHIRA
+========================================================================== 
+*/
+
+/* Container untuk menampung Layer & Search agar bertumpuk ke bawah */
+.webgis-sidebar-left {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* JARAK 20PX ANTAR PANEL SESUAI PERMINTAAN */
+  width: 280px;
+}
+
+/* Override LayerPanel agar tidak absolute lagi (karena sudah di dalam sidebar-left) */
+.layer-panel {
+  position: relative !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100%;
+}
+
+/* SEARCH PANEL STYLE (ATM GAMBAR 1, 2, 3) */
+.search-panel {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.search-panel-header {
+  padding: 10px 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.search-panel-header h6 {
+  margin: 0;
+  font-weight: 700;
+  color: #041d38;
+  font-size: 14px;
+}
+
+.search-input-group {
+  display: flex;
+  padding: 10px;
+  background: #1a1a1a; /* Tema gelap sperti rujukan */
+  gap: 5px;
+}
+
+.search-input-group input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #333;
+  color: #2ecc71; /* Warna hijau neon rujukan */
+  padding: 8px 12px;
+  border-radius: 4px;
+  outline: none;
+  font-size: 13px;
+}
+
+.btn-clear-search {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  width: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-search-icon {
+  background: #27ae60; /* Warna hijau sperti rujukan gambar 3 */
+  border: none;
+  color: white;
+  padding: 0 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* HASIL PENCARIAN (GAMBAR 1 & 2) */
+.search-results-list {
+  background: #1a1a1a;
+  max-height: 200px;
+  overflow-y: auto;
+  border-top: 1px solid #333;
+}
+
+.search-result-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #252525;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.search-result-item:hover {
+  background: #252525;
+}
+
+.res-name {
+  color: #2ecc71; /* Hijau neon */
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 3px;
+}
+
+.res-address {
+  color: #aaa;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Custom scrollbar untuk hasil cari agar minimalis */
+.search-results-list::-webkit-scrollbar { width: 4px; }
+.search-results-list::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
