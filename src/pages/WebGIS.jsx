@@ -1,49 +1,27 @@
 import MapView from '../map/MapView'
-import LayerPanel from '../map/LayerPanel'
 
 function WebGIS() {
   return (
     <div className="webgis-page">
-
-      <section className="webgis-header">
-
+      {/* UPDATE: Kita ubah section header agar mirip Hero Home */}
+      <section className="webgis-hero-section">
         <div className="container">
-
-          <div className="webgis-header-content">
-
-            <div>
-              <span className="webgis-label">
-                GEOPORTAL ACEH
-              </span>
-
-              <h1>
-                WebGIS Aceh
-              </h1>
-
-              <p>
-                Jelajahi informasi geospasial Provinsi Aceh
-                melalui peta interaktif.
-              </p>
-            </div>
-
+          <div className="webgis-hero-content">
+            <span className="webgis-eyebrow">GEOPORTAL ACEH</span>
+            <h1>WebGIS <span>Aceh</span></h1>
+            <p>
+              Jelajahi informasi geospasial Provinsi Aceh melalui peta interaktif 
+              untuk mendukung pembangunan berbasis data.
+            </p>
           </div>
-
         </div>
-
       </section>
 
       <section className="webgis-map-section">
-
         <div className="webgis-map-wrapper">
-
           <MapView />
-
-          <LayerPanel />
-
         </div>
-
       </section>
-
     </div>
   )
 }
