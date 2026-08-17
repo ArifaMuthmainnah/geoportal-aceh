@@ -1,11 +1,57 @@
+import { useEffect, useState } from 'react'
 import { statistics } from '../data/home'
-import datasets from '../data/datasets'
 import applications from '../data/applications'
+import { getDatasets } from '../api/datasetApi'
 import AnimatedCounter from '../components/AnimatedCounter'
 
+function stripHtml(html) {
+  if (!html) return ''
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  return doc.body.textContent || ''
+}
+
+const CATEGORY_MAP = {
+  society: 'Sosial',
+  biota: 'Lingkungan',
+  environment: 'Lingkungan',
+  imagery_basemaps_earth_cover: 'Infrastruktur',
+  location: 'Administrasi',
+  boundaries: 'Administrasi',
+  planning_cadastre: 'Administrasi',
+  structure: 'Infrastruktur',
+  transportation: 'Infrastruktur',
+  utilities_communication: 'Infrastruktur',
+  economy: 'Sosial',
+  farming: 'Lingkungan',
+  health: 'Sosial',
+  intelligence_military: 'Administrasi',
+  ocean: 'Lingkungan',
+  climatology_meteorology_atmosphere: 'Lingkungan',
+  geoscientific_information: 'Lingkungan',
+  elevation: 'Lingkungan',
+}
+
+function mapCategory(identifier) {
+  return CATEGORY_MAP[identifier] || 'Umum'
+}
+
 function Home() {
-  const latestDatasets = datasets.slice(0, 3)
+  const [datasets, setDatasets] = useState([])
   const latestApplications = applications.slice(0, 3)
+
+  useEffect(() => {
+    async function fetchDatasets() {
+      try {
+        const data = await getDatasets()
+        const list = Array.isArray(data) ? data : data.datasets || []
+        setDatasets(list.slice(0, 3))
+      } catch (err) {
+        console.error('Gagal mengambil dataset:', err)
+      }
+    }
+
+    fetchDatasets()
+  }, [])
 
   return (
     <div className="home-page">
@@ -172,20 +218,20 @@ function Home() {
 
           <div className="home-card-grid">
 
-            {latestDatasets.map((dataset) => (
+            {datasets.map((dataset) => (
 
               <article
                 className="dataset-home-card"
-                key={dataset.id}
+                key={dataset.pk}
               >
 
                 <div className="dataset-home-image">
 
-                  {dataset.image ? (
+                  {dataset.thumbnail_url ? (
 
                     <img
-                      src={dataset.image}
-                      alt={dataset.name}
+                      src={dataset.thumbnail_url}
+                      alt={dataset.title}
                     />
 
                   ) : (
@@ -205,7 +251,7 @@ function Home() {
                   )}
 
                   <span className="dataset-type">
-                    {dataset.type}
+                    {dataset.subtype || 'Dataset'}
                   </span>
 
                 </div>
@@ -214,22 +260,23 @@ function Home() {
                 <div className="dataset-home-body">
 
                   <span className="dataset-category">
-                    {dataset.category}
+                    {mapCategory(dataset.category?.identifier)}
                   </span>
 
                   <h3>
-                    {dataset.name}
+                    {dataset.title}
                   </h3>
 
                   <p>
-                    {dataset.description}
+                    {stripHtml(dataset.abstract).slice(0, 100)}
+                    {stripHtml(dataset.abstract).length > 100 ? '...' : ''}
                   </p>
 
                   <div className="dataset-agency">
                     <span>Instansi</span>
 
                     <strong>
-                      {dataset.agency}
+                      {dataset.attribution || '-'}
                     </strong>
                   </div>
 
