@@ -38,6 +38,13 @@ import Pemberitahuan from './pages/Pemberitahuan'
 import { AuthProvider } from './context/AuthContext'
 import Login from './pages/login/Login'
 
+// =====================================================
+// USER
+// =====================================================
+
+import UserDashboard from './pages/user/UserDashboard'
+import UploadDataset from './pages/user/UploadDataset'
+import MyDatasets from './pages/user/MyDatasets'
 
 // =====================================================
 // ADMIN
@@ -195,6 +202,64 @@ function App() {
             }
           />
 
+
+          <Route
+            path="/dashboard/datasets"
+            element={
+              
+              <ProtectedRoute>
+
+                <MyDatasets />
+
+              </ProtectedRoute>
+            }
+          />
+
+          {/* =================================================
+              LOGIN - KARTOGRAFI
+          ================================================= */}
+
+          <Route
+            path="/login/kartografi"
+            element={
+
+              <LoginArea>
+
+                <Kartografi />
+
+              </LoginArea>
+
+            }
+          />
+
+
+          {/* =================================================
+              DASHBOARD USER (OPERATOR)
+          ================================================= */}
+
+          <Route
+            path="/dashboard"
+            element={
+
+              <ProtectedRoute>
+
+                <UserDashboard />
+
+              </ProtectedRoute>
+
+            }
+          />
+
+          <Route
+            path="/dashboard/upload"
+            element={
+              <ProtectedRoute>
+
+                <UploadDataset />
+
+              </ProtectedRoute>
+            }
+          />
 
           {/* =================================================
               ADMIN

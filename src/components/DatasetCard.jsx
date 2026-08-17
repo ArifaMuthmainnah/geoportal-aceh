@@ -25,6 +25,11 @@ function DatasetCard({ dataset, owner }) {
     dataset.thumbnailUrl ||
     null
 
+  const isPublished =
+    dataset.is_published === true ||
+    dataset.published === true ||
+    dataset.is_approved === true
+
   const formattedDate = dataset.date
     ? new Date(dataset.date).toLocaleDateString(
         'id-ID',
@@ -86,6 +91,15 @@ function DatasetCard({ dataset, owner }) {
             title={dataset.title || 'Tanpa judul'}
           >
             {dataset.title || 'Tanpa judul'}
+
+            {!isPublished && (
+              <span
+                className="katalog-card-unpublished-icon"
+                title="This resource is unpublished and not approved"
+              >
+                i
+              </span>
+            )}
           </h5>
 
           {/* DESCRIPTION */}
