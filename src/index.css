@@ -3168,8 +3168,6 @@ main {
 
   display: flex;
 
-  min-height: 175px;
-
   overflow: hidden;
 
   border: 1px solid #e0e7ef;
@@ -3243,8 +3241,8 @@ main {
     ),
     linear-gradient(
       145deg,
-      #e8f2fa,
-      #f4f8fc
+      #ffffff,
+      #ffffff
     );
 
   color: #0b5cab;
@@ -3739,12 +3737,20 @@ main {
 
   margin-top: auto;
 
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
   color: #0b5cab;
 
   font-size: 0.76rem;
   font-weight: 700;
 
   text-decoration: none;
+
+  cursor: pointer;
 }
 
 .jign-node-info h3 {
