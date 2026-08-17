@@ -382,6 +382,20 @@ function Home() {
   // RENDER
   // =========================================
 
+  useEffect(() => {
+    async function fetchDatasets() {
+      try {
+        const data = await getDatasets()
+        const list = Array.isArray(data) ? data : data.datasets || []
+        setDatasets(list.slice(0, 3))
+      } catch (err) {
+        console.error('Gagal mengambil dataset:', err)
+      }
+    }
+
+    fetchDatasets()
+  }, [])
+
   return (
 
     <div className="home-page">

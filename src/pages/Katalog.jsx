@@ -237,45 +237,34 @@ function Katalog() {
 
     <main className="katalog-page">
 
-
       {/* =====================================
-          HEADER
+          HERO / HEADER
           ===================================== */}
 
-      <section className="information-header">
+          <section className="catalog-hero">
 
-        <div className="container information-header-inner">
+            <div className="container">
 
-          <div className="information-breadcrumb">
+              <div className="catalog-hero-content">
 
-            <span className="text-muted">
-              Data
-            </span>
+                <span className="catalog-eyebrow">
+                  GEOPORTAL ACEH
+                </span>
 
-            <span className="text-muted mx-2">
-              /
-            </span>
+                <h1>
+                  Katalog Data
+                </h1>
 
-            <span className="current">
-              Katalog
-            </span>
+                <p>
+                  Temukan dan jelajahi berbagai data
+                  geospasial yang tersedia di Aceh.
+                </p>
 
-          </div>
+              </div>
 
+            </div>
 
-          <h1>
-            Katalog Data
-          </h1>
-
-
-          <p>
-            Temukan dan jelajahi data
-            geospasial Aceh.
-          </p>
-
-        </div>
-
-      </section>
+          </section>
 
 
 
@@ -284,7 +273,6 @@ function Katalog() {
           ===================================== */}
 
       <section className="container information-toolbar-wrapper">
-
         <div className="information-toolbar">
 
           <div className="catalog-search-wrapper">
@@ -332,9 +320,7 @@ function Katalog() {
             {filteredDatasets.length}{' '}
             dataset
           </small>
-
         </div>
-
       </section>
 
 
@@ -398,9 +384,13 @@ function Katalog() {
             </div>
 
           </div>
-
         </div>
 
+        {loading && (
+          <div className="information-empty">
+            <p>Memuat data...</p>
+          </div>
+        )}
 
         {/* ===================================
             LOADING
@@ -415,7 +405,6 @@ function Katalog() {
             </p>
 
           </div>
-
         )}
 
 
