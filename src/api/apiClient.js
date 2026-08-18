@@ -392,6 +392,7 @@ export async function apiGetAll(
         ? response
         : response?.results ||
           response?.datasets ||
+          response?.geoapps ||
           response?.owners ||
           response?.users ||
           response?.data ||
