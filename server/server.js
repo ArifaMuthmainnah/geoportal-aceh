@@ -11,6 +11,9 @@ const authRoutes =
 const userRoutes =
   require('./routes/userRoutes')
 
+const datasetRoutes =
+  require('./routes/datasetRoutes')
+
 
 const app = express()
 
@@ -49,6 +52,11 @@ app.use(
 app.use(
   '/api/users',
   userRoutes
+)
+
+app.use(
+  '/api/datasets',
+  datasetRoutes
 )
 
 

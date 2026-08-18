@@ -611,3 +611,62 @@ export function authDelete(
   )
 
 }
+
+// =====================================================
+// AUTH POST FILE (MULTIPART) - BACKEND SENDIRI
+// =====================================================
+//
+// Khusus upload file ke backend kita sendiri
+// (bukan ke geoportal lama).
+//
+// Tidak set Content-Type manual, browser akan
+// otomatis menambahkan boundary yang benar.
+//
+// =====================================================
+
+export async function authPostFile(
+  endpoint,
+  formData
+) {
+
+  const token = getToken()
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response =
+    await fetch(
+      buildAuthUrl(endpoint),
+      {
+        method: 'POST',
+        headers,
+        body: formData,
+      }
+    )
+
+  const text = await response.text()
+
+  let data = {}
+
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    data = { message: text }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Gagal mengunggah file (${response.status})`
+    )
+  }
+
+  return data
+
+}

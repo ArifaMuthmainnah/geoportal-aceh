@@ -10,9 +10,9 @@ import {
 } from 'react-router'
 
 import {
-  getAllDatasets,
-  deleteDataset,
-} from '../../api/datasetApi'
+  getMyDatasets,
+  deleteMyDataset,
+} from '../../api/myDatasetApi'
 
 import {
   useAuth,
@@ -41,7 +41,7 @@ function MyDatasets() {
       setLoading(true)
       setError('')
 
-      const data = await getAllDatasets()
+      const data = await getMyDatasets()
 
       setDatasets(Array.isArray(data) ? data : [])
 
@@ -67,34 +67,13 @@ function MyDatasets() {
   }, [])
 
 
-  const myDatasets = useMemo(() => {
-
-    if (!currentUser) return []
-
-    return datasets.filter((dataset) => {
-
-      const ownerUsername =
-        dataset.owner?.username ||
-        dataset.owner?.name ||
-        ''
-
-      return (
-        ownerUsername.toLowerCase() ===
-        String(currentUser.username || '').toLowerCase()
-      )
-
-    })
-
-  }, [datasets, currentUser])
-
-
   const filteredDatasets = useMemo(() => {
 
     const keyword = search.trim().toLowerCase()
 
-    if (!keyword) return myDatasets
+    if (!keyword) return datasets
 
-    return myDatasets.filter((dataset) => {
+    return datasets.filter((dataset) => {
 
       const title = String(dataset.title || '').toLowerCase()
 
@@ -102,7 +81,7 @@ function MyDatasets() {
 
     })
 
-  }, [myDatasets, search])
+  }, [datasets, search])
 
 
   async function handleDelete(dataset) {
@@ -115,10 +94,10 @@ function MyDatasets() {
 
     try {
 
-      await deleteDataset(dataset.pk)
+      await deleteMyDataset(dataset.id)
 
       setDatasets((current) =>
-        current.filter((item) => item.pk !== dataset.pk)
+        current.filter((item) => item.id !== dataset.id)
       )
 
       window.alert('Dataset berhasil dihapus.')
@@ -127,7 +106,7 @@ function MyDatasets() {
 
       console.error('Delete error:', err)
 
-      window.alert('Dataset gagal dihapus. Periksa permission API.')
+      window.alert('Dataset gagal dihapus.')
 
     }
 
@@ -273,23 +252,20 @@ function MyDatasets() {
 
                     {filteredDatasets.map((dataset) => {
 
-                      const published =
-                        dataset.is_published === true ||
-                        dataset.published === true ||
-                        dataset.is_approved === true
+                      const published = Boolean(dataset.is_published)
 
                       return (
 
-                        <tr key={dataset.pk}>
+                        <tr key={dataset.id}>
 
                           <td>
                             <strong>{dataset.title || 'Tanpa judul'}</strong>
-                            <small>ID: {dataset.pk || '-'}</small>
+                            <small>ID: {dataset.id || '-'}</small>
                           </td>
 
                           <td>
-                            {dataset.date
-                              ? new Date(dataset.date).toLocaleDateString('id-ID')
+                            {dataset.created_at
+                              ? new Date(dataset.created_at).toLocaleDateString('id-ID')
                               : '-'}
                           </td>
 
@@ -301,13 +277,6 @@ function MyDatasets() {
 
                           <td>
                             <div className="admin-actions">
-
-                              <Link
-                                to={`/katalog/${dataset.pk}`}
-                                className="admin-action-view"
-                              >
-                                Lihat
-                              </Link>
 
                               <button
                                 type="button"
