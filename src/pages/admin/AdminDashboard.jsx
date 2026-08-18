@@ -12,10 +12,14 @@ import {
 import {
   getAllDatasets,
   deleteDataset,
+  updateDataset,
 } from '../../api/datasetApi'
 
 import {
   getAllUsers,
+  createUser,
+  updateUser,
+  deleteUser,
 } from '../../api/userApi'
 
 import {
@@ -25,9 +29,7 @@ import {
 
 function AdminDashboard() {
 
-  const navigate =
-    useNavigate()
-
+  const navigate = useNavigate()
 
   const {
     currentUser,
@@ -37,43 +39,44 @@ function AdminDashboard() {
 
 
   // ===================================================
-  // STATE
+  // STATE - DATA
   // ===================================================
 
-  const [
-    datasets,
-    setDatasets
-  ] = useState([])
+  const [datasets, setDatasets] = useState([])
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [activeMenu, setActiveMenu] = useState('dashboard')
 
 
-  const [
-    users,
-    setUsers
-  ] = useState([])
+  // ===================================================
+  // STATE - MODAL DATASET
+  // ===================================================
+
+  const [editingDataset, setEditingDataset] = useState(null)
+  const [datasetForm, setDatasetForm] = useState({
+    title: '',
+    abstract: '',
+  })
+  const [savingDataset, setSavingDataset] = useState(false)
+  const [togglingId, setTogglingId] = useState(null)
 
 
-  const [
-    loading,
-    setLoading
-  ] = useState(true)
+  // ===================================================
+  // STATE - MODAL USER
+  // ===================================================
 
-
-  const [
-    error,
-    setError
-  ] = useState('')
-
-
-  const [
-    search,
-    setSearch
-  ] = useState('')
-
-
-  const [
-    activeMenu,
-    setActiveMenu
-  ] = useState('dashboard')
+  const [userModalMode, setUserModalMode] = useState(null) // 'create' | 'edit' | null
+  const [editingUser, setEditingUser] = useState(null)
+  const [userForm, setUserForm] = useState({
+    username: '',
+    email: '',
+    password: '',
+    role: 'operator',
+  })
+  const [savingUser, setSavingUser] = useState(false)
+  const [userFormError, setUserFormError] = useState('')
 
 
   // ===================================================
@@ -85,118 +88,40 @@ function AdminDashboard() {
     try {
 
       setLoading(true)
-
       setError('')
 
-
-      const [
-        datasetResult,
-        userResult,
-      ] = await Promise.allSettled([
-
+      const [datasetResult, userResult] = await Promise.allSettled([
         getAllDatasets(),
-
         getAllUsers(),
-
       ])
 
-
-      // ===============================================
-      // DATASET
-      // ===============================================
-
-      if (
-        datasetResult.status ===
-        'fulfilled'
-      ) {
-
-        const datasetData =
-          datasetResult.value
-
-
-        setDatasets(
-          Array.isArray(
-            datasetData
-          )
-            ? datasetData
-            : []
-        )
-
+      if (datasetResult.status === 'fulfilled') {
+        const datasetData = datasetResult.value
+        setDatasets(Array.isArray(datasetData) ? datasetData : [])
       } else {
-
-        console.error(
-          'Dataset error:',
-          datasetResult.reason
-        )
-
-
+        console.error('Dataset error:', datasetResult.reason)
         setDatasets([])
-
       }
 
-
-      // ===============================================
-      // USERS
-      // ===============================================
-
-      if (
-        userResult.status ===
-        'fulfilled'
-      ) {
-
-        const userData =
-          userResult.value
-
-
-        setUsers(
-          Array.isArray(
-            userData
-          )
-            ? userData
-            : []
-        )
-
+      if (userResult.status === 'fulfilled') {
+        const userData = userResult.value
+        setUsers(Array.isArray(userData) ? userData : [])
       } else {
-
-        console.error(
-          'User error:',
-          userResult.reason
-        )
-
-
+        console.error('User error:', userResult.reason)
         setUsers([])
-
       }
 
-
-      // ===============================================
-      // ERROR
-      // ===============================================
-
       if (
-        datasetResult.status ===
-          'rejected' &&
-        userResult.status ===
-          'rejected'
+        datasetResult.status === 'rejected' &&
+        userResult.status === 'rejected'
       ) {
-
-        setError(
-          'Data dashboard gagal dimuat.'
-        )
-
+        setError('Data dashboard gagal dimuat.')
       }
 
     } catch (err) {
 
-      console.error(
-        'Dashboard error:',
-        err
-      )
-
-
-      setError(
-        'Gagal memuat dashboard.'
-      )
+      console.error('Dashboard error:', err)
+      setError('Gagal memuat dashboard.')
 
     } finally {
 
@@ -207,14 +132,8 @@ function AdminDashboard() {
   }
 
 
-  // ===================================================
-  // LOAD
-  // ===================================================
-
   useEffect(() => {
-
     loadDashboard()
-
   }, [])
 
 
@@ -222,198 +141,133 @@ function AdminDashboard() {
   // STATISTICS
   // ===================================================
 
-  const statistics =
-    useMemo(() => {
+  const statistics = useMemo(() => {
 
-      const published =
-        datasets.filter(
-          (dataset) =>
-            dataset.is_published ===
-              true ||
-            dataset.published ===
-              true ||
-            dataset.is_approved ===
-              true
-        ).length
+    const published = datasets.filter(
+      (dataset) =>
+        dataset.is_published === true ||
+        dataset.published === true ||
+        dataset.is_approved === true
+    ).length
 
+    return [
+      { label: 'Total Dataset', value: datasets.length, icon: '▦' },
+      { label: 'Terpublikasi', value: published, icon: '✓' },
+      { label: 'Pengguna', value: users.length, icon: '♙' },
+      {
+        label: 'Belum Terpublikasi',
+        value: Math.max(datasets.length - published, 0),
+        icon: '◷',
+      },
+    ]
 
-      return [
-
-        {
-          label:
-            'Total Dataset',
-
-          value:
-            datasets.length,
-
-          icon:
-            '▦',
-        },
-
-
-        {
-          label:
-            'Terpublikasi',
-
-          value:
-            published,
-
-          icon:
-            '✓',
-        },
-
-
-        {
-          label:
-            'Pengguna',
-
-          value:
-            users.length,
-
-          icon:
-            '♙',
-        },
-
-
-        {
-          label:
-            'Belum Terpublikasi',
-
-          value:
-            Math.max(
-              datasets.length -
-              published,
-              0
-            ),
-
-          icon:
-            '◷',
-        },
-
-      ]
-
-    }, [
-      datasets,
-      users,
-    ])
+  }, [datasets, users])
 
 
   // ===================================================
   // FILTER DATASET
   // ===================================================
 
-  const filteredDatasets =
-    useMemo(() => {
+  const filteredDatasets = useMemo(() => {
 
-      const keyword =
-        search
-          .trim()
-          .toLowerCase()
+    const keyword = search.trim().toLowerCase()
 
+    if (!keyword) {
+      return datasets
+    }
 
-      if (!keyword) {
+    return datasets.filter((dataset) => {
 
-        return datasets
+      const title = String(dataset.title || '').toLowerCase()
 
-      }
+      const abstract = String(
+        dataset.abstract || dataset.description || ''
+      ).toLowerCase()
 
+      return title.includes(keyword) || abstract.includes(keyword)
 
-      return datasets.filter(
-        (dataset) => {
+    })
 
-          const title =
-            String(
-              dataset.title ||
-              ''
-            )
-              .toLowerCase()
-
-
-          const abstract =
-            String(
-              dataset.abstract ||
-              dataset.description ||
-              ''
-            )
-              .toLowerCase()
-
-
-          return (
-            title.includes(
-              keyword
-            ) ||
-            abstract.includes(
-              keyword
-            )
-          )
-
-        }
-      )
-
-    }, [
-      datasets,
-      search,
-    ])
+  }, [datasets, search])
 
 
   // ===================================================
   // DELETE DATASET
   // ===================================================
 
-  async function handleDelete(
-    dataset
-  ) {
+  async function handleDelete(dataset) {
 
-    const title =
-      dataset.title ||
-      'dataset ini'
+    const title = dataset.title || 'dataset ini'
 
-
-    const confirmed =
-      window.confirm(
-        `Hapus dataset "${title}"?`
-      )
-
+    const confirmed = window.confirm(`Hapus dataset "${title}"?`)
 
     if (!confirmed) {
-
       return
-
     }
-
 
     try {
 
-      await deleteDataset(
-        dataset.pk
+      await deleteDataset(dataset.pk)
+
+      setDatasets((current) =>
+        current.filter((item) => item.pk !== dataset.pk)
       )
 
+      window.alert('Dataset berhasil dihapus.')
 
-      setDatasets(
-        (current) =>
-          current.filter(
-            (item) =>
-              item.pk !==
-              dataset.pk
-          )
-      )
+    } catch (err) {
+
+      console.error('Delete error:', err)
+      window.alert('Dataset gagal dihapus. Periksa permission API.')
+
+    }
+
+  }
 
 
-      window.alert(
-        'Dataset berhasil dihapus.'
+  // ===================================================
+  // TOGGLE PUBLISH DATASET
+  // ===================================================
+
+  function isDatasetPublished(dataset) {
+    return (
+      dataset.is_published === true ||
+      dataset.published === true ||
+      dataset.is_approved === true
+    )
+  }
+
+  async function handleTogglePublish(dataset) {
+
+    const nextValue = !isDatasetPublished(dataset)
+
+    try {
+
+      setTogglingId(dataset.pk)
+
+      await updateDataset(dataset.pk, {
+        is_published: nextValue,
+      })
+
+      setDatasets((current) =>
+        current.map((item) =>
+          item.pk === dataset.pk
+            ? { ...item, is_published: nextValue }
+            : item
+        )
       )
 
     } catch (err) {
 
-      console.error(
-        'Delete error:',
-        err
-      )
-
+      console.error('Toggle publish error:', err)
 
       window.alert(
-        'Dataset gagal dihapus. Periksa permission API.'
+        'Gagal mengubah status publish. Periksa permission API.'
       )
+
+    } finally {
+
+      setTogglingId(null)
 
     }
 
@@ -421,49 +275,266 @@ function AdminDashboard() {
 
 
   // ===================================================
-  // LOGOUT
+  // EDIT DATASET
   // ===================================================
 
-  function handleLogout() {
+  function openEditDataset(dataset) {
 
-    logout()
+    setEditingDataset(dataset)
 
+    setDatasetForm({
+      title: dataset.title || '',
+      abstract: dataset.abstract || dataset.description || '',
+    })
 
-    navigate(
-      '/',
-      {
-        replace: true,
-      }
-    )
+  }
+
+  function closeEditDataset() {
+    setEditingDataset(null)
+  }
+
+  async function handleSaveDataset(event) {
+
+    event.preventDefault()
+
+    if (!editingDataset) {
+      return
+    }
+
+    try {
+
+      setSavingDataset(true)
+
+      await updateDataset(editingDataset.pk, {
+        title: datasetForm.title,
+        abstract: datasetForm.abstract,
+      })
+
+      setDatasets((current) =>
+        current.map((item) =>
+          item.pk === editingDataset.pk
+            ? {
+                ...item,
+                title: datasetForm.title,
+                abstract: datasetForm.abstract,
+              }
+            : item
+        )
+      )
+
+      window.alert('Dataset berhasil diperbarui.')
+
+      closeEditDataset()
+
+    } catch (err) {
+
+      console.error('Update dataset error:', err)
+      window.alert('Dataset gagal diperbarui. Periksa permission API.')
+
+    } finally {
+
+      setSavingDataset(false)
+
+    }
 
   }
 
 
   // ===================================================
-  // REFRESH
+  // USER - CREATE / EDIT MODAL
   // ===================================================
 
+  function openCreateUser() {
+
+    setUserModalMode('create')
+
+    setEditingUser(null)
+
+    setUserForm({
+      username: '',
+      email: '',
+      password: '',
+      role: 'operator',
+    })
+
+    setUserFormError('')
+
+  }
+
+  function openEditUser(user) {
+
+    setUserModalMode('edit')
+
+    setEditingUser(user)
+
+    setUserForm({
+      username: user.username || '',
+      email: user.email || '',
+      password: '',
+      role: user.role || 'operator',
+    })
+
+    setUserFormError('')
+
+  }
+
+  function closeUserModal() {
+    setUserModalMode(null)
+    setEditingUser(null)
+  }
+
+  async function handleSaveUser(event) {
+
+    event.preventDefault()
+
+    setUserFormError('')
+
+    if (!userForm.username.trim()) {
+      setUserFormError('Username wajib diisi.')
+      return
+    }
+
+    if (userModalMode === 'create' && !userForm.password.trim()) {
+      setUserFormError('Password wajib diisi untuk pengguna baru.')
+      return
+    }
+
+    try {
+
+      setSavingUser(true)
+
+      if (userModalMode === 'create') {
+
+        const created = await createUser({
+          username: userForm.username,
+          email: userForm.email,
+          password: userForm.password,
+          role: userForm.role,
+        })
+
+        setUsers((current) => [
+          ...current,
+          created?.user || created || userForm,
+        ])
+
+        window.alert('Pengguna berhasil ditambahkan.')
+
+      } else if (userModalMode === 'edit' && editingUser) {
+
+        const payload = {
+          username: userForm.username,
+          email: userForm.email,
+          role: userForm.role,
+        }
+
+        if (userForm.password.trim()) {
+          payload.password = userForm.password
+        }
+
+        await updateUser(
+          editingUser.id || editingUser.pk,
+          payload
+        )
+
+        setUsers((current) =>
+          current.map((item) =>
+            item === editingUser ||
+            item.id === editingUser.id ||
+            item.pk === editingUser.pk
+              ? { ...item, ...payload }
+              : item
+          )
+        )
+
+        window.alert('Pengguna berhasil diperbarui.')
+
+      }
+
+      closeUserModal()
+
+    } catch (err) {
+
+      console.error('Save user error:', err)
+
+      setUserFormError(
+        'Gagal menyimpan pengguna. Periksa permission API atau data yang dimasukkan.'
+      )
+
+    } finally {
+
+      setSavingUser(false)
+
+    }
+
+  }
+
+
+  // ===================================================
+  // DELETE USER
+  // ===================================================
+
+  async function handleDeleteUser(user) {
+
+    if (
+      user.id === currentUser?.id ||
+      user.pk === currentUser?.id ||
+      user.username === currentUser?.username
+    ) {
+      window.alert('Kamu tidak bisa menghapus akunmu sendiri.')
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Hapus pengguna "${user.username || 'ini'}"?`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+
+      await deleteUser(user.id || user.pk)
+
+      setUsers((current) =>
+        current.filter(
+          (item) =>
+            (item.id || item.pk) !== (user.id || user.pk)
+        )
+      )
+
+      window.alert('Pengguna berhasil dihapus.')
+
+    } catch (err) {
+
+      console.error('Delete user error:', err)
+      window.alert('Pengguna gagal dihapus. Periksa permission API.')
+
+    }
+
+  }
+
+
+  // ===================================================
+  // LOGOUT / REFRESH
+  // ===================================================
+
+  function handleLogout() {
+    logout()
+    navigate('/', { replace: true })
+  }
+
   function handleRefresh() {
-
     loadDashboard()
-
   }
 
 
   // ===================================================
   // PROTECTION
   // ===================================================
-  //
-  // Seharusnya sudah ditangani ProtectedRoute.
-  //
-  // Ini hanya lapisan tambahan pada component.
-  //
-  // ===================================================
 
   if (!isAdmin) {
-
     return null
-
   }
 
 
@@ -478,437 +549,188 @@ function AdminDashboard() {
       <div className="admin-layout">
 
 
-        {/* =================================================
-            SIDEBAR
-        ================================================= */}
+        {/* SIDEBAR */}
 
         <aside className="admin-sidebar">
 
-
-          {/* BRAND */}
-
           <div className="admin-sidebar-brand">
-
-            <span>
-              GEOPORTAL
-            </span>
-
-            <strong>
-              ACEH
-            </strong>
-
+            <span>GEOPORTAL</span>
+            <strong>ACEH</strong>
           </div>
-
-
-          {/* USER */}
 
           <div className="admin-sidebar-user">
 
             <div className="admin-user-avatar">
-
-              {
-                (
-                  currentUser?.username ||
-                  'A'
-                )
-                  .charAt(0)
-                  .toUpperCase()
-              }
-
+              {(currentUser?.username || 'A').charAt(0).toUpperCase()}
             </div>
 
-
             <div>
-
-              <strong>
-
-                {
-                  currentUser?.username ||
-                  'Administrator'
-                }
-
-              </strong>
-
-
-              <span>
-                Administrator
-              </span>
-
+              <strong>{currentUser?.username || 'Administrator'}</strong>
+              <span>Administrator</span>
             </div>
 
           </div>
 
-
-          {/* NAVIGATION */}
-
           <nav className="admin-sidebar-nav">
 
-
-            {/* DASHBOARD */}
-
             <button
               type="button"
-              className={
-                activeMenu ===
-                'dashboard'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() =>
-                setActiveMenu(
-                  'dashboard'
-                )
-              }
+              className={activeMenu === 'dashboard' ? 'active' : ''}
+              onClick={() => setActiveMenu('dashboard')}
             >
-
-              <span>
-                ▦
-              </span>
-
+              <span>▦</span>
               Dashboard
-
             </button>
-
-
-            {/* DATASET */}
 
             <button
               type="button"
-              className={
-                activeMenu ===
-                'datasets'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() =>
-                setActiveMenu(
-                  'datasets'
-                )
-              }
+              className={activeMenu === 'datasets' ? 'active' : ''}
+              onClick={() => setActiveMenu('datasets')}
             >
-
-              <span>
-                ◈
-              </span>
-
+              <span>◈</span>
               Dataset
-
             </button>
-
-
-            {/* USERS */}
 
             <button
               type="button"
-              className={
-                activeMenu ===
-                'users'
-                  ? 'active'
-                  : ''
-              }
-              onClick={() =>
-                setActiveMenu(
-                  'users'
-                )
-              }
+              className={activeMenu === 'users' ? 'active' : ''}
+              onClick={() => setActiveMenu('users')}
             >
-
-              <span>
-                ♙
-              </span>
-
+              <span>♙</span>
               Pengguna
-
             </button>
 
-
-            {/* CATALOG */}
-
-            <Link
-              to="/katalog"
-              className="admin-sidebar-link"
-            >
-
-              <span>
-                ◉
-              </span>
-
+            <Link to="/katalog" className="admin-sidebar-link">
+              <span>◉</span>
               Lihat Katalog
-
             </Link>
 
-
-            {/* WEBGIS */}
-
-            <Link
-              to="/webgis"
-              className="admin-sidebar-link"
-            >
-
-              <span>
-                ⌖
-              </span>
-
+            <Link to="/webgis" className="admin-sidebar-link">
+              <span>⌖</span>
               WebGIS
-
             </Link>
-
 
           </nav>
-
-
-          {/* LOGOUT */}
 
           <button
             type="button"
             className="admin-sidebar-logout"
-            onClick={
-              handleLogout
-            }
+            onClick={handleLogout}
           >
-
             ← Logout
-
           </button>
-
 
         </aside>
 
 
-        {/* =================================================
-            MAIN
-        ================================================= */}
+        {/* MAIN */}
 
         <section className="admin-main">
 
 
-          {/* =================================================
-              HEADER
-          ================================================= */}
+          {/* HEADER */}
 
           <header className="admin-header">
 
             <div>
-
-              <span className="section-eyebrow">
-                ADMINISTRATOR
-              </span>
-
-
-              <h1>
-                Dashboard
-              </h1>
-
-
-              <p>
-                Kelola data dan pengguna
-                Geoportal Aceh.
-              </p>
-
+              <span className="section-eyebrow">ADMINISTRATOR</span>
+              <h1>Dashboard</h1>
+              <p>Kelola data dan pengguna Geoportal Aceh.</p>
             </div>
 
-
             <div className="admin-header-actions">
-
 
               <button
                 type="button"
                 className="admin-refresh-button"
-                onClick={
-                  handleRefresh
-                }
+                onClick={handleRefresh}
                 disabled={loading}
               >
-
-                ↻
-                {' '}
-                {loading
-                  ? 'Memuat...'
-                  : 'Refresh'
-                }
-
+                ↻ {loading ? 'Memuat...' : 'Refresh'}
               </button>
 
-
-              <Link
-                to="/"
-                className="admin-view-site"
-              >
-
+              <Link to="/" className="admin-view-site">
                 Lihat Website →
-
               </Link>
-
 
             </div>
 
           </header>
 
 
-          {/* =================================================
-              ERROR
-          ================================================= */}
-
           {error && (
-
             <div className="admin-alert">
-
               {error}
-
             </div>
-
           )}
 
 
-          {/* =================================================
-              STATISTICS
-          ================================================= */}
+          {/* STATISTICS */}
 
           <section className="admin-stat-grid">
 
-            {statistics.map(
-              (stat) => (
+            {statistics.map((stat) => (
 
-                <article
-                  className="admin-stat-card"
-                  key={
-                    stat.label
-                  }
-                >
+              <article className="admin-stat-card" key={stat.label}>
 
-                  <div className="admin-stat-icon">
+                <div className="admin-stat-icon">
+                  {stat.icon}
+                </div>
 
-                    {stat.icon}
+                <div>
+                  <strong>{loading ? '...' : stat.value}</strong>
+                  <span>{stat.label}</span>
+                </div>
 
-                  </div>
+              </article>
 
-
-                  <div>
-
-                    <strong>
-
-                      {loading
-                        ? '...'
-                        : stat.value}
-
-                    </strong>
-
-
-                    <span>
-
-                      {stat.label}
-
-                    </span>
-
-                  </div>
-
-                </article>
-
-              )
-            )}
+            ))}
 
           </section>
 
 
-          {/* =================================================
-              DATASET
-          ================================================= */}
+          {/* DATASET */}
 
-          {(
-            activeMenu ===
-              'dashboard' ||
-            activeMenu ===
-              'datasets'
-          ) && (
+          {(activeMenu === 'dashboard' || activeMenu === 'datasets') && (
 
             <section className="admin-panel">
-
-
-              {/* PANEL HEADER */}
 
               <div className="admin-panel-header">
 
                 <div>
-
-                  <span className="section-eyebrow">
-                    CONTENT
-                  </span>
-
-
-                  <h2>
-                    Dataset
-                  </h2>
-
+                  <span className="section-eyebrow">CONTENT</span>
+                  <h2>Dataset</h2>
                 </div>
 
-
                 <div className="admin-panel-actions">
-
-                  <Link
-                    to="/katalog"
-                    className="admin-secondary-button"
-                  >
+                  <Link to="/katalog" className="admin-secondary-button">
                     Katalog
                   </Link>
-
                 </div>
 
               </div>
 
-
-              {/* TOOLBAR */}
-
               <div className="admin-toolbar">
-
                 <input
                   type="search"
                   placeholder="Cari dataset..."
                   value={search}
-                  onChange={
-                    (event) =>
-                      setSearch(
-                        event.target.value
-                      )
-                  }
+                  onChange={(event) => setSearch(event.target.value)}
                 />
-
               </div>
-
-
-              {/* LOADING */}
 
               {loading ? (
 
                 <div className="admin-loading">
-
                   Memuat dataset...
-
                 </div>
 
               ) : filteredDatasets.length === 0 ? (
 
                 <div className="admin-empty">
-
-                  <div
-                    style={{
-                      fontSize:
-                        '36px',
-                      marginBottom:
-                        '10px',
-                    }}
-                  >
-                    ◈
-                  </div>
-
-                  <strong>
-                    Tidak ada dataset
-                  </strong>
-
-                  <p>
-                    Belum ada dataset
-                    yang tersedia.
-                  </p>
-
+                  <div style={{ fontSize: '36px', marginBottom: '10px' }}>◈</div>
+                  <strong>Tidak ada dataset</strong>
+                  <p>Belum ada dataset yang tersedia.</p>
                 </div>
 
               ) : (
@@ -918,190 +740,112 @@ function AdminDashboard() {
                   <table className="admin-table">
 
                     <thead>
-
                       <tr>
-
-                        <th>
-                          Dataset
-                        </th>
-
-                        <th>
-                          Owner
-                        </th>
-
-                        <th>
-                          Tanggal
-                        </th>
-
-                        <th>
-                          Status
-                        </th>
-
-                        <th>
-                          Aksi
-                        </th>
-
+                        <th>Dataset</th>
+                        <th>Owner</th>
+                        <th>Tanggal</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
                       </tr>
-
                     </thead>
-
 
                     <tbody>
 
-                      {filteredDatasets
-                        .slice(
-                          0,
-                          50
-                        )
-                        .map(
-                          (
-                            dataset
-                          ) => {
+                      {filteredDatasets.slice(0, 50).map((dataset) => {
 
-                            const published =
-                              dataset.is_published ===
-                                true ||
-                              dataset.published ===
-                                true ||
-                              dataset.is_approved ===
-                                true
+                        const published = isDatasetPublished(dataset)
 
+                        return (
 
-                            return (
+                          <tr key={dataset.pk}>
 
-                              <tr
-                                key={
-                                  dataset.pk
+                            <td>
+                              <strong>{dataset.title || 'Tanpa judul'}</strong>
+                              <small>ID: {dataset.pk || '-'}</small>
+                            </td>
+
+                            <td>
+                              {
+                                dataset.owner?.username ||
+                                dataset.owner?.first_name ||
+                                dataset.owner?.name ||
+                                '-'
+                              }
+                            </td>
+
+                            <td>
+                              {
+                                dataset.date
+                                  ? new Date(dataset.date).toLocaleDateString('id-ID')
+                                  : '-'
+                              }
+                            </td>
+
+                            <td>
+                              <span
+                                className={
+                                  published
+                                    ? 'admin-status published'
+                                    : 'admin-status pending'
                                 }
                               >
+                                {published ? 'Published' : 'Belum Publish'}
+                              </span>
+                            </td>
 
+                            <td>
 
-                                {/* DATASET */}
+                              <div className="admin-actions">
 
-                                <td>
+                                <Link
+                                  to={`/katalog/${dataset.pk}`}
+                                  className="admin-action-view"
+                                >
+                                  Lihat
+                                </Link>
 
-                                  <strong>
+                                <button
+                                  type="button"
+                                  className="admin-action-view"
+                                  onClick={() => openEditDataset(dataset)}
+                                >
+                                  Edit
+                                </button>
 
-                                    {
-                                      dataset.title ||
-                                      'Tanpa judul'
-                                    }
-
-                                  </strong>
-
-
-                                  <small>
-
-                                    ID:{' '}
-
-                                    {
-                                      dataset.pk ||
-                                      '-'
-                                    }
-
-                                  </small>
-
-                                </td>
-
-
-                                {/* OWNER */}
-
-                                <td>
-
-                                  {
-                                    dataset.owner?.username ||
-                                    dataset.owner?.first_name ||
-                                    dataset.owner?.name ||
-                                    '-'
+                                <button
+                                  type="button"
+                                  className={
+                                    published
+                                      ? 'admin-action-delete'
+                                      : 'admin-action-view'
                                   }
+                                  disabled={togglingId === dataset.pk}
+                                  onClick={() => handleTogglePublish(dataset)}
+                                >
+                                  {togglingId === dataset.pk
+                                    ? '...'
+                                    : published
+                                      ? 'Unpublish'
+                                      : 'Publish'}
+                                </button>
 
-                                </td>
+                                <button
+                                  type="button"
+                                  className="admin-action-delete"
+                                  onClick={() => handleDelete(dataset)}
+                                >
+                                  Hapus
+                                </button>
 
+                              </div>
 
-                                {/* DATE */}
+                            </td>
 
-                                <td>
+                          </tr>
 
-                                  {
-                                    dataset.date
-                                      ? new Date(
-                                          dataset.date
-                                        ).toLocaleDateString(
-                                          'id-ID'
-                                        )
-                                      : '-'
-                                  }
+                        )
 
-                                </td>
-
-
-                                {/* STATUS */}
-
-                                <td>
-
-                                  <span
-                                    className={
-                                      published
-                                        ? 'admin-status published'
-                                        : 'admin-status pending'
-                                    }
-                                  >
-
-                                    {published
-                                      ? 'Published'
-                                      : 'Belum Publish'
-                                    }
-
-                                  </span>
-
-                                </td>
-
-
-                                {/* ACTION */}
-
-                                <td>
-
-                                  <div className="admin-actions">
-
-
-                                    <Link
-                                      to={
-                                        `/katalog/${dataset.pk}`
-                                      }
-                                      className="admin-action-view"
-                                    >
-
-                                      Lihat
-
-                                    </Link>
-
-
-                                    <button
-                                      type="button"
-                                      className="admin-action-delete"
-                                      onClick={() =>
-                                        handleDelete(
-                                          dataset
-                                        )
-                                      }
-                                    >
-
-                                      Hapus
-
-                                    </button>
-
-
-                                  </div>
-
-                                </td>
-
-
-                              </tr>
-
-                            )
-
-                          }
-                        )}
+                      })}
 
                     </tbody>
 
@@ -1116,81 +860,44 @@ function AdminDashboard() {
           )}
 
 
-          {/* =================================================
-              USERS
-          ================================================= */}
+          {/* USERS */}
 
-          {activeMenu ===
-            'users' && (
+          {activeMenu === 'users' && (
 
             <section className="admin-panel">
-
-
-              {/* HEADER */}
 
               <div className="admin-panel-header">
 
                 <div>
+                  <span className="section-eyebrow">MANAGEMENT</span>
+                  <h2>Pengguna</h2>
+                  <p>Daftar pengguna yang terdaftar di sistem Geoportal Aceh.</p>
+                </div>
 
-                  <span className="section-eyebrow">
-                    MANAGEMENT
-                  </span>
-
-
-                  <h2>
-                    Pengguna
-                  </h2>
-
-
-                  <p>
-                    Daftar pengguna yang
-                    terdaftar di sistem
-                    Geoportal Aceh.
-                  </p>
-
+                <div className="admin-panel-actions">
+                  <button
+                    type="button"
+                    className="admin-secondary-button"
+                    onClick={openCreateUser}
+                  >
+                    + Tambah Pengguna
+                  </button>
                 </div>
 
               </div>
 
-
-              {/* LOADING */}
-
               {loading ? (
 
                 <div className="admin-loading">
-
                   Memuat pengguna...
-
                 </div>
 
               ) : users.length === 0 ? (
 
                 <div className="admin-empty">
-
-                  <div
-                    style={{
-                      fontSize:
-                        '36px',
-                      marginBottom:
-                        '10px',
-                    }}
-                  >
-                    ♙
-                  </div>
-
-
-                  <strong>
-                    Data pengguna
-                    tidak tersedia
-                  </strong>
-
-
-                  <p>
-                    Endpoint user mungkin
-                    membutuhkan permission
-                    administrator.
-                  </p>
-
+                  <div style={{ fontSize: '36px', marginBottom: '10px' }}>♙</div>
+                  <strong>Data pengguna tidak tersedia</strong>
+                  <p>Endpoint user mungkin membutuhkan permission administrator.</p>
                 </div>
 
               ) : (
@@ -1200,128 +907,76 @@ function AdminDashboard() {
                   <table className="admin-table">
 
                     <thead>
-
                       <tr>
-
-                        <th>
-                          Username
-                        </th>
-
-                        <th>
-                          Email
-                        </th>
-
-                        <th>
-                          Role
-                        </th>
-
-                        <th>
-                          Tanggal
-                        </th>
-
-                        <th>
-                          Status
-                        </th>
-
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Tanggal</th>
+                        <th>Aksi</th>
                       </tr>
-
                     </thead>
-
 
                     <tbody>
 
-                      {users
-                        .slice(
-                          0,
-                          100
-                        )
-                        .map(
-                          (
-                            user
-                          ) => (
+                      {users.slice(0, 100).map((user) => (
 
-                            <tr
-                              key={
-                                user.id ||
-                                user.pk ||
-                                user.username
+                        <tr key={user.id || user.pk || user.username}>
+
+                          <td>
+                            <strong>{user.username || '-'}</strong>
+                          </td>
+
+                          <td>
+                            {user.email || '-'}
+                          </td>
+
+                          <td>
+                            <span
+                              className={
+                                user.role === 'admin'
+                                  ? 'admin-role admin'
+                                  : 'admin-role operator'
                               }
                             >
+                              {user.role || 'operator'}
+                            </span>
+                          </td>
 
-                              <td>
+                          <td>
+                            {
+                              user.created_at
+                                ? new Date(user.created_at).toLocaleDateString('id-ID')
+                                : '-'
+                            }
+                          </td>
 
-                                <strong>
+                          <td>
 
-                                  {
-                                    user.username ||
-                                    '-'
-                                  }
+                            <div className="admin-actions">
 
-                                </strong>
+                              <button
+                                type="button"
+                                className="admin-action-view"
+                                onClick={() => openEditUser(user)}
+                              >
+                                Edit
+                              </button>
 
-                              </td>
+                              <button
+                                type="button"
+                                className="admin-action-delete"
+                                onClick={() => handleDeleteUser(user)}
+                              >
+                                Hapus
+                              </button>
 
+                            </div>
 
-                              <td>
+                          </td>
 
-                                {
-                                  user.email ||
-                                  '-'
-                                }
+                        </tr>
 
-                              </td>
-
-
-                              <td>
-
-                                <span
-                                  className={
-                                    user.role ===
-                                    'admin'
-                                      ? 'admin-role admin'
-                                      : 'admin-role operator'
-                                  }
-                                >
-
-                                  {
-                                    user.role ||
-                                    'operator'
-                                  }
-
-                                </span>
-
-                              </td>
-
-
-                              <td>
-
-                                {
-                                  user.created_at
-                                    ? new Date(
-                                        user.created_at
-                                      ).toLocaleDateString(
-                                        'id-ID'
-                                      )
-                                    : '-'
-                                }
-
-                              </td>
-
-
-                              <td>
-
-                                <span className="admin-status published">
-
-                                  Aktif
-
-                                </span>
-
-                              </td>
-
-                            </tr>
-
-                          )
-                        )}
+                      ))}
 
                     </tbody>
 
@@ -1335,10 +990,222 @@ function AdminDashboard() {
 
           )}
 
-
         </section>
 
       </div>
+
+
+      {/* MODAL - EDIT DATASET */}
+
+      {editingDataset && (
+
+        <div className="admin-modal-overlay" onClick={closeEditDataset}>
+
+          <div
+            className="admin-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+
+            <div className="admin-modal-header">
+              <h3>Edit Dataset</h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={closeEditDataset}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveDataset}>
+
+              <div className="admin-modal-body">
+
+                <div className="admin-form-group">
+                  <label>Judul</label>
+                  <input
+                    type="text"
+                    value={datasetForm.title}
+                    onChange={(event) =>
+                      setDatasetForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Deskripsi / Abstract</label>
+                  <textarea
+                    rows={5}
+                    value={datasetForm.abstract}
+                    onChange={(event) =>
+                      setDatasetForm((current) => ({
+                        ...current,
+                        abstract: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+              </div>
+
+              <div className="admin-modal-footer">
+
+                <button
+                  type="button"
+                  className="admin-secondary-button"
+                  onClick={closeEditDataset}
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="admin-view-site"
+                  disabled={savingDataset}
+                >
+                  {savingDataset ? 'Menyimpan...' : 'Simpan'}
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* MODAL - CREATE / EDIT USER */}
+
+      {userModalMode && (
+
+        <div className="admin-modal-overlay" onClick={closeUserModal}>
+
+          <div
+            className="admin-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+
+            <div className="admin-modal-header">
+              <h3>
+                {userModalMode === 'create' ? 'Tambah Pengguna' : 'Edit Pengguna'}
+              </h3>
+              <button
+                type="button"
+                className="admin-modal-close"
+                onClick={closeUserModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUser}>
+
+              <div className="admin-modal-body">
+
+                {userFormError && (
+                  <div className="admin-alert">
+                    {userFormError}
+                  </div>
+                )}
+
+                <div className="admin-form-group">
+                  <label>Username</label>
+                  <input
+                    type="text"
+                    value={userForm.username}
+                    onChange={(event) =>
+                      setUserForm((current) => ({
+                        ...current,
+                        username: event.target.value,
+                      }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Email</label>
+                  <input
+                    type="email"
+                    value={userForm.email}
+                    onChange={(event) =>
+                      setUserForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>
+                    Password
+                    {userModalMode === 'edit' && ' (kosongkan jika tidak diubah)'}
+                  </label>
+                  <input
+                    type="password"
+                    value={userForm.password}
+                    onChange={(event) =>
+                      setUserForm((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div className="admin-form-group">
+                  <label>Role</label>
+                  <select
+                    value={userForm.role}
+                    onChange={(event) =>
+                      setUserForm((current) => ({
+                        ...current,
+                        role: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="operator">Operator</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+              </div>
+
+              <div className="admin-modal-footer">
+
+                <button
+                  type="button"
+                  className="admin-secondary-button"
+                  onClick={closeUserModal}
+                >
+                  Batal
+                </button>
+
+                <button
+                  type="submit"
+                  className="admin-view-site"
+                  disabled={savingUser}
+                >
+                  {savingUser ? 'Menyimpan...' : 'Simpan'}
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
 
     </main>
 
