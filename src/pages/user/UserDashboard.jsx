@@ -10,8 +10,8 @@ import {
 } from 'react-router'
 
 import {
-  getAllDatasets,
-} from '../../api/datasetApi'
+  getMyDatasets,
+} from '../../api/myDatasetApi'
 
 import {
   useAuth,
@@ -40,7 +40,7 @@ function UserDashboard() {
       setLoading(true)
       setError('')
 
-      const data = await getAllDatasets()
+      const data = await getMyDatasets()
 
       setDatasets(Array.isArray(data) ? data : [])
 
@@ -66,40 +66,16 @@ function UserDashboard() {
   }, [])
 
 
-  const myDatasets = useMemo(() => {
-
-    if (!currentUser) return []
-
-    return datasets.filter((dataset) => {
-
-      const ownerUsername =
-        dataset.owner?.username ||
-        dataset.owner?.name ||
-        ''
-
-      return (
-        ownerUsername.toLowerCase() ===
-        String(currentUser.username || '').toLowerCase()
-      )
-
-    })
-
-  }, [datasets, currentUser])
-
-
   const statistics = useMemo(() => {
 
-    const published = myDatasets.filter(
-      (dataset) =>
-        dataset.is_published === true ||
-        dataset.published === true ||
-        dataset.is_approved === true
+    const published = datasets.filter(
+      (dataset) => Boolean(dataset.is_published)
     ).length
 
     return [
       {
         label: 'Dataset Saya',
-        value: myDatasets.length,
+        value: datasets.length,
         icon: '◈',
       },
       {
@@ -109,12 +85,12 @@ function UserDashboard() {
       },
       {
         label: 'Menunggu Publish',
-        value: Math.max(myDatasets.length - published, 0),
+        value: Math.max(datasets.length - published, 0),
         icon: '◷',
       },
     ]
 
-  }, [myDatasets])
+  }, [datasets])
 
 
   function handleLogout() {
@@ -296,7 +272,7 @@ function UserDashboard() {
                 Memuat dataset...
               </div>
 
-            ) : myDatasets.length === 0 ? (
+            ) : datasets.length === 0 ? (
 
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>◈</div>
@@ -320,24 +296,21 @@ function UserDashboard() {
 
                   <tbody>
 
-                    {myDatasets.slice(0, 5).map((dataset) => {
+                    {datasets.slice(0, 5).map((dataset) => {
 
-                      const published =
-                        dataset.is_published === true ||
-                        dataset.published === true ||
-                        dataset.is_approved === true
+                      const published = Boolean(dataset.is_published)
 
                       return (
 
-                        <tr key={dataset.pk}>
+                        <tr key={dataset.id}>
 
                           <td>
                             <strong>{dataset.title || 'Tanpa judul'}</strong>
                           </td>
 
                           <td>
-                            {dataset.date
-                              ? new Date(dataset.date).toLocaleDateString('id-ID')
+                            {dataset.created_at
+                              ? new Date(dataset.created_at).toLocaleDateString('id-ID')
                               : '-'}
                           </td>
 

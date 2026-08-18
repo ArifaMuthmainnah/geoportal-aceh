@@ -29,6 +29,32 @@ db.exec(`
   )
 `)
 
+// =====================================================
+// DATASETS TABLE
+// =====================================================
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS datasets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+    title TEXT NOT NULL,
+    abstract TEXT,
+    category TEXT,
+    keywords TEXT,
+
+    file_path TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+
+    owner_id INTEGER NOT NULL,
+
+    is_published INTEGER NOT NULL DEFAULT 0,
+
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (owner_id) REFERENCES users(id)
+  )
+`)
+
 console.log('Database Geoportal Aceh siap.')
 
 module.exports = db
