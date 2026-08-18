@@ -10204,143 +10204,7 @@ main {
 
 
 /* =====================================================
-   STATISTICS
-   Sama seperti statistik Homepage
-===================================================== */
-
-.jign-statistics {
-  display: grid;
-
-  grid-template-columns:
-    repeat(5, 1fr);
-
-  overflow: hidden;
-
-  margin-top: 30px;
-
-  border: 1px solid #e2e8f0;
-
-  border-radius: 18px;
-
-  background: #ffffff;
-
-  box-shadow:
-    0 10px 30px
-    rgba(15, 23, 42, 0.06);
-}
-
-.jign-stat-item {
-  position: relative;
-
-  min-height: 145px;
-
-  display: flex;
-
-  flex-direction: column;
-
-  align-items: center;
-
-  justify-content: center;
-
-  padding: 22px 15px;
-
-  text-align: center;
-
-  transition:
-    background 0.25s ease,
-    transform 0.25s ease;
-}
-
-.jign-stat-item:hover {
-  background: #f8fafc;
-
-  transform: translateY(-2px);
-}
-
-
-/* separator */
-
-.jign-stat-item:not(:last-child)::after {
-  content: '';
-
-  position: absolute;
-
-  top: 24%;
-  right: 0;
-
-  width: 1px;
-  height: 52%;
-
-  background:
-    linear-gradient(
-      transparent,
-      #e2e8f0,
-      transparent
-    );
-}
-
-
-/* icon */
-
-.jign-stat-icon {
-  width: 42px;
-  height: 42px;
-
-  display: flex;
-
-  align-items: center;
-  justify-content: center;
-
-  margin-bottom: 10px;
-
-  border-radius: 50%;
-
-  background: #eef6f5;
-
-  color: #0f766e;
-
-  font-size: 17px;
-
-  line-height: 1;
-}
-
-
-/* angka */
-
-.jign-stat-number {
-  display: block;
-
-  color: #0f172a;
-
-  font-size:
-    clamp(1.9rem, 3vw, 2.7rem);
-
-  line-height: 1;
-
-  font-weight: 800;
-
-  letter-spacing: -0.04em;
-}
-
-
-/* label */
-
-.jign-stat-label {
-  margin-top: 9px;
-
-  color: #64748b;
-
-  font-size: 11px;
-
-  font-weight: 700;
-
-  letter-spacing: 0.04em;
-}
-
-
-/* =====================================================
    SEARCH + FILTER
-   Diletakkan SETELAH statistik
 ===================================================== */
 
 .jign-toolbar-section {
@@ -10357,6 +10221,15 @@ main {
   padding: 18px 20px;
 
   border: 1px solid #e2e8f0;
+
+  border-radius: 12px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 6px 20px
+    rgba(15, 23, 42, 0.04);
+}
 
 /* 
 ==========================================================================
@@ -11843,8 +11716,6 @@ main {
   .jign-owner-type {
     font-size: 9px;
   }
-}
-  box-shadow: 0 25px 60px rgba(15, 39, 71, 0.25);
 }
 
 .admin-modal-header {
