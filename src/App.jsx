@@ -25,6 +25,9 @@ import Katalog from './pages/Katalog'
 import DatasetDetail from './pages/DatasetDetail'
 import WebGIS from './pages/WebGIS'
 import Aplikasi from './pages/Aplikasi'
+import ApplicationDetail
+  from './pages/ApplicationDetail'
+
 import JIGN from './pages/JIGN'
 import Berita from './pages/Berita'
 import Agenda from './pages/Agenda'
@@ -312,6 +315,16 @@ function App() {
               </PublicPage>
 
             }
+          />
+
+          <Route
+            path="/aplikasi"
+            element={<Aplikasi />}
+          />
+
+          <Route
+            path="/aplikasi/:id"
+            element={<ApplicationDetail />}
           />
 
 

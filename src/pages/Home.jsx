@@ -5,14 +5,16 @@ import { getLatestDatasets } from '../api/datasetApi'
 import { getAllOwners } from '../api/jignApi'
 import { getMaps } from '../api/mapApi'
 import { getDocuments } from '../api/documentApi'
-import { getGeoapps } from '../api/geoappApi'
+import { getGeoapps, getAllGeoapps } from '../api/geoappApi'
 
-import { getOwnerName, getOwnerAvatar } from '../utils/datasetUtils'
+import {
+  getOwnerName,
+  getOwnerAvatar,
+} from '../utils/datasetUtils'
 
 import DatasetCard from '../components/DatasetCard'
+import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
-
-import applications from '../data/applications'
 
 
 // =========================================
@@ -27,6 +29,15 @@ function Home() {
 
   const [datasets, setDatasets] = useState([])
   const [datasetTotal, setDatasetTotal] = useState(0)
+
+
+  // =========================================
+  // APPLICATIONS / GEOAPPS
+  // =========================================
+
+  const [applications, setApplications] = useState([])
+  const [applicationLoading, setApplicationLoading] =
+    useState(true)
 
 
   // =========================================
@@ -52,10 +63,12 @@ function Home() {
 
   const [loading, setLoading] = useState(true)
   const [datasetError, setDatasetError] = useState('')
+  const [applicationError, setApplicationError] =
+    useState('')
 
 
   // =========================================
-  // LOAD DATA
+  // LOAD HOME DATA
   // =========================================
 
   useEffect(() => {
@@ -240,9 +253,10 @@ function Home() {
         /*
          * Ambil seluruh owner.
          *
-         * getAllOwners() akan menangani
+         * getAllOwners() menangani
          * pagination dari API.
          */
+
         const ownerList =
           await getAllOwners()
 
@@ -262,6 +276,7 @@ function Home() {
          * Urutkan berdasarkan jumlah dataset
          * terbanyak.
          */
+
         const sortedOwners =
           [...validOwners].sort(
             (a, b) =>
@@ -276,8 +291,9 @@ function Home() {
 
 
         /*
-         * Jumlah instansi/owner.
+         * Jumlah instansi / owner.
          */
+
         setOwnerTotal(
           sortedOwners.length
         )
@@ -306,11 +322,108 @@ function Home() {
 
 
   // =========================================
-  // APPLICATIONS
+  // LOAD APPLICATIONS / GEOAPPS
   // =========================================
 
-  const latestApplications =
-    applications.slice(0, 3)
+  useEffect(() => {
+
+    async function loadApplications() {
+
+      try {
+
+        setApplicationLoading(true)
+        setApplicationError('')
+
+
+        const response =
+          await getAllGeoapps()
+
+        console.log(
+          'Applications Home:',
+          response
+        )
+
+
+        const geoappList =
+          Array.isArray(response)
+            ? response
+            : response?.geoapps ||
+              response?.results ||
+              response?.data ||
+              []
+
+
+        /*
+         * Hanya aplikasi yang sudah dipublikasikan
+         * yang ditampilkan kepada pengunjung.
+         */
+
+        const publishedApplications =
+          geoappList.filter(
+            (application) =>
+              application.is_published === true
+          )
+
+
+        /*
+         * Ambil 3 aplikasi terbaru.
+         *
+         * Jika API mengembalikan data sudah dalam
+         * urutan terbaru, slice(0, 3) cukup.
+         *
+         * Jika terdapat field date, kita urutkan
+         * berdasarkan tanggal terlebih dahulu.
+         */
+
+        const sortedApplications =
+          [...publishedApplications].sort(
+            (a, b) => {
+
+              const dateA =
+                a.date
+                  ? new Date(a.date).getTime()
+                  : 0
+
+              const dateB =
+                b.date
+                  ? new Date(b.date).getTime()
+                  : 0
+
+              return dateB - dateA
+
+            }
+          )
+
+
+        setApplications(
+          sortedApplications.slice(0, 3)
+        )
+
+      } catch (err) {
+
+        console.error(
+          'Gagal mengambil aplikasi:',
+          err
+        )
+
+        setApplications([])
+
+        setApplicationError(
+          'Aplikasi belum dapat dimuat.'
+        )
+
+      } finally {
+
+        setApplicationLoading(false)
+
+      }
+
+    }
+
+
+    loadApplications()
+
+  }, [])
 
 
   // =========================================
@@ -359,16 +472,10 @@ function Home() {
   /*
    * Membuat Map berdasarkan PK owner.
    *
-   * Contoh:
-   *
-   * owner.pk = 1023
-   *
-   * maka:
-   *
-   * ownerMap.get(1023)
-   *
-   * akan mendapatkan data Bappeda Aceh.
+   * Digunakan untuk mencocokkan owner dataset
+   * dengan data owner dari API.
    */
+
   const ownerMap =
     new Map(
       owners.map((owner) => [
@@ -381,20 +488,6 @@ function Home() {
   // =========================================
   // RENDER
   // =========================================
-
-  useEffect(() => {
-    async function fetchDatasets() {
-      try {
-        const data = await getDatasets()
-        const list = Array.isArray(data) ? data : data.datasets || []
-        setDatasets(list.slice(0, 3))
-      } catch (err) {
-        console.error('Gagal mengambil dataset:', err)
-      }
-    }
-
-    fetchDatasets()
-  }, [])
 
   return (
 
@@ -596,7 +689,7 @@ function Home() {
 
 
           {/* ===================================
-              LOADING
+              LOADING DATASET
               =================================== */}
 
           {loading && (
@@ -647,14 +740,6 @@ function Home() {
 
                   /*
                    * Cari owner berdasarkan PK.
-                   *
-                   * Beberapa kemungkinan struktur
-                   * dataset dari API:
-                   *
-                   * dataset.owner.pk
-                   * dataset.owner
-                   * dataset.owner_id
-                   * dataset.owner_pk
                    */
 
                   const ownerId =
@@ -673,7 +758,11 @@ function Home() {
                   return (
 
                     <DatasetCard
-                      key={dataset.pk}
+                      key={
+                        dataset.pk ||
+                        dataset.uuid ||
+                        dataset.id
+                      }
                       dataset={dataset}
                       owner={owner}
                     />
@@ -798,10 +887,10 @@ function Home() {
 
 
       {/* =====================================
-          APPLICATIONS
+          APLIKASI GEOSPASIAL
           ===================================== */}
 
-      <section className="home-section">
+      <section className="home-section home-applications-section">
 
         <div className="container">
 
@@ -820,8 +909,8 @@ function Home() {
 
 
               <p>
-                Akses berbagai aplikasi dan layanan
-                geospasial yang tersedia.
+                Akses berbagai aplikasi dan dashboard
+                geospasial yang tersedia di Geoportal Aceh.
               </p>
 
             </div>
@@ -839,53 +928,141 @@ function Home() {
 
 
 
-          <div className="home-application-grid">
+          {/* ===================================
+              LOADING APPLICATION
+              =================================== */}
 
-            {latestApplications.map(
-              (application) => (
+          {applicationLoading && (
 
-                <article
-                  className="home-application-card"
-                  key={application.id}
+            <div className="row g-4">
+
+              {[1, 2, 3].map((item) => (
+
+                <div
+                  className="col-md-6 col-lg-4"
+                  key={item}
                 >
 
-                  <div className="home-application-icon">
-                    GIS
-                  </div>
+                  <article className="card katalog-card h-100">
+
+                    <div className="katalog-card-image">
+
+                      <div className="katalog-card-image-placeholder">
+
+                        <span>
+                          GIS
+                        </span>
+
+                      </div>
+
+                    </div>
 
 
-                  <div>
+                    <div className="card-body katalog-card-body">
 
-                    <span>
-                      {application.category}
-                    </span>
+                      <div className="skeleton-line short" />
+
+                      <div className="skeleton-line title" />
+
+                      <div className="skeleton-line" />
+
+                      <div className="skeleton-line medium" />
+
+                    </div>
+
+                  </article>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          )}
 
 
-                    <h3>
-                      {application.name}
-                    </h3>
 
+          {/* ===================================
+              ERROR APPLICATION
+              =================================== */}
 
-                    <p>
-                      {application.description}
-                    </p>
+          {!applicationLoading &&
+            applicationError && (
 
-                  </div>
+              <div className="information-empty">
 
+                <p>
+                  {applicationError}
+                </p>
 
-                  <Link
-                    to="/aplikasi"
-                    className="home-card-link"
-                  >
-                    Selengkapnya →
-                  </Link>
+              </div>
 
-                </article>
-
-              )
             )}
 
-          </div>
+
+
+          {/* ===================================
+              APPLICATION CARDS
+              =================================== */}
+
+          {!applicationLoading &&
+            !applicationError &&
+            applications.length > 0 && (
+
+              <div className="row g-4">
+
+                {applications.map(
+                  (application) => (
+
+                    <div
+                      className="col-md-6 col-lg-4"
+                      key={
+                        application.pk ||
+                        application.uuid ||
+                        application.id
+                      }
+                    >
+
+                      <ApplicationCard
+                        application={
+                          application
+                        }
+                      />
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            )}
+
+
+
+          {/* ===================================
+              EMPTY APPLICATION
+              =================================== */}
+
+          {!applicationLoading &&
+            !applicationError &&
+            applications.length === 0 && (
+
+              <div className="information-empty">
+
+                <h5>
+                  Belum ada aplikasi
+                </h5>
+
+                <p>
+                  Aplikasi dan dashboard geospasial
+                  yang telah dipublikasikan akan
+                  ditampilkan di sini.
+                </p>
+
+              </div>
+
+            )}
 
         </div>
 
