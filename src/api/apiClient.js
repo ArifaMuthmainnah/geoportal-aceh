@@ -96,7 +96,15 @@ function getToken() {
 
 function getGeoAuthHeaders() {
 
-  return {}
+  const token = getToken()
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
 
 }
 
@@ -152,6 +160,24 @@ export async function apiPost(
   endpoint,
   body
 ) {
+  // ...isi function yang sudah ada, JANGAN diubah...
+}
+
+
+// =====================================================
+// POST FILE (MULTIPART) - GEO API
+// =====================================================
+//
+// Khusus untuk upload file (FormData).
+// Tidak set Content-Type manual, karena browser
+// akan otomatis menambahkan boundary yang benar.
+//
+// =====================================================
+
+export async function apiPostFile(
+  endpoint,
+  formData
+) {
 
   const response =
     await fetch(
@@ -160,17 +186,13 @@ export async function apiPost(
         method: 'POST',
 
         headers: {
-          'Content-Type':
-            'application/json',
-
           Accept:
             'application/json',
 
           ...getGeoAuthHeaders(),
         },
 
-        body:
-          JSON.stringify(body),
+        body: formData,
       }
     )
 
@@ -181,13 +203,13 @@ export async function apiPost(
       await response.text()
 
     console.error(
-      'API POST Error:',
+      'API UPLOAD Error:',
       response.status,
       errorText
     )
 
     throw new Error(
-      `Gagal menyimpan data (${response.status})`
+      `Gagal mengunggah file (${response.status})`
     )
   }
 
