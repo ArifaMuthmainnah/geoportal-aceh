@@ -9337,18 +9337,18 @@ main {
   }
 
 
-  /* -----------------------------
+  /* ==========================
      BUTTON
-  ----------------------------- */
+  ============================= */
 
   .login-submit {
     height: 46px;
   }
 
 
-  /* -----------------------------
+  /* =============================
      FOOTER
-  ----------------------------- */
+  ================================ */
 
   .login-card-footer {
     gap: 10px;
@@ -9357,36 +9357,36 @@ main {
   }
 
 
-  /* -----------------------------
+  /* =============================
      INFO GRID
-  ----------------------------- */
+  ================================ */
 
   .login-info-grid {
     grid-template-columns: 1fr;
   }
 
 
-  /* -----------------------------
+  /* =============================
      FEATURE
-  ----------------------------- */
+  ================================ */
 
   .login-feature-section {
     grid-template-columns: 1fr;
   }
 
 
-  /* -----------------------------
+  /* =============================
      HERO
-  ----------------------------- */
+  ================================ */
 
   .login-page-hero {
     padding-top: 55px;
   }
 
 
-  /* -----------------------------
+  /* =============================
      ACTIONS
-  ----------------------------- */
+  ================================ */
 
   .login-page-actions {
     flex-direction: column;
@@ -9455,18 +9455,17 @@ main {
 }
 
 /* 
-==========================================================================
-   WEBGIS PAGE & HERO SECTION (KERJAAN THAHIRA)
-   Desain disamakan dengan gaya Home Portal Aceh
-========================================================================== 
+==============================
+   WEBGIS PAGE & HERO SECTION 
+==============================
 */
 
 .webgis-page {
   min-height: 100vh;
-  background: #f8f9fa; /* Latar belakang halaman abu-abu sangat muda */
+  background: #f8f9fa; 
 }
 
-/* HEADER BARU: Gradasi Biru sesuai Home */
+/* HEADER */
 .webgis-hero-section {
   position: relative;
   overflow: hidden;
@@ -9527,7 +9526,7 @@ main {
 }
 
 .webgis-hero-content h1 span {
-  color: #cce8ff; /* Warna biru muda highlight */
+  color: #cce8ff; 
 }
 
 .webgis-hero-content p {
@@ -9581,21 +9580,15 @@ main {
   .webgis-sidebar-left {
     top: 10px;
     left: 10px;
-    width: calc(100% - 20px); /* Melebar di layar kecil */
+    width: calc(100% - 20px); 
     max-width: 220px;
   }
 }
 
 /* 
-==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   WEBGIS & MAP SECTION - WORK BY THAHIRA
-========================================================================== 
+=========================
+   WEBGIS & MAP SECTION 
+=========================
 */
 /* LIVE COORDINATE STYLE */
 .mouse-coordinate-display {
@@ -9620,7 +9613,7 @@ main {
   position: absolute;
   left: 20px;
   top: 20px;
-  z-index: 1000; /* Harus di atas peta */
+  z-index: 1000;
   width: 260px;
   background: white;
   border-radius: 10px;
@@ -9642,7 +9635,7 @@ main {
   color: #041d38;
 }
 
-/* TOOLBAR 4 KOTAK */
+/* TOOLBAR */
 .layer-toolbar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -9675,7 +9668,7 @@ main {
 .layer-panel-body {
   padding: 15px;
   max-height: 300px;
-  overflow-y: auto; /* Jika layer banyak, bisa di scroll */
+  overflow-y: auto;
   background: white;
   border-radius: 0 0 10px 10px;
 }
@@ -9707,12 +9700,12 @@ main {
   margin: 10px 0;
 }
 
-/* MODAL BASEMAP (ATM DARK THEME RUJUKAN) */
+/* MODAL BASEMAP */
 .basemap-modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.6);
-  z-index: 9999; /* Pastikan di atas segalanya */
+  z-index: 9999; 
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9720,7 +9713,7 @@ main {
 }
 
 .basemap-modal {
-  background: #1e1e1e; /* Warna gelap sperti Kalsel */
+  background: #1e1e1e; 
   width: 90%;
   max-width: 500px;
   border-radius: 8px;
@@ -9788,9 +9781,9 @@ main {
 }
 
 /* 
-==========================================================================
-   MODAL & POPUP SYSTEM - WORK BY THAHIRA
-========================================================================== 
+========================
+   MODAL & POPUP SYSTEM 
+========================
 */
 
 .modal-overlay {
@@ -9885,25 +9878,19 @@ main {
 .remove-item:hover { background: #252525; }
 
 /* 
-==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   BASIS DESA MODAL STYLE - WORK BY THAHIRA
-========================================================================== 
+===========================
+   BASIS DESA MODAL STYLE
+===========================
 */
 
 .village-modal {
   width: 450px !important;
-  border-top: 3px solid #f1c40f !important; /* Aksen kuning sperti rujukan */
+  border-top: 3px solid #f1c40f !important;
 }
 
 .village-header {
   background: #222 !important;
-  color: #f1c40f !important; /* Teks kuning */
+  color: #f1c40f !important; 
   border-bottom: 1px solid #333 !important;
 }
 
@@ -9919,7 +9906,7 @@ main {
   flex: 1;
   background: transparent;
   border: none;
-  color: #2ecc71; /* Warna teks hijau neon sperti rujukan */
+  color: #2ecc71; 
   font-family: 'Courier New', Courier, monospace;
   outline: none;
   font-size: 14px;
@@ -10002,12 +9989,12 @@ main {
 }
 
 /* 
-==========================================================================
-   SIDEBAR & SEARCH PANEL - WORK BY THAHIRA
-========================================================================== 
+===========================
+   SIDEBAR & SEARCH PANEL
+===========================
 */
 
-/* Container untuk menampung Layer & Search agar bertumpuk ke bawah */
+/* Container untuk menampung Layer & Search */
 .webgis-sidebar-left {
   position: absolute;
   left: 20px;
@@ -10015,11 +10002,11 @@ main {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* JARAK 20PX ANTAR PANEL SESUAI PERMINTAAN */
+  gap: 20px; /* JARAK 20PX */
   width: 280px;
 }
 
-/* Override LayerPanel agar tidak absolute lagi (karena sudah di dalam sidebar-left) */
+/* Override LayerPanel */
 .layer-panel {
   position: relative !important;
   left: 0 !important;
@@ -10027,7 +10014,7 @@ main {
   width: 100%;
 }
 
-/* SEARCH PANEL STYLE (ATM GAMBAR 1, 2, 3) */
+/* SEARCH PANEL STYLE */
 .search-panel {
   background: white;
   border-radius: 10px;
@@ -10053,7 +10040,7 @@ main {
 .search-input-group {
   display: flex;
   padding: 10px;
-  background: #1a1a1a; /* Tema gelap sperti rujukan */
+  background: #1a1a1a; 
   gap: 5px;
 }
 
@@ -10061,7 +10048,7 @@ main {
   flex: 1;
   background: transparent;
   border: 1px solid #333;
-  color: #2ecc71; /* Warna hijau neon rujukan */
+  color: #2ecc71;
   padding: 8px 12px;
   border-radius: 4px;
   outline: none;
@@ -10078,7 +10065,7 @@ main {
 }
 
 .btn-search-icon {
-  background: #27ae60; /* Warna hijau sperti rujukan gambar 3 */
+  background: #27ae60; 
   border: none;
   color: white;
   padding: 0 12px;
@@ -10086,7 +10073,7 @@ main {
   cursor: pointer;
 }
 
-/* HASIL PENCARIAN (GAMBAR 1 & 2) */
+/* HASIL PENCARIAN */
 .search-results-list {
   background: #1a1a1a;
   max-height: 200px;
@@ -10118,7 +10105,7 @@ main {
   line-height: 1.4;
 }
 
-/* Custom scrollbar untuk hasil cari agar minimalis */
+/* Custom scrollbar */
 .search-results-list::-webkit-scrollbar { width: 4px; }
 .search-results-list::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; }
 
@@ -10354,6 +10341,9 @@ main {
 /* =====================================================
    SEARCH + FILTER
    Diletakkan SETELAH statistik
+=======
+   SEARCH + FILTER
+>>>>>>> d87b207169e711579f59909b64bd45f21824bbec
 ===================================================== */
 
 .jign-toolbar-section {
@@ -10375,6 +10365,631 @@ main {
 
   background: #ffffff;
 
+  box-shadow:
+    0 6px 20px
+    rgba(15, 23, 42, 0.04);
+}
+
+/* 
+==========================================================================
+   LAYERS / GEOSERVIS PAGE - WORK BY THAHIRA
+========================================================================== 
+*/
+
+.geoservice-container {
+  display: flex;
+  gap: 30px;
+  padding: 40px 5%;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #ffffff;
+}
+
+/* SIDEBAR FILTER */
+.geoservice-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+}
+
+.sidebar-group {
+  margin-bottom: 10px;
+}
+
+.sidebar-main-btn {
+  width: 100%;
+  padding: 12px;
+  background: #0b5cab; /* Warna kuning orange khas rujukan */
+  border: none;
+  border-radius: 4px;
+  font-weight: 800;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.sidebar-main-btn.active {
+  background: #4da6df;
+}
+
+.sidebar-sub-list {
+  list-style: none;
+  padding: 10px 0;
+  margin: 0;
+}
+
+.sidebar-sub-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+}
+
+.sidebar-sub-list li:hover {
+  background: #f8f9fa;
+  color: #0b5cab;
+}
+
+.sub-item-count {
+  background: #ccc;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+}
+
+/* MAIN CONTENT */
+.geoservice-main {
+  flex: 1;
+}
+
+.geoservice-search-bar {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.geoservice-search-bar input {
+  flex: 1;
+  padding: 12px 20px;
+  border: 2px solid #0b5cab;
+  border-right: none;
+  border-radius: 30px 0 0 30px;
+  outline: none;
+}
+
+.search-btn {
+  padding: 0 25px;
+  background: #0b5cab;
+  border: none;
+  border-radius: 0 30px 30px 0;
+  color: white;
+  cursor: pointer;
+}
+
+.geoservice-chips {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  justify-content: center;
+}
+
+.chip-btn {
+  padding: 8px 15px;
+  background: #4da6df;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip-btn.active { background: #0b5cab; }
+
+/* LAYER GRID */
+.geoservice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+}
+
+.layer-card-item {
+  border: 1px dashed #4da6df; /* Gaya border putus-putus rujukan */
+  padding: 15px;
+  text-align: center;
+  border-radius: 8px;
+  transition: 0.3s;
+}
+
+.layer-card-item:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  transform: translateY(-5px);
+}
+
+.card-header-icons {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.card-header-icons button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: #4da6df;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.card-header-icons button:nth-child(2) { background: #f39c12; }
+.card-header-icons button:nth-child(3) { background: #3498db; }
+.card-header-icons button:nth-child(4) { background: #7f8c8d; }
+
+.card-image-placeholder {
+  height: 180px;
+  background: #f9f9f9;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.skeleton-map {
+  width: 80%;
+  height: 80%;
+  background-image: url('https://upload.wikimedia.org/wikipedia/commons/4/41/Aceh_in_Indonesia.svg'); /* Peta Aceh */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.3;
+}
+
+.card-body-info h3 {
+  font-size: 14px;
+  color: #333;
+  font-weight: 800;
+  height: 40px;
+  margin: 0 0 10px;
+}
+
+.card-date {
+  font-size: 12px;
+  color: #27ae60;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 15px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+}
+
+.status-badge.skpd { background: #0000ff; }
+.status-badge.dibatasi { background: #ff0000; }
+
+.load-more-btn {
+  display: block;
+  margin: 40px auto 0;
+  padding: 10px 30px;
+  background: #0b5cab;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.geoservice-title{
+  color: #12395F;
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   CSRT DASHBOARD PAGE - WORK BY THAHIRA RISKA
+========================================================================== 
+*/
+
+.csrt-main-container {
+  display: grid;
+  grid-template-columns: 320px 1fr 320px; /* Layout 3 Kolom */
+  gap: 2px;
+  background: #cbd5e1; /* Warna garis pemisah */
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  height: 70vh;
+  margin: 0 5% 50px; /* Jarak kanan kiri 5% agar seimbang dengan header */
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* SIDEBAR & PANEL UMUM */
+.csrt-sidebar, .csrt-result-panel {
+  background: #ffffff;
+  padding: 25px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.csrt-map-area {
+  background: #f1f5f9;
+  position: relative;
+}
+
+/* FORM STYLING */
+.csrt-form-group {
+  margin-bottom: 18px;
+}
+
+.csrt-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.csrt-sidebar select, 
+.csrt-sidebar input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+}
+
+/* BUTTONS */
+.csrt-draw-btn {
+  width: 100%;
+  padding: 12px;
+  background: #2ecc71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 800;
+  margin-bottom: 25px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.csrt-draw-btn:hover { background: #27ae60; }
+
+.csrt-search-btn {
+  width: 100%;
+  padding: 12px;
+  background: #0056b3; /* Biru khas Aceh */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: auto; /* Selalu di bawah panel */
+}
+
+/* RESULT PANEL */
+.csrt-result-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #334155;
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.csrt-alert-empty {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  padding: 20px;
+  border-radius: 8px;
+  color: #92400e;
+}
+
+.csrt-alert-empty strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.csrt-alert-empty p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.csrt-empty-placeholder {
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  margin-top: 50px;
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN CSRT
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   KARTOGRAFI PAGE - WORK BY THAHIRA RISKA
+========================================================================== 
+*/
+/* Layout Kartografi */
+.kartografi-main-container {
+  display: flex;
+  gap: 30px;
+  padding: 0 40px 50px 40px;
+  background-color: #f8fafc;
+}
+
+/* Sidebar List */
+.kartografi-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.sidebar-search {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.agency-list {
+  list-style: none;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
+.agency-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  transition: all 0.2s;
+}
+
+.agency-item:hover, .agency-item.active {
+  background-color: #0056b3; /* Biru Aceh */
+  color: white;
+}
+
+.agency-badge {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.agency-item.active .agency-badge {
+  background: rgba(255,255,255,0.3);
+  color: white;
+}
+
+/* Content Area */
+.kartografi-content {
+  flex-grow: 1;
+}
+
+.search-peta-wrapper {
+  display: flex;
+  margin-bottom: 30px;
+}
+
+.input-cari-peta {
+  flex-grow: 1;
+  padding: 15px 20px;
+  border: 2px solid #0056b3;
+  border-radius: 8px 0 0 8px;
+  font-size: 16px;
+  outline: none;
+}
+
+.btn-cari-peta {
+  padding: 0 30px;
+  background-color: #0056b3; /* Orange rujukan */
+  color: white;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+/* Grid Cards */
+.peta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.peta-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.peta-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+}
+
+.peta-thumb {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+  background: #f1f5f9;
+}
+
+.peta-title {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  text-transform: uppercase;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: white;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  padding: 15px 20px;
+  background: #dcfce7; /* Hijau muda rujukan */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #bbf7d0;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.info-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.label-td { width: 30%; color: #64748b; }
+.value-td { font-weight: 500; }
+
+.modal-footer {
+  padding: 15px 20px;
+  background: #f8fafc;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-modal {
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+/* =========================================
+  ICON & LABEL STYLE FOR DATA CARD
+========================================= */
+
+.katalog-card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.katalog-card-unpublished-icon {
+  flex-shrink: 0;
+
+  width: 16px;
+  height: 16px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #fbbf24;
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 800;
+  font-style: italic;
+
+  cursor: help;
+}
+
+/* =========================================================
+   ADMIN MODAL (Edit Dataset / Tambah & Edit Pengguna)
+========================================================= */
+
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background: rgba(15, 39, 71, 0.55);
+  backdrop-filter: blur(3px);
+}
+
+.admin-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: #ffffff;
   box-shadow:
     0 8px 25px
     rgba(15, 23, 42, 0.05);
@@ -11240,4 +11855,136 @@ main {
   .jign-owner-type {
     font-size: 9px;
   }
+}
+
+.admin-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 22px;
+
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.admin-modal-header h3 {
+  margin: 0;
+
+  color: var(--admin-primary);
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.admin-modal-close {
+  width: 30px;
+  height: 30px;
+
+  border: 0;
+  border-radius: 8px;
+
+  background: #f1f5f9;
+  color: #64748b;
+
+  font-size: 18px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.admin-modal-close:hover {
+  background: #e2e8f0;
+}
+
+.admin-modal-body {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+
+  padding: 20px 22px;
+}
+
+.admin-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  padding: 16px 22px;
+
+  border-top: 1px solid var(--admin-border);
+}
+
+
+/* =========================================================
+   ADMIN FORM
+========================================================= */
+
+.admin-form-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.admin-form-group label {
+  color: var(--admin-text);
+
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.admin-form-group input,
+.admin-form-group select,
+.admin-form-group textarea {
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #ffffff;
+  color: var(--admin-text);
+
+  font-family: inherit;
+  font-size: 13px;
+
+  transition:
+    border 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-form-group textarea {
+  resize: vertical;
+}
+
+.admin-form-group input:focus,
+.admin-form-group select:focus,
+.admin-form-group textarea:focus {
+  border-color: #60a5fa;
+
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 480px) {
+
+  .admin-modal {
+    max-width: 100%;
+  }
+
+  .admin-modal-footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
 }

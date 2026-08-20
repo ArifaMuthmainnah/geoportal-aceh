@@ -96,7 +96,15 @@ function getToken() {
 
 function getGeoAuthHeaders() {
 
-  return {}
+  const token = getToken()
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
 
 }
 
@@ -152,6 +160,24 @@ export async function apiPost(
   endpoint,
   body
 ) {
+  // ...isi function yang sudah ada, JANGAN diubah...
+}
+
+
+// =====================================================
+// POST FILE (MULTIPART) - GEO API
+// =====================================================
+//
+// Khusus untuk upload file (FormData).
+// Tidak set Content-Type manual, karena browser
+// akan otomatis menambahkan boundary yang benar.
+//
+// =====================================================
+
+export async function apiPostFile(
+  endpoint,
+  formData
+) {
 
   const response =
     await fetch(
@@ -160,17 +186,13 @@ export async function apiPost(
         method: 'POST',
 
         headers: {
-          'Content-Type':
-            'application/json',
-
           Accept:
             'application/json',
 
           ...getGeoAuthHeaders(),
         },
 
-        body:
-          JSON.stringify(body),
+        body: formData,
       }
     )
 
@@ -181,13 +203,13 @@ export async function apiPost(
       await response.text()
 
     console.error(
-      'API POST Error:',
+      'API UPLOAD Error:',
       response.status,
       errorText
     )
 
     throw new Error(
-      `Gagal menyimpan data (${response.status})`
+      `Gagal mengunggah file (${response.status})`
     )
   }
 
@@ -587,5 +609,64 @@ export function authDelete(
       method: 'DELETE',
     }
   )
+
+}
+
+// =====================================================
+// AUTH POST FILE (MULTIPART) - BACKEND SENDIRI
+// =====================================================
+//
+// Khusus upload file ke backend kita sendiri
+// (bukan ke geoportal lama).
+//
+// Tidak set Content-Type manual, browser akan
+// otomatis menambahkan boundary yang benar.
+//
+// =====================================================
+
+export async function authPostFile(
+  endpoint,
+  formData
+) {
+
+  const token = getToken()
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response =
+    await fetch(
+      buildAuthUrl(endpoint),
+      {
+        method: 'POST',
+        headers,
+        body: formData,
+      }
+    )
+
+  const text = await response.text()
+
+  let data = {}
+
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    data = { message: text }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Gagal mengunggah file (${response.status})`
+    )
+  }
+
+  return data
 
 }
