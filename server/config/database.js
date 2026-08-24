@@ -1,60 +1,212 @@
-const Database = require('better-sqlite3')
-const path = require('path')
-
-const dbPath = path.join(__dirname, '..', 'geoportal.db')
-
-const db = new Database(dbPath)
-
-// Aktifkan foreign key
-db.pragma('foreign_keys = ON')
+const { Pool } = require('pg')
+require('dotenv').config()
 
 // =====================================================
-// USERS TABLE
+// POSTGRESQL SUPABASE
 // =====================================================
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+})
 
-    username TEXT NOT NULL UNIQUE,
+// =====================================================
+// DATABASE WRAPPER
+// =====================================================
 
-    email TEXT NOT NULL UNIQUE,
+const db = {
 
-    password TEXT NOT NULL,
+  prepare(sql) {
 
-    role TEXT NOT NULL DEFAULT 'operator'
-      CHECK(role IN ('admin', 'operator')),
+    return {
 
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      // -------------------------------------------------
+      // SELECT SATU DATA
+      // -------------------------------------------------
+
+      async get(...params) {
+
+        const result =
+          await pool.query(sql, params)
+
+        return result.rows[0] || undefined
+      },
+
+      // -------------------------------------------------
+      // SELECT BANYAK DATA
+      // -------------------------------------------------
+
+      async all(...params) {
+
+        const result =
+          await pool.query(sql, params)
+
+        return result.rows
+      },
+
+      // -------------------------------------------------
+      // INSERT / UPDATE / DELETE
+      // -------------------------------------------------
+
+      async run(...params) {
+
+        const result =
+          await pool.query(sql, params)
+
+        return {
+          changes: result.rowCount,
+          lastInsertRowid:
+            result.rows[0]?.id || null
+        }
+      }
+
+    }
+  },
+
+  // ---------------------------------------------------
+  // RAW QUERY
+  // ---------------------------------------------------
+
+  async exec(sql) {
+
+    return pool.query(sql)
+  }
+
+}
+
+// =====================================================
+// TEST CONNECTION
+// =====================================================
+
+async function testDatabase() {
+
+  try {
+
+    await pool.query('SELECT NOW()')
+
+    console.log(
+      'Database Supabase PostgreSQL berhasil terhubung.'
+    )
+
+  } catch (error) {
+
+    console.error(
+      'DATABASE CONNECTION ERROR:',
+      error.message
+    )
+
+    process.exit(1)
+  }
+
+}
+
+// =====================================================
+// CREATE TABLES
+// =====================================================
+
+async function initializeDatabase() {
+
+  await pool.query(`
+
+    CREATE TABLE IF NOT EXISTS users (
+
+      id SERIAL PRIMARY KEY,
+
+      username TEXT NOT NULL UNIQUE,
+
+      email TEXT NOT NULL UNIQUE,
+
+      password TEXT NOT NULL,
+
+      role TEXT NOT NULL DEFAULT 'operator',
+
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+      CONSTRAINT users_role_check
+      CHECK (role IN ('admin', 'operator'))
+
+    )
+
+  `)
+
+
+  await pool.query(`
+
+    CREATE TABLE IF NOT EXISTS datasets (
+
+      id SERIAL PRIMARY KEY,
+
+      title TEXT NOT NULL,
+
+      abstract TEXT,
+
+      category TEXT,
+
+      keywords TEXT,
+
+      file_path TEXT NOT NULL,
+
+      file_name TEXT NOT NULL,
+
+      owner_id INTEGER NOT NULL,
+
+      is_published INTEGER NOT NULL DEFAULT 0,
+
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+      CONSTRAINT datasets_owner_fk
+
+      FOREIGN KEY (owner_id)
+
+      REFERENCES users(id)
+
+      ON DELETE CASCADE
+
+    )
+
+  `)
+
+
+  console.log(
+    'Tabel users dan datasets siap.'
   )
-`)
+
+}
+
 
 // =====================================================
-// DATASETS TABLE
+// INITIALIZE
 // =====================================================
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS datasets (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+async function initialize() {
 
-    title TEXT NOT NULL,
-    abstract TEXT,
-    category TEXT,
-    keywords TEXT,
+  await testDatabase()
 
-    file_path TEXT NOT NULL,
-    file_name TEXT NOT NULL,
+  await initializeDatabase()
 
-    owner_id INTEGER NOT NULL,
+}
 
-    is_published INTEGER NOT NULL DEFAULT 0,
 
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+// Jalankan initialization,
+// tetapi jangan menghalangi module export.
 
-    FOREIGN KEY (owner_id) REFERENCES users(id)
-  )
-`)
+initialize()
+  .catch(error => {
 
-console.log('Database Geoportal Aceh siap.')
+    console.error(
+      'DATABASE INITIALIZATION ERROR:',
+      error
+    )
+
+    process.exit(1)
+
+  })
+
+
+// =====================================================
+// EXPORT
+// =====================================================
 
 module.exports = db

@@ -15,7 +15,7 @@ const router = express.Router()
 // LOGIN
 // =====================================================
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
 
   try {
 
@@ -36,15 +36,14 @@ router.post('/login', (req, res) => {
     }
 
 
-    const user = db
+    const user = await db
       .prepare(`
         SELECT *
         FROM users
-        WHERE username = ?
-        OR email = ?
+        WHERE username = $1
+        OR email = $1
       `)
       .get(
-        username.trim(),
         username.trim()
       )
 
@@ -131,11 +130,11 @@ router.post('/login', (req, res) => {
 router.get(
   '/me',
   authenticateToken,
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
-      const user = db
+      const user = await db
         .prepare(`
           SELECT
             id,
@@ -144,9 +143,11 @@ router.get(
             role,
             created_at
           FROM users
-          WHERE id = ?
+          WHERE id = $1
         `)
-        .get(req.user.id)
+        .get(
+          req.user.id
+        )
 
 
       if (!user) {

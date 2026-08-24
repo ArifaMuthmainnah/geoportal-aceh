@@ -26,11 +26,12 @@ router.use(
 // GET ALL USERS
 // =====================================================
 
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
 
-  const users = db
-    .prepare(
-      `
+  try {
+
+    const users = await db
+      .prepare(`
         SELECT
           id,
           username,
@@ -39,15 +40,28 @@ router.get('/', (req, res) => {
           created_at
         FROM users
         ORDER BY id DESC
-      `
+      `)
+      .all()
+
+
+    res.json({
+      success: true,
+      users
+    })
+
+  } catch (error) {
+
+    console.error(
+      'GET USERS ERROR:',
+      error
     )
-    .all()
 
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data pengguna.'
+    })
 
-  res.json({
-    success: true,
-    users
-  })
+  }
 
 })
 
@@ -56,7 +70,7 @@ router.get('/', (req, res) => {
 // CREATE USER
 // =====================================================
 
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
 
   try {
 
@@ -67,6 +81,10 @@ router.post('/', (req, res) => {
       role
     } = req.body
 
+
+    // -------------------------------------------------
+    // VALIDASI
+    // -------------------------------------------------
 
     if (
       !username ||
@@ -83,38 +101,98 @@ router.post('/', (req, res) => {
     }
 
 
+    const cleanUsername =
+      username.trim()
+
+    const cleanEmail =
+      email.trim().toLowerCase()
+
+
+    if (
+      cleanUsername.length < 3
+    ) {
+
+      return res.status(400).json({
+        success: false,
+        message:
+          'Username minimal 3 karakter.'
+      })
+
+    }
+
+
+    if (
+      password.length < 6
+    ) {
+
+      return res.status(400).json({
+        success: false,
+        message:
+          'Password minimal 6 karakter.'
+      })
+
+    }
+
+
+    // -------------------------------------------------
+    // ROLE
+    // -------------------------------------------------
+
     const selectedRole =
       role === 'admin'
         ? 'admin'
         : 'operator'
 
 
+    // -------------------------------------------------
+    // CEK USERNAME / EMAIL
+    // -------------------------------------------------
+
     const existing =
-      db
-        .prepare(
-          `
-            SELECT id
-            FROM users
-            WHERE username = ?
-            OR email = ?
-          `
-        )
+      await db
+        .prepare(`
+          SELECT
+            id,
+            username,
+            email
+          FROM users
+          WHERE username = $1
+          OR email = $2
+        `)
         .get(
-          username,
-          email
+          cleanUsername,
+          cleanEmail
         )
 
 
     if (existing) {
 
+      if (
+        existing.username ===
+        cleanUsername
+      ) {
+
+        return res.status(409).json({
+          success: false,
+          message:
+            'Username sudah digunakan.'
+        })
+
+      }
+
+
       return res.status(409).json({
         success: false,
         message:
-          'Username atau email sudah digunakan.'
+          'Email sudah digunakan.'
       })
 
     }
 
+
+    // -------------------------------------------------
+    // HASH PASSWORD
+    // -------------------------------------------------
 
     const hashedPassword =
       bcrypt.hashSync(
@@ -123,35 +201,43 @@ router.post('/', (req, res) => {
       )
 
 
+    // -------------------------------------------------
+    // INSERT USER
+    // -------------------------------------------------
+
     const result =
-      db
-        .prepare(
-          `
-            INSERT INTO users
-            (
-              username,
-              email,
-              password,
-              role
-            )
-            VALUES (?, ?, ?, ?)
-          `
-        )
+      await db
+        .prepare(`
+          INSERT INTO users
+          (
+            username,
+            email,
+            password,
+            role
+          )
+          VALUES ($1, $2, $3, $4)
+          RETURNING id
+        `)
         .run(
-          username,
-          email,
+          cleanUsername,
+          cleanEmail,
           hashedPassword,
           selectedRole
         )
 
 
+    // -------------------------------------------------
+    // RESPONSE
+    // -------------------------------------------------
+
     res.status(201).json({
       success: true,
-      message: 'User berhasil dibuat.',
+      message:
+        'User berhasil dibuat.',
       user: {
         id: result.lastInsertRowid,
-        username,
-        email,
+        username: cleanUsername,
+        email: cleanEmail,
         role: selectedRole
       }
     })
@@ -159,11 +245,15 @@ router.post('/', (req, res) => {
 
   } catch (error) {
 
-    console.error(error)
+    console.error(
+      'CREATE USER ERROR:',
+      error
+    )
 
     res.status(500).json({
       success: false,
-      message: 'Gagal membuat user.'
+      message:
+        'Gagal membuat user.'
     })
 
   }
@@ -175,51 +265,78 @@ router.post('/', (req, res) => {
 // DELETE USER
 // =====================================================
 
-router.delete('/:id', (req, res) => {
+router.delete(
+  '/:id',
+  async (req, res) => {
 
-  const id =
-    Number(req.params.id)
+    try {
 
-
-  // Admin tidak boleh menghapus dirinya sendiri
-  if (id === req.user.id) {
-
-    return res.status(400).json({
-      success: false,
-      message:
-        'Admin yang sedang login tidak dapat menghapus dirinya sendiri.'
-    })
-
-  }
+      const id =
+        Number(req.params.id)
 
 
-  const result =
-    db
-      .prepare(
-        `
-          DELETE FROM users
-          WHERE id = ?
-        `
+      // -------------------------------------------------
+      // ADMIN TIDAK BOLEH HAPUS DIRI SENDIRI
+      // -------------------------------------------------
+
+      if (
+        id === req.user.id
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          message:
+            'Admin yang sedang login tidak dapat menghapus dirinya sendiri.'
+        })
+
+      }
+
+
+      const result =
+        await db
+          .prepare(`
+            DELETE FROM users
+            WHERE id = $1
+          `)
+          .run(id)
+
+
+      if (
+        result.changes === 0
+      ) {
+
+        return res.status(404).json({
+          success: false,
+          message:
+            'User tidak ditemukan.'
+        })
+
+      }
+
+
+      res.json({
+        success: true,
+        message:
+          'User berhasil dihapus.'
+      })
+
+    } catch (error) {
+
+      console.error(
+        'DELETE USER ERROR:',
+        error
       )
-      .run(id)
 
+      res.status(500).json({
+        success: false,
+        message:
+          'Gagal menghapus user.'
+      })
 
-  if (result.changes === 0) {
-
-    return res.status(404).json({
-      success: false,
-      message: 'User tidak ditemukan.'
-    })
+    }
 
   }
-
-
-  res.json({
-    success: true,
-    message: 'User berhasil dihapus.'
-  })
-
-})
+)
 
 
 module.exports = router
