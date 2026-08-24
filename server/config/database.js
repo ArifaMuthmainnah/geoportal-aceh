@@ -6,7 +6,8 @@ require('dotenv').config()
 // =====================================================
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.SUPABASE_DATABASE_URL,
+
   ssl: {
     rejectUnauthorized: false
   }
@@ -29,9 +30,16 @@ const db = {
       async get(...params) {
 
         const result =
-          await pool.query(sql, params)
+          await pool.query(
+            sql,
+            params
+          )
 
-        return result.rows[0] || undefined
+        return (
+          result.rows[0] ||
+          undefined
+        )
+
       },
 
       // -------------------------------------------------
@@ -41,9 +49,13 @@ const db = {
       async all(...params) {
 
         const result =
-          await pool.query(sql, params)
+          await pool.query(
+            sql,
+            params
+          )
 
         return result.rows
+
       },
 
       // -------------------------------------------------
@@ -53,16 +65,26 @@ const db = {
       async run(...params) {
 
         const result =
-          await pool.query(sql, params)
+          await pool.query(
+            sql,
+            params
+          )
 
         return {
-          changes: result.rowCount,
+
+          changes:
+            result.rowCount,
+
           lastInsertRowid:
-            result.rows[0]?.id || null
+            result.rows[0]?.id ||
+            null
+
         }
+
       }
 
     }
+
   },
 
   // ---------------------------------------------------
@@ -72,9 +94,11 @@ const db = {
   async exec(sql) {
 
     return pool.query(sql)
+
   }
 
 }
+
 
 // =====================================================
 // TEST CONNECTION
@@ -84,10 +108,18 @@ async function testDatabase() {
 
   try {
 
-    await pool.query('SELECT NOW()')
+    const result =
+      await pool.query(
+        'SELECT NOW() AS now'
+      )
 
     console.log(
       'Database Supabase PostgreSQL berhasil terhubung.'
+    )
+
+    console.log(
+      'Database time:',
+      result.rows[0].now
     )
 
   } catch (error) {
@@ -97,16 +129,27 @@ async function testDatabase() {
       error.message
     )
 
+    console.error(
+      'DATABASE CONNECTION DETAIL:',
+      error
+    )
+
     process.exit(1)
+
   }
 
 }
+
 
 // =====================================================
 // CREATE TABLES
 // =====================================================
 
 async function initializeDatabase() {
+
+  // ---------------------------------------------------
+  // USERS
+  // ---------------------------------------------------
 
   await pool.query(`
 
@@ -125,12 +168,22 @@ async function initializeDatabase() {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
       CONSTRAINT users_role_check
-      CHECK (role IN ('admin', 'operator'))
+
+      CHECK (
+        role IN (
+          'admin',
+          'operator'
+        )
+      )
 
     )
 
   `)
 
+
+  // ---------------------------------------------------
+  // DATASETS
+  // ---------------------------------------------------
 
   await pool.query(`
 
@@ -158,7 +211,9 @@ async function initializeDatabase() {
 
       CONSTRAINT datasets_owner_fk
 
-      FOREIGN KEY (owner_id)
+      FOREIGN KEY (
+        owner_id
+      )
 
       REFERENCES users(id)
 
@@ -177,7 +232,7 @@ async function initializeDatabase() {
 
 
 // =====================================================
-// INITIALIZE
+// INITIALIZE DATABASE
 // =====================================================
 
 async function initialize() {
@@ -189,10 +244,12 @@ async function initialize() {
 }
 
 
-// Jalankan initialization,
-// tetapi jangan menghalangi module export.
+// =====================================================
+// RUN INITIALIZATION
+// =====================================================
 
 initialize()
+
   .catch(error => {
 
     console.error(
