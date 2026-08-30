@@ -1,54 +1,55 @@
-import { useEffect, useMemo, useState } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
-import { getAllDatasets, } from '../api/datasetApi'
+import {
+  getAllDatasets,
+} from '../api/datasetApi'
 
-import { getAllOwners, } from '../api/jignApi'
+import {
+  getAllOwners,
+} from '../api/jignApi'
 
-import { mapCategory, } from '../utils/datasetUtils'
+import {
+  getPublishedByType,
+} from '../api/myDatasetApi'
+
+import {
+  getPublicOwners,
+} from '../api/userApi'
+
+import {
+  mapCategory,
+} from '../utils/datasetUtils'
+
+import {
+  mergeResourceLists,
+  sortByDateDesc,
+  mergeOwnerLists,
+  getResourceOwnerName,
+} from '../utils/ownDataAdapter'
 
 import DatasetCard from '../components/DatasetCard'
 
 
 function Katalog() {
 
-  // =========================================
-  // DATA
-  // =========================================
+  const [datasets, setDatasets] = useState([])
+  const [owners, setOwners] = useState([])
 
-  const [datasets, setDatasets] =
-    useState([])
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('Semua')
+  const [instansi, setInstansi] = useState('Semua')
 
-  const [owners, setOwners] =
-    useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-
-  // =========================================
-  // FILTER
-  // =========================================
-
-  const [search, setSearch] =
-    useState('')
-
-  const [category, setCategory] =
-    useState('Semua')
-
-
-  // =========================================
-  // STATE
-  // =========================================
-
-  const [loading, setLoading] =
-    useState(true)
-
-  const [error, setError] =
-    useState('')
-
-
-  // =========================================
-  // LOAD DATASET + OWNER
-  // =========================================
 
   useEffect(() => {
+
+    let mounted = true
 
     async function fetchData() {
 
@@ -57,334 +58,249 @@ function Katalog() {
         setLoading(true)
         setError('')
 
+        let datasetList = []
 
-        // ================================
-        // DATASET
-        // ================================
+        try {
+          const datasetData = await getAllDatasets()
+          datasetList =
+            Array.isArray(datasetData)
+              ? datasetData
+              : datasetData?.datasets ||
+                datasetData?.results ||
+                datasetData?.data ||
+                []
+        } catch (err) {
+          console.error('Gagal mengambil dataset API lama:', err)
+        }
 
-        const datasetData =
-          await getAllDatasets()
+        let ownDatasetList = []
 
-        console.log(
-          'Semua Dataset:',
-          datasetData
-        )
+        try {
+          ownDatasetList = await getPublishedByType('dataset')
+        } catch (err) {
+          console.error('Gagal mengambil dataset upload sendiri:', err)
+        }
 
+        let ownerList = []
 
-        setDatasets(
-          Array.isArray(datasetData)
-            ? datasetData
-            : []
-        )
+        try {
+          const ownerData = await getAllOwners()
+          ownerList =
+            Array.isArray(ownerData)
+              ? ownerData
+              : ownerData?.owners ||
+                ownerData?.results ||
+                ownerData?.data ||
+                []
+        } catch (err) {
+          console.error('Gagal mengambil owner API lama:', err)
+        }
 
+        let ownUserList = []
 
-        // ================================
-        // OWNER / INSTANSI
-        // ================================
+        try {
+          ownUserList = await getPublicOwners()
+        } catch (err) {
+          console.error('Gagal mengambil pengguna sendiri:', err)
+        }
 
-        const ownerData =
-          await getAllOwners()
+        if (!mounted) return
 
-        console.log(
-          'Semua Owner:',
-          ownerData
-        )
+        const mergedDatasets =
+          sortByDateDesc(
+            mergeResourceLists(datasetList, ownDatasetList)
+          )
 
+        const mergedOwners =
+          mergeOwnerLists(ownerList, ownUserList)
 
-        setOwners(
-          Array.isArray(ownerData)
-            ? ownerData
-            : []
-        )
-
+        setDatasets(mergedDatasets)
+        setOwners(mergedOwners)
 
       } catch (err) {
 
-        console.error(
-          'Gagal mengambil data:',
-          err
-        )
+        console.error('Gagal mengambil data katalog:', err)
+
+        if (!mounted) return
 
         setDatasets([])
         setOwners([])
-
-        setError(
-          'Gagal mengambil data katalog.'
-        )
-
+        setError('Gagal mengambil data katalog.')
 
       } finally {
 
-        setLoading(false)
+        if (mounted) setLoading(false)
 
       }
 
     }
 
-
     fetchData()
+
+    return () => { mounted = false }
 
   }, [])
 
 
-  // =========================================
-  // OWNER MAP
-  // =========================================
-
   const ownerMap = useMemo(() => {
-
     return new Map(
-      owners.map((owner) => [
-        owner.pk,
-        owner,
-      ])
+      owners.map((owner) => [owner.pk || owner.id || owner.uuid, owner])
     )
+  }, [owners])
+
+
+  const categories = useMemo(() => {
+
+    const categorySet = new Set()
+
+    datasets.forEach((dataset) => {
+      const identifier = dataset?.category?.identifier
+      if (!identifier) return
+      const mappedCategory = mapCategory(identifier)
+      if (mappedCategory !== 'Umum') categorySet.add(mappedCategory)
+    })
+
+    return ['Semua', ...Array.from(categorySet)]
+
+  }, [datasets])
+
+
+  // ===================================================
+  // DAFTAR INSTANSI (UNTUK FILTER)
+  // ===================================================
+
+  const instansiList = useMemo(() => {
+
+    const nameSet = new Set()
+
+    owners.forEach((owner) => {
+      const fullName =
+        `${owner.first_name || ''} ${owner.last_name || ''}`.trim() ||
+        owner.username
+
+      if (fullName) nameSet.add(fullName)
+    })
+
+    return ['Semua', ...Array.from(nameSet).sort((a, b) => a.localeCompare(b, 'id'))]
 
   }, [owners])
 
 
-  // =========================================
-  // CATEGORY FILTER
-  // =========================================
+  const filteredDatasets = useMemo(() => {
 
-  const categories = useMemo(() => {
-    const categorySet = new Set()
+    const keyword = search.toLowerCase().trim()
 
-    datasets.forEach((dataset) => {
-      const identifier =
-        dataset.category?.identifier
+    return datasets.filter((dataset) => {
 
-      if (!identifier) {
-        return
-      }
+      const title = String(dataset?.title || '').toLowerCase()
+      const matchSearch = title.includes(keyword)
 
-      const mappedCategory =
-        mapCategory(identifier)
+      const mappedCategory = mapCategory(dataset?.category?.identifier)
+      const matchCategory = category === 'Semua' || mappedCategory === category
 
-      // Jangan tampilkan kategori "Umum"
-      // jika identifier API memang tidak dikenal.
-      if (mappedCategory !== 'Umum') {
-        categorySet.add(mappedCategory)
-      }
+      const ownerName = getResourceOwnerName(dataset)
+      const matchInstansi = instansi === 'Semua' || ownerName === instansi
+
+      return matchSearch && matchCategory && matchInstansi
+
     })
 
-    return [
-      'Semua',
-      ...Array.from(categorySet),
-    ]
-  }, [datasets])
+  }, [datasets, search, category, instansi])
 
-
-  // =========================================
-  // FILTER DATASET
-  // =========================================
-
-  const filteredDatasets =
-    useMemo(() => {
-
-      const keyword =
-        search
-          .toLowerCase()
-          .trim()
-
-
-      return datasets.filter(
-        (dataset) => {
-
-          // SEARCH HANYA JUDUL
-          const title =
-            (
-              dataset.title || ''
-            ).toLowerCase()
-
-
-          const matchSearch =
-            title.includes(keyword)
-
-
-          // FILTER CATEGORY
-          const mappedCategory =
-            mapCategory(
-              dataset.category?.identifier
-            )
-
-
-          const matchCategory =
-            category === 'Semua' ||
-            mappedCategory === category
-
-
-          return (
-            matchSearch &&
-            matchCategory
-          )
-
-        }
-      )
-
-    }, [
-      datasets,
-      search,
-      category,
-    ])
-
-
-  // =========================================
-  // RENDER
-  // =========================================
 
   return (
 
     <main className="katalog-page">
 
-      {/* =====================================
-          HERO / HEADER
-          ===================================== */}
-
-          <section className="catalog-hero">
-
-            <div className="container">
-
-              <div className="catalog-hero-content">
-
-                <span className="catalog-eyebrow">
-                  GEOPORTAL ACEH
-                </span>
-
-                <h1>
-                  Katalog Data
-                </h1>
-
-                <p>
-                  Temukan dan jelajahi berbagai data
-                  geospasial yang tersedia di Aceh.
-                </p>
-
-              </div>
-
-            </div>
-
-          </section>
-
-
-
-      {/* =====================================
-          SEARCH
-          ===================================== */}
-
-      <section className="container information-toolbar-wrapper">
-        <div className="information-toolbar">
-
-          <div className="catalog-search-wrapper">
-
-            <span
-              className="catalog-search-icon"
-              aria-hidden="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-
-                <path
-                  d="M16.5 16.5L21 21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-
-            <input
-              type="text"
-              className="information-search"
-              placeholder="Cari berdasarkan judul dataset..."
-              value={search}
-              onChange={(e) =>
-                setSearch(e.target.value)
-              }
-            />
-
+      <section className="catalog-hero">
+        <div className="container">
+          <div className="catalog-hero-content">
+            <span className="catalog-eyebrow">GEOPORTAL ACEH</span>
+            <h1>Katalog Data</h1>
+            <p>Temukan dan jelajahi berbagai data geospasial yang tersedia di Aceh.</p>
           </div>
-
-          <small className="information-result-count">
-            Menampilkan{' '}
-            {filteredDatasets.length}{' '}
-            dataset
-          </small>
         </div>
       </section>
 
 
+      <section className="container information-toolbar-wrapper">
 
-      {/* =====================================
-          CONTENT
-          ===================================== */}
+        <div className="catalog-search-wrapper" style={{ marginBottom: '14px' }}>
+          <span className="catalog-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
+
+          <input
+            type="text"
+            className="information-search"
+            placeholder="Cari berdasarkan judul dataset..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
+
+          <small className="information-result-count">
+            Menampilkan {filteredDatasets.length} dataset
+          </small>
+
+          <select
+            className="jign-sort-select"
+            value={instansi}
+            onChange={(event) => setInstansi(event.target.value)}
+            aria-label="Filter berdasarkan instansi"
+          >
+            {instansiList.map((item) => (
+              <option key={item} value={item}>
+                {item === 'Semua' ? 'Semua Instansi' : item}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+      </section>
+
 
       <section className="container information-content">
 
-
-        {/* ===================================
-            HEADING
-            =================================== */}
-
         <div className="catalog-heading-layout">
 
-          {/* ================================
-              TITLE
-          ================================= */}
           <div className="catalog-heading-title">
-
-            <span className="section-eyebrow">
-              DATA GEOSPASIAL
-            </span>
-
-            <h2>
-              Dataset Terbaru
-            </h2>
-
-            <p>
-              Temukan dataset berdasarkan
-              kategori informasi.
-            </p>
-
+            <span className="section-eyebrow">DATA GEOSPASIAL</span>
+            <h2>Dataset Terbaru</h2>
+            <p>Temukan dataset berdasarkan kategori informasi.</p>
           </div>
 
-
-          {/* ================================
-              CATEGORY
-          ================================= */}
           <div className="catalog-category-wrapper">
-
             <div className="information-categories">
-
               {categories.map((item) => (
                 <button
                   key={item}
                   type="button"
-                  className={`information-category ${
-                    category === item
-                      ? 'active'
-                      : ''
-                  }`}
+                  className={`information-category ${category === item ? 'active' : ''}`}
                   onClick={() => setCategory(item)}
                 >
                   {item}
                 </button>
               ))}
-
             </div>
-
           </div>
+
         </div>
+
 
         {loading && (
           <div className="information-empty">
@@ -392,124 +308,46 @@ function Katalog() {
           </div>
         )}
 
-        {/* ===================================
-            LOADING
-            =================================== */}
 
-        {loading && (
-
+        {!loading && error && (
           <div className="information-empty">
-
-            <p>
-              Memuat data...
-            </p>
-
+            <p>{error}</p>
           </div>
         )}
 
 
+        {!loading && !error && filteredDatasets.length > 0 && (
+          <div className="row g-4">
+            {filteredDatasets.map((dataset) => {
 
-        {/* ===================================
-            ERROR
-            =================================== */}
+              const ownerId =
+                dataset?.owner?.pk ??
+                dataset?.owner?.id ??
+                dataset?.owner_pk ??
+                dataset?.owner_id
 
-        {!loading &&
-          error && (
+              const owner =
+                ownerMap.get(ownerId) ||
+                dataset?.owner ||
+                null
 
-            <div className="information-empty">
+              return (
+                <div className="col-md-6 col-lg-4" key={dataset.pk || dataset.uuid || dataset.id}>
+                  <DatasetCard dataset={dataset} owner={owner} />
+                </div>
+              )
 
-              <p>
-                {error}
-              </p>
-
-            </div>
-
-          )}
-
-
-
-        {/* ===================================
-            DATASET
-            =================================== */}
-
-        {!loading &&
-          !error &&
-          filteredDatasets.length > 0 && (
-
-            <div className="row g-4">
-
-              {filteredDatasets.map(
-                (dataset) => {
-
-                  /*
-                   * Dataset biasanya memiliki
-                   * informasi owner.
-                   *
-                   * Kita coba cari owner
-                   * berdasarkan PK dari API owners.
-                   */
-
-                  const ownerId =
-                    dataset.owner?.pk ||
-                    dataset.owner?.id ||
-                    dataset.owner_pk ||
-                    dataset.owner_id
+            })}
+          </div>
+        )}
 
 
-                  const owner =
-                    ownerMap.get(
-                      ownerId
-                    ) ||
-                    dataset.owner ||
-                    null
-
-
-                  return (
-
-                    <div
-                      className="col-md-6 col-lg-4"
-                      key={dataset.pk}
-                    >
-
-                      <DatasetCard
-                        dataset={dataset}
-                        owner={owner}
-                      />
-
-                    </div>
-
-                  )
-
-                }
-              )}
-
-            </div>
-
-          )}
-
-        {/* ===================================
-            EMPTY
-            =================================== */}
-
-        {!loading &&
-          !error &&
-          filteredDatasets.length === 0 && (
-
-            <div className="information-empty">
-
-              <h5>
-                Dataset tidak ditemukan
-              </h5>
-
-              <p>
-                Coba gunakan kata kunci
-                judul atau kategori
-                yang berbeda.
-              </p>
-
-            </div>
-
-          )}
+        {!loading && !error && filteredDatasets.length === 0 && (
+          <div className="information-empty">
+            <h5>Dataset tidak ditemukan</h5>
+            <p>Coba gunakan kata kunci judul, kategori, atau instansi yang berbeda.</p>
+          </div>
+        )}
 
       </section>
 

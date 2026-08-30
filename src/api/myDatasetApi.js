@@ -7,25 +7,39 @@ import {
 
 
 // =====================================================
-// UPLOAD DATASET
+// UPLOAD RESOURCE (MENDUKUNG BANYAK FILE)
 // =====================================================
 
 export function uploadMyDataset({
-  file,
+  files,
   title,
   abstract,
+  resourceType = 'dataset',
   category,
   keywords,
+  externalUrl,
+  extraMetadata,
 }) {
 
   const formData = new FormData()
 
-  formData.append('base_file', file)
+  if (Array.isArray(files)) {
+    files.forEach((file) => formData.append('base_file', file))
+  }
 
-  if (title) formData.append('title', title)
-  if (abstract) formData.append('abstract', abstract)
-  if (category) formData.append('category', category)
-  if (keywords) formData.append('keywords', keywords)
+  formData.append('title', title || '')
+  formData.append('abstract', abstract || '')
+  formData.append('resource_type', resourceType || 'dataset')
+  formData.append('category', category || '')
+  formData.append('keywords', keywords || '')
+
+  if (externalUrl && externalUrl.trim()) {
+    formData.append('external_url', externalUrl.trim())
+  }
+
+  if (extraMetadata) {
+    formData.append('extra_metadata', extraMetadata)
+  }
 
   return authPostFile('/datasets', formData)
 
@@ -33,56 +47,83 @@ export function uploadMyDataset({
 
 
 // =====================================================
-// DATASET SAYA
+// DATA MILIK USER
 // =====================================================
 
 export async function getMyDatasets() {
-
   const response = await authGet('/datasets/mine')
-
   return response?.datasets || []
+}
 
+export async function getMyDatasetsByType(resourceType) {
+  const response = await authGet(`/datasets/mine/${resourceType}`)
+  return response?.datasets || []
 }
 
 
 // =====================================================
-// SEMUA DATASET (ADMIN)
+// DETAIL MILIK SENDIRI (TIDAK PERLU PUBLISHED) — #15
+// =====================================================
+
+export async function getMyDatasetDetail(id) {
+  const response = await authGet(`/datasets/mine/detail/${id}`)
+  return response?.dataset || null
+}
+
+
+// =====================================================
+// SEMUA DATASET ADMIN
 // =====================================================
 
 export async function getAllOwnDatasets() {
-
   const response = await authGet('/datasets')
-
   return response?.datasets || []
+}
 
+export async function getAdminDatasetsByType(resourceType) {
+  const response = await authGet(`/datasets/admin/${resourceType}`)
+  return response?.datasets || []
 }
 
 
 // =====================================================
-// UPDATE / PUBLISH
+// DETAIL UNTUK ADMIN (TIDAK PERLU PUBLISHED) — #15
+// =====================================================
+
+export async function getAdminDatasetDetail(id) {
+  const response = await authGet(`/datasets/admin/detail/${id}`)
+  return response?.dataset || null
+}
+
+
+// =====================================================
+// UPDATE / DELETE
 // =====================================================
 
 export function updateMyDataset(id, data) {
   return authPatch(`/datasets/${id}`, data)
 }
 
-
-// =====================================================
-// DELETE
-// =====================================================
-
 export function deleteMyDataset(id) {
   return authDelete(`/datasets/${id}`)
 }
 
+
 // =====================================================
-// DATASET PUBLIK (PUBLISHED) - UNTUK HOME & KATALOG
+// DATASET PUBLIK
 // =====================================================
 
 export async function getPublishedDatasets() {
-
   const response = await authGet('/datasets/published')
-
   return response?.datasets || []
+}
 
+export async function getPublishedByType(resourceType) {
+  const response = await authGet(`/datasets/public/${resourceType}`)
+  return response?.datasets || []
+}
+
+export async function getPublishedDetail(id) {
+  const response = await authGet(`/datasets/public/detail/${id}`)
+  return response?.dataset || null
 }

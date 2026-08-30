@@ -9,64 +9,111 @@ import {
 // COMPONENTS
 // =====================================================
 
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
-import BackToTop from './components/BackToTop'
-import LoginNavbar from './components/LoginNavbar'
-import ProtectedRoute from './components/ProtectedRoute'
+import Navbar
+  from './components/Navbar'
+
+import Footer
+  from './components/Footer'
+
+import BackToTop
+  from './components/BackToTop'
+
+import LoginNavbar
+  from './components/LoginNavbar'
+
+import ProtectedRoute
+  from './components/ProtectedRoute'
 
 
 // =====================================================
 // PUBLIC PAGES
 // =====================================================
 
-import Home from './pages/Home'
-import Katalog from './pages/Katalog'
-import DatasetDetail from './pages/DatasetDetail'
-import WebGIS from './pages/WebGIS'
-import Aplikasi from './pages/Aplikasi'
+import Home
+  from './pages/Home'
+
+import Katalog
+  from './pages/Katalog'
+
+import DatasetDetail
+  from './pages/DatasetDetail'
+
+import WebGIS
+  from './pages/WebGIS'
+
+import Aplikasi
+  from './pages/Aplikasi'
+
 import ApplicationDetail
   from './pages/ApplicationDetail'
 
-import JIGN from './pages/JIGN'
-import Berita from './pages/Berita'
-import Agenda from './pages/Agenda'
-import Pemberitahuan from './pages/Pemberitahuan'
+import JIGN
+  from './pages/JIGN'
+
+import JIGNDetail from './pages/JIGNDetail'
+
+import Berita
+  from './pages/Berita'
+
+import Agenda
+  from './pages/Agenda'
+
+import Pemberitahuan
+  from './pages/Pemberitahuan'
+
+import EditMyDataset from './pages/user/EditMyDataset'
 
 
 // =====================================================
 // AUTH
 // =====================================================
 
-import { AuthProvider } from './context/AuthContext'
-import Login from './pages/login/Login'
+import {
+  AuthProvider,
+} from './context/AuthContext'
+
+import Login
+  from './pages/login/Login'
+
 
 // =====================================================
 // USER
 // =====================================================
 
-import UserDashboard from './pages/user/UserDashboard'
-import UploadDataset from './pages/user/UploadDataset'
-import MyDatasets from './pages/user/MyDatasets'
+import UserDashboard
+  from './pages/user/UserDashboard'
+
+import UploadDataset
+  from './pages/user/UploadDataset'
+
+import MyDatasets
+  from './pages/user/MyDatasets'
+
 
 // =====================================================
 // ADMIN
 // =====================================================
 
-import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminDashboard
+  from './pages/admin/AdminDashboard'
 
 
 // =====================================================
 // LOGIN AREA
 // =====================================================
 
-import Layers from './pages/login/Layers'
-import CSRT from './pages/login/CSRT'
-import Kartografi from './pages/login/Kartografi'
+import Layers
+  from './pages/login/Layers'
+
+import CSRT
+  from './pages/login/CSRT'
+
+import Kartografi
+  from './pages/login/Kartografi'
 
 
 // =====================================================
-// PUBLIC PAGE WRAPPER
+// PUBLIC WRAPPER
 // =====================================================
 
 function PublicPage({
@@ -88,14 +135,12 @@ function PublicPage({
       <BackToTop />
 
     </>
-
   )
-
 }
 
 
 // =====================================================
-// LOGIN AREA WRAPPER
+// LOGIN WRAPPER
 // =====================================================
 
 function LoginArea({
@@ -113,9 +158,7 @@ function LoginArea({
       </main>
 
     </div>
-
   )
-
 }
 
 
@@ -133,7 +176,6 @@ function App() {
 
         <Routes>
 
-
           {/* =================================================
               LOGIN
           ================================================= */}
@@ -147,7 +189,6 @@ function App() {
                 <Login />
 
               </LoginArea>
-
             }
           />
 
@@ -165,7 +206,6 @@ function App() {
                 <Layers />
 
               </LoginArea>
-
             }
           />
 
@@ -183,7 +223,6 @@ function App() {
                 <CSRT />
 
               </LoginArea>
-
             }
           />
 
@@ -201,15 +240,18 @@ function App() {
                 <Kartografi />
 
               </LoginArea>
-
             }
           />
 
 
+          {/* =================================================
+              USER DATASETS
+          ================================================= */}
+
           <Route
             path="/dashboard/datasets"
             element={
-              
+
               <ProtectedRoute>
 
                 <MyDatasets />
@@ -218,26 +260,9 @@ function App() {
             }
           />
 
-          {/* =================================================
-              LOGIN - KARTOGRAFI
-          ================================================= */}
-
-          <Route
-            path="/login/kartografi"
-            element={
-
-              <LoginArea>
-
-                <Kartografi />
-
-              </LoginArea>
-
-            }
-          />
-
 
           {/* =================================================
-              DASHBOARD USER (OPERATOR)
+              USER DASHBOARD
           ================================================= */}
 
           <Route
@@ -249,13 +274,18 @@ function App() {
                 <UserDashboard />
 
               </ProtectedRoute>
-
             }
           />
+
+
+          {/* =================================================
+              UPLOAD
+          ================================================= */}
 
           <Route
             path="/dashboard/upload"
             element={
+
               <ProtectedRoute>
 
                 <UploadDataset />
@@ -264,21 +294,18 @@ function App() {
             }
           />
 
+          <Route
+            path="/dashboard/edit/:id"
+            element={
+              <ProtectedRoute>
+                <EditMyDataset />
+              </ProtectedRoute>
+            }
+          />
+
+
           {/* =================================================
               ADMIN
-          =================================================
-          
-              HANYA ADMIN
-              
-              Belum login:
-              /admin → /login
-              
-              Operator:
-              /admin → /dashboard
-              
-              Admin:
-              /admin → AdminDashboard
-              
           ================================================= */}
 
           <Route
@@ -292,7 +319,6 @@ function App() {
                 <AdminDashboard />
 
               </ProtectedRoute>
-
             }
           />
 
@@ -310,7 +336,6 @@ function App() {
                 <Home />
 
               </PublicPage>
-
             }
           />
 
@@ -328,7 +353,6 @@ function App() {
                 <Katalog />
 
               </PublicPage>
-
             }
           />
 
@@ -342,7 +366,6 @@ function App() {
                 <DatasetDetail />
 
               </PublicPage>
-
             }
           />
 
@@ -360,7 +383,6 @@ function App() {
                 <WebGIS />
 
               </PublicPage>
-
             }
           />
 
@@ -378,18 +400,20 @@ function App() {
                 <Aplikasi />
 
               </PublicPage>
-
             }
           />
 
-          <Route
-            path="/aplikasi"
-            element={<Aplikasi />}
-          />
 
           <Route
             path="/aplikasi/:id"
-            element={<ApplicationDetail />}
+            element={
+
+              <PublicPage>
+
+                <ApplicationDetail />
+
+              </PublicPage>
+            }
           />
 
 
@@ -406,13 +430,21 @@ function App() {
                 <JIGN />
 
               </PublicPage>
+            }
+          />
 
+          <Route
+            path="/jign/:username"
+            element={
+              <PublicPage>
+                <JIGNDetail />
+              </PublicPage>
             }
           />
 
 
           {/* =================================================
-              INFORMASI - BERITA
+              BERITA
           ================================================= */}
 
           <Route
@@ -424,13 +456,12 @@ function App() {
                 <Berita />
 
               </PublicPage>
-
             }
           />
 
 
           {/* =================================================
-              INFORMASI - AGENDA
+              AGENDA
           ================================================= */}
 
           <Route
@@ -442,13 +473,12 @@ function App() {
                 <Agenda />
 
               </PublicPage>
-
             }
           />
 
 
           {/* =================================================
-              INFORMASI - PEMBERITAHUAN
+              PEMBERITAHUAN
           ================================================= */}
 
           <Route
@@ -460,19 +490,15 @@ function App() {
                 <Pemberitahuan />
 
               </PublicPage>
-
             }
           />
-
 
         </Routes>
 
       </AuthProvider>
 
     </BrowserRouter>
-
   )
-
 }
 
 

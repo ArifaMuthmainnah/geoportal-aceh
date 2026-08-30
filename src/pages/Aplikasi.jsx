@@ -8,44 +8,30 @@ import {
   getAllGeoapps,
 } from '../api/geoappApi'
 
+import {
+  getPublishedByType,
+} from '../api/myDatasetApi'
+
+import {
+  mergeResourceLists,
+  sortByDateDesc,
+  getResourceOwnerName,
+} from '../utils/ownDataAdapter'
+
 import GeoappCard from '../components/ApplicationCard'
 
 
 function Aplikasi() {
 
-  // =========================================
-  // DATA
-  // =========================================
+  const [applications, setApplications] = useState([])
 
-  const [applications, setApplications] =
-    useState([])
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState('Semua')
+  const [instansi, setInstansi] = useState('Semua')
 
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  // =========================================
-  // FILTER
-  // =========================================
-
-  const [search, setSearch] =
-    useState('')
-
-  const [category, setCategory] =
-    useState('Semua')
-
-
-  // =========================================
-  // STATE
-  // =========================================
-
-  const [loading, setLoading] =
-    useState(true)
-
-  const [error, setError] =
-    useState('')
-
-
-  // =========================================
-  // LOAD GEOAPPS
-  // =========================================
 
   useEffect(() => {
 
@@ -56,38 +42,34 @@ function Aplikasi() {
         setLoading(true)
         setError('')
 
+        let oldList = []
 
-        const data =
-          await getAllGeoapps()
+        try {
+          const data = await getAllGeoapps()
+          oldList = Array.isArray(data) ? data : []
+        } catch (err) {
+          console.error('Gagal mengambil aplikasi API lama:', err)
+        }
 
+        let ownList = []
 
-        console.log(
-          'Semua Geoapps:',
-          data
-        )
+        try {
+          ownList = await getPublishedByType('dashboard')
+        } catch (err) {
+          console.error('Gagal mengambil dashboard upload sendiri:', err)
+        }
 
+        const mergedApplications =
+          sortByDateDesc(mergeResourceLists(oldList, ownList))
 
-        setApplications(
-          Array.isArray(data)
-            ? data
-            : []
-        )
-
+        setApplications(mergedApplications)
 
       } catch (err) {
 
-        console.error(
-          'Gagal mengambil aplikasi:',
-          err
-        )
-
+        console.error('Gagal mengambil aplikasi:', err)
 
         setApplications([])
-
-        setError(
-          'Gagal mengambil data aplikasi.'
-        )
-
+        setError('Gagal mengambil data aplikasi.')
 
       } finally {
 
@@ -97,409 +79,197 @@ function Aplikasi() {
 
     }
 
-
     fetchApplications()
 
   }, [])
 
 
-  // =========================================
-  // CATEGORY
-  // =========================================
-
   const categories = useMemo(() => {
 
-    const categorySet =
-      new Set()
+    const categorySet = new Set()
 
+    applications.forEach((application) => {
+      const category =
+        application.resource_type === 'dashboard'
+          ? 'Dashboard'
+          : application.category?.identifier || 'Aplikasi'
+      categorySet.add(category)
+    })
 
-    applications.forEach(
-      (application) => {
-
-        const category =
-          application.resource_type ===
-          'dashboard'
-            ? 'Dashboard'
-            : application.category?.identifier ||
-              'Aplikasi'
-
-
-        categorySet.add(
-          category
-        )
-
-      }
-    )
-
-
-    return [
-      'Semua',
-      ...Array.from(categorySet),
-    ]
+    return ['Semua', ...Array.from(categorySet)]
 
   }, [applications])
 
 
-  // =========================================
-  // FILTER
-  // =========================================
+  const instansiList = useMemo(() => {
 
-  const filteredApplications =
-    useMemo(() => {
+    // applications di sini tidak punya daftar owners terpisah,
+    // jadi kita tetap ambil dari data yang ada (sudah published)
+    const nameSet = new Set()
 
-      const keyword =
-        search
-          .toLowerCase()
-          .trim()
+    applications.forEach((application) => {
+      const name = getResourceOwnerName(application)
+      if (name && name !== 'Tidak diketahui') nameSet.add(name)
+    })
 
+    return ['Semua', ...Array.from(nameSet).sort((a, b) => a.localeCompare(b, 'id'))]
 
-      return applications.filter(
-        (application) => {
-
-          // ================================
-          // SEARCH
-          // ================================
-
-          const title =
-            (
-              application.title ||
-              application.name ||
-              ''
-            ).toLowerCase()
+  }, [applications])
 
 
-          const matchSearch =
-            title.includes(
-              keyword
-            )
+  const filteredApplications = useMemo(() => {
 
+    const keyword = search.toLowerCase().trim()
 
-          // ================================
-          // CATEGORY
-          // ================================
+    return applications.filter((application) => {
 
-          const applicationCategory =
-            application.resource_type ===
-            'dashboard'
-              ? 'Dashboard'
-              : application.category?.identifier ||
-                'Aplikasi'
+      const title = (application.title || application.name || '').toLowerCase()
+      const matchSearch = title.includes(keyword)
 
+      const applicationCategory =
+        application.resource_type === 'dashboard'
+          ? 'Dashboard'
+          : application.category?.identifier || 'Aplikasi'
 
-          const matchCategory =
-            category === 'Semua' ||
-            applicationCategory ===
-              category
+      const matchCategory = category === 'Semua' || applicationCategory === category
 
+      const ownerName = getResourceOwnerName(application)
+      const matchInstansi = instansi === 'Semua' || ownerName === instansi
 
-          // ================================
-          // PUBLISHED ONLY
-          // ================================
+      const matchPublished = application.is_published === true
 
-          const matchPublished =
-            application.is_published === true
+      return matchSearch && matchCategory && matchInstansi && matchPublished
 
+    })
 
-          return (
-            matchSearch &&
-            matchCategory &&
-            matchPublished
-          )
+  }, [applications, search, category, instansi])
 
-        }
-      )
-
-    }, [
-      applications,
-      search,
-      category,
-    ])
-
-
-  // =========================================
-  // RENDER
-  // =========================================
 
   return (
 
     <main className="applications-page">
 
-
-      {/* =====================================
-          HERO
-      ===================================== */}
-
       <section className="applications-hero">
-
         <div className="container">
-
           <div className="applications-hero-content">
-
-            <span className="applications-eyebrow">
-              GEOPORTAL ACEH
-            </span>
-
-            <h1>
-              Aplikasi Geospasial
-            </h1>
-
-            <p>
-              Jelajahi berbagai aplikasi dan
-              layanan geospasial yang mendukung
-              pengelolaan informasi spasial
-              di Aceh.
-            </p>
-
+            <span className="applications-eyebrow">GEOPORTAL ACEH</span>
+            <h1>Aplikasi Geospasial</h1>
+            <p>Jelajahi berbagai aplikasi dan layanan geospasial yang mendukung pengelolaan informasi spasial di Aceh.</p>
           </div>
-
         </div>
-
       </section>
 
-
-
-      {/* =====================================
-          SEARCH
-      ===================================== */}
 
       <section className="container information-toolbar-wrapper">
 
-        <div className="information-toolbar">
+        <div className="catalog-search-wrapper" style={{ marginBottom: '14px' }}>
+          <span className="catalog-search-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+              <path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </span>
 
+          <input
+            type="text"
+            className="information-search"
+            placeholder="Cari berdasarkan judul aplikasi..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+        </div>
 
-          {/* SEARCH */}
-
-          <div className="catalog-search-wrapper">
-
-            <span
-              className="catalog-search-icon"
-              aria-hidden="true"
-            >
-
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                />
-
-                <path
-                  d="M16.5 16.5L21 21"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-
-              </svg>
-
-            </span>
-
-
-            <input
-              type="text"
-              className="information-search"
-              placeholder="Cari berdasarkan judul aplikasi..."
-              value={search}
-              onChange={(e) =>
-                setSearch(
-                  e.target.value
-                )
-              }
-            />
-
-          </div>
-
-
-          {/* RESULT */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            flexWrap: 'wrap',
+          }}
+        >
 
           <small className="information-result-count">
-
-            Menampilkan{' '}
-
-            {filteredApplications.length}
-
-            {' '}aplikasi
-
+            Menampilkan {filteredApplications.length} aplikasi
           </small>
+
+          <select
+            className="jign-sort-select"
+            value={instansi}
+            onChange={(event) => setInstansi(event.target.value)}
+            aria-label="Filter berdasarkan instansi"
+          >
+            {instansiList.map((item) => (
+              <option key={item} value={item}>
+                {item === 'Semua' ? 'Semua Instansi' : item}
+              </option>
+            ))}
+          </select>
 
         </div>
 
       </section>
 
 
-
-      {/* =====================================
-          CONTENT
-      ===================================== */}
-
       <section className="container information-content">
-
-
-        {/* ===================================
-            HEADING
-        =================================== */}
 
         <div className="catalog-heading-layout">
 
-
           <div className="catalog-heading-title">
-
-            <span className="section-eyebrow">
-              APLIKASI GEOSPASIAL
-            </span>
-
-            <h2>
-              Aplikasi Terbaru
-            </h2>
-
-            <p>
-              Temukan berbagai aplikasi dan
-              dashboard geospasial yang tersedia
-              di Geoportal Aceh.
-            </p>
-
+            <span className="section-eyebrow">APLIKASI GEOSPASIAL</span>
+            <h2>Aplikasi Terbaru</h2>
+            <p>Temukan berbagai aplikasi dan dashboard geospasial yang tersedia di Geoportal Aceh.</p>
           </div>
 
-
-          {/* CATEGORY */}
-
           <div className="catalog-category-wrapper">
-
             <div className="information-categories">
-
-              {categories.map(
-                (item) => (
-
-                  <button
-                    key={item}
-                    type="button"
-                    className={`information-category ${
-                      category === item
-                        ? 'active'
-                        : ''
-                    }`}
-                    onClick={() =>
-                      setCategory(item)
-                    }
-                  >
-                    {item}
-                  </button>
-
-                )
-              )}
-
+              {categories.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={`information-category ${category === item ? 'active' : ''}`}
+                  onClick={() => setCategory(item)}
+                >
+                  {item}
+                </button>
+              ))}
             </div>
-
           </div>
 
         </div>
 
 
-
-        {/* ===================================
-            LOADING
-        =================================== */}
-
         {loading && (
-
           <div className="information-empty">
-
-            <p>
-              Memuat aplikasi...
-            </p>
-
+            <p>Memuat aplikasi...</p>
           </div>
-
         )}
 
 
-
-        {/* ===================================
-            ERROR
-        =================================== */}
-
-        {!loading &&
-          error && (
-
-            <div className="information-empty">
-
-              <p>
-                {error}
-              </p>
-
-            </div>
-
-          )}
+        {!loading && error && (
+          <div className="information-empty">
+            <p>{error}</p>
+          </div>
+        )}
 
 
-
-        {/* ===================================
-            APPLICATIONS
-        =================================== */}
-
-        {!loading &&
-          !error &&
-          filteredApplications.length > 0 && (
-
-            <div className="row g-4">
-
-              {filteredApplications.map(
-                (application) => (
-
-                  <div
-                    className="col-md-6 col-lg-4"
-                    key={
-                      application.pk ||
-                      application.uuid
-                    }
-                  >
-
-                    <GeoappCard
-                      application={
-                        application
-                      }
-                    />
-
-                  </div>
-
-                )
-              )}
-
-            </div>
-
-          )}
+        {!loading && !error && filteredApplications.length > 0 && (
+          <div className="row g-4">
+            {filteredApplications.map((application) => (
+              <div className="col-md-6 col-lg-4" key={application.pk || application.uuid}>
+                <GeoappCard application={application} />
+              </div>
+            ))}
+          </div>
+        )}
 
 
-
-        {/* ===================================
-            EMPTY
-        =================================== */}
-
-        {!loading &&
-          !error &&
-          filteredApplications.length === 0 && (
-
-            <div className="information-empty">
-
-              <h5>
-                Aplikasi tidak ditemukan
-              </h5>
-
-              <p>
-                Coba gunakan kata kunci atau
-                kategori yang berbeda.
-              </p>
-
-            </div>
-
-          )}
+        {!loading && !error && filteredApplications.length === 0 && (
+          <div className="information-empty">
+            <h5>Aplikasi tidak ditemukan</h5>
+            <p>Coba gunakan kata kunci, kategori, atau instansi yang berbeda.</p>
+          </div>
+        )}
 
       </section>
 

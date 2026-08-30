@@ -23,10 +23,6 @@ const db = {
 
     return {
 
-      // -------------------------------------------------
-      // SELECT SATU DATA
-      // -------------------------------------------------
-
       async get(...params) {
 
         const result =
@@ -42,10 +38,6 @@ const db = {
 
       },
 
-      // -------------------------------------------------
-      // SELECT BANYAK DATA
-      // -------------------------------------------------
-
       async all(...params) {
 
         const result =
@@ -57,10 +49,6 @@ const db = {
         return result.rows
 
       },
-
-      // -------------------------------------------------
-      // INSERT / UPDATE / DELETE
-      // -------------------------------------------------
 
       async run(...params) {
 
@@ -86,10 +74,6 @@ const db = {
     }
 
   },
-
-  // ---------------------------------------------------
-  // RAW QUERY
-  // ---------------------------------------------------
 
   async exec(sql) {
 
@@ -195,13 +179,17 @@ async function initializeDatabase() {
 
       abstract TEXT,
 
+      resource_type TEXT NOT NULL
+      DEFAULT 'dataset',
+
+
       category TEXT,
 
       keywords TEXT,
 
-      file_path TEXT NOT NULL,
+      file_path TEXT,
 
-      file_name TEXT NOT NULL,
+      file_name TEXT,
 
       owner_id INTEGER NOT NULL,
 
@@ -224,8 +212,182 @@ async function initializeDatabase() {
   `)
 
 
+  // ---------------------------------------------------
+  // MIGRASI KOLOM: file_path / file_name jadi NULLABLE
+  // ---------------------------------------------------
+  //
+  // Diperlukan karena sekarang resource bisa berupa
+  // LINK (dashboard/webgis eksternal), bukan cuma file.
+  //
+  // ---------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ALTER COLUMN file_path DROP NOT NULL
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ALTER COLUMN file_name DROP NOT NULL
+  `)
+
+
+  // ---------------------------------------------------
+  // MIGRASI KOLOM BARU
+  // ---------------------------------------------------
+  //
+  // content_type   : 'file' atau 'link'
+  // external_url   : dipakai kalau content_type = 'link'
+  // extra_metadata : JSON string berisi metadata tambahan
+  //                  (attributes, srid, bbox, region,
+  //                  language, attribution, purpose, dll)
+  //                  supaya halaman detail bisa menampilkan
+  //                  info selengkap data dari API lama.
+  //
+  // ---------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS content_type TEXT NOT NULL DEFAULT 'file'
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS external_url TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS extra_metadata TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS files_json TEXT
+  `)
+
+  // ---------------------------------------------------
+  // MIGRASI KOLOM AVATAR USER
+  // ---------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS avatar_url TEXT
+  `)
+
+  // ---------------------------------------------------
+  // PERBAIKI CONSTRAINT resource_type
+  // ---------------------------------------------------
+  //
+  // BUG LAMA: constraint hanya mengizinkan
+  // ('dataset','application','webgis'), padahal seluruh
+  // kode aplikasi (routes & frontend) memakai 'dashboard'.
+  // Akibatnya SETIAP upload dashboard GAGAL karena
+  // melanggar CHECK constraint di database.
+  //
+  // ---------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE datasets
+    DROP CONSTRAINT IF EXISTS datasets_resource_type_check
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD CONSTRAINT datasets_resource_type_check
+    CHECK (
+      resource_type IN (
+        'dataset',
+        'dashboard',
+        'webgis'
+      )
+    )
+  `)
+
+
+  // ---------------------------------------------------
+  // PERBAIKI CONSTRAINT content_type
+  // ---------------------------------------------------
+
+  await pool.query(`
+    ALTER TABLE datasets
+    DROP CONSTRAINT IF EXISTS datasets_content_type_check
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD CONSTRAINT datasets_content_type_check
+    CHECK (
+      content_type IN (
+        'file',
+        'link',
+        'both'
+      )
+    )
+  `)
+
+
+  // ---------------------------------------------------
+  // API OVERRIDES
+  // ---------------------------------------------------
+  //
+  // Menyimpan "penyesuaian lokal" terhadap data dari API
+  // Geoportal Aceh lama, TANPA mengubah data aslinya:
+  // - is_hidden       : sembunyikan dari web kita
+  // - title_override  : ganti judul tampilan di web kita
+  // - abstract_override
+  // - category_override
+  //
+  // resource_type: 'dataset' atau 'geoapp'
+  // external_id  : pk/id resource di API lama
+  //
+  // ---------------------------------------------------
+
+  await pool.query(`
+
+    CREATE TABLE IF NOT EXISTS api_overrides (
+
+      id SERIAL PRIMARY KEY,
+
+      resource_type TEXT NOT NULL,
+
+      external_id TEXT NOT NULL,
+
+      is_hidden INTEGER NOT NULL DEFAULT 0,
+
+      title_override TEXT,
+
+      abstract_override TEXT,
+
+      category_override TEXT,
+
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+      CONSTRAINT api_overrides_type_check
+
+      CHECK (
+        resource_type IN (
+          'dataset',
+          'geoapp'
+        )
+      ),
+
+      CONSTRAINT api_overrides_unique
+
+      UNIQUE (
+        resource_type,
+        external_id
+      )
+
+    )
+
+  `)
+
+
   console.log(
-    'Tabel users dan datasets siap.'
+    'Tabel users, datasets, dan api_overrides siap.'
   )
 
 }
