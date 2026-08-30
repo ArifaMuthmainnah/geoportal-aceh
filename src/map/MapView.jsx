@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  ZoomControl,
+  GeoJSON,
+  useMap,
+} from 'react-leaflet'
 import MapControls from './MapControls'
 import LayerPanel from './LayerPanel'
 import MouseCoordinate from './MouseCoordinate'
@@ -8,6 +16,11 @@ import RemoveLayerModal from './RemoveLayerModal'
 import VillageSearchModal from './VillageSearchModal'
 import SearchPanel from './SearchPanel'
 import 'leaflet/dist/leaflet.css'
+import {
+  getDatasetDetail,
+  getDatasetFeatures,
+} from '../api/datasetApi'
+
 
 // --- KOMPONEN PEMBANTU UNTUK FLY TO (Pindah Lokasi Peta) ---
 // Komponen ini harus di dalam MapContainer agar bisa memakai useMap()
@@ -29,12 +42,8 @@ function MapView() {
   const [targetCoords, setTargetCoords] = useState(null);
 
   // --- 2. STATE UNTUK LAYER YANG AKTIF ---
-  const [layers, setLayers] = useState([
-    { id: 1, name: 'Batas Administrasi', visible: true, institution: 'BAPPEDA', category: 'Wilayah' },
-    { id: 2, name: 'Lokasi Penting', visible: true, institution: 'DISKOMINSA', category: 'Sosial' },
-    { id: 3, name: 'Jaringan Jalan', visible: false, institution: 'DISHUB', category: 'Transportasi' },
-    { id: 4, name: 'Sungai', visible: false, institution: 'PUPR', category: 'Lingkungan' },
-  ])
+  const [layers, setLayers] =
+  useState([])
 
   // --- 3. STATE UNTUK BASEMAP ---
   const [activeBasemap, setActiveBasemap] = useState("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
@@ -60,13 +69,126 @@ function MapView() {
     setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l))
   }
 
-  const handleAddLayer = (newDataset) => {
-    if (layers.find(l => l.id === newDataset.id)) {
-      alert("Layer ini sudah ada di dalam list!");
-      return;
+  const handleAddLayer =
+  async (newDataset) => {
+
+    try {
+
+      const datasetId =
+        newDataset.pk ??
+        newDataset.id
+
+      if (!datasetId) {
+
+        alert(
+          'ID dataset tidak tersedia.'
+        )
+
+        return
+      }
+
+
+      if (
+        layers.some(
+          (layer) =>
+            String(layer.id) ===
+            String(datasetId)
+        )
+      ) {
+
+        alert(
+          'Layer ini sudah ada di dalam list!'
+        )
+
+        return
+      }
+
+
+      // Ambil detail dataset
+      const response =
+        await getDatasetDetail(
+          datasetId
+        )
+
+
+      // GeoNode bisa mengembalikan
+      // object langsung atau { dataset: {...} }
+      const detail =
+        response?.dataset ||
+        response
+
+
+      const alternate =
+        detail?.alternate ||
+        newDataset?.alternate
+
+
+      if (!alternate) {
+
+        console.error(
+          'Dataset tidak mempunyai field alternate:',
+          detail
+        )
+
+        alert(
+          'Dataset ini belum memiliki nama layer GeoServer.'
+        )
+
+        return
+      }
+
+
+      // Ambil data spasial asli dari GeoServer WFS
+      const geojson =
+        await getDatasetFeatures(
+          alternate
+        )
+
+
+        const layer = {
+
+          id:
+            detail?.pk ??
+            detail?.id ??
+            datasetId,
+        
+          name:
+            detail?.title ||
+            detail?.name ||
+            newDataset?.title ||
+            newDataset?.name ||
+            'Dataset',
+        
+          alternate,
+        
+          visible: true,
+        
+          geojson,
+        
+        }
+
+      setLayers(
+        (previous) => [
+          ...previous,
+          layer,
+        ]
+      )
+
+      setShowAddModal(false)
+
+    } catch (error) {
+
+      console.error(
+        'Gagal menambahkan layer:',
+        error
+      )
+
+      alert(
+        'Layer gagal dimuat dari Geoportal Aceh.'
+      )
+
     }
-    setLayers([...layers, { ...newDataset, visible: true }]);
-    setShowAddModal(false);
+
   }
 
   const handleRemoveLayers = (idsToRemove) => {
@@ -80,6 +202,23 @@ function MapView() {
       <MapContainer center={center} zoom={8} className="map-container" zoomControl={false}>
         {/* Layer Peta Dasar */}
         <TileLayer url={activeBasemap} attribution='&copy; Geoportal Aceh' />
+
+        {layers
+  .filter(
+    (layer) =>
+      layer.visible &&
+      layer.geojson
+  )
+  .map(
+    (layer) => (
+
+      <GeoJSON
+        key={layer.id}
+        data={layer.geojson}
+      />
+
+    )
+  )}
         
         {/* Koordinat Live */}
         <MouseCoordinate />
@@ -114,10 +253,7 @@ function MapView() {
           </Marker>
         )}
 
-        {/* Marker contoh untuk Banda Aceh */}
-        {layers.find(l => l.id === 2)?.visible && (
-          <Marker position={[5.55, 95.32]}><Popup>Ibukota Banda Aceh</Popup></Marker>
-        )}
+        
       </MapContainer>
 
       {/* --- SEMUA MODAL/POP-UP --- */}
