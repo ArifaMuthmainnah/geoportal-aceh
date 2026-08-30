@@ -46,15 +46,12 @@ export function mapCategory(identifier) {
     return 'Umum'
   }
 
-  // Pastikan identifier berupa string
   const key = String(identifier).trim()
 
-  // Cari mapping secara langsung
   if (CATEGORY_MAP[key]) {
     return CATEGORY_MAP[key]
   }
 
-  // Cari tanpa membedakan huruf besar/kecil
   const normalizedKey = key.toLowerCase()
 
   const matchedKey = Object.keys(CATEGORY_MAP).find(
@@ -65,10 +62,9 @@ export function mapCategory(identifier) {
     return CATEGORY_MAP[matchedKey]
   }
 
-  // Kalau API memberikan identifier
-  // yang belum ada di mapping,
-  // jangan tampilkan identifier Inggris mentah.
-  return 'Umum'
+  // Kategori kustom yang ditulis user sendiri:
+  // tampilkan apa adanya, JANGAN dijadikan 'Umum'.
+  return key
 }
 
 

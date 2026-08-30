@@ -41,9 +41,27 @@ function DatasetCard({ dataset, owner }) {
       )
     : '-'
 
+  // =====================================================
+  // TUJUAN LINK (fix #2)
+  // =====================================================
+  //
+  // Card ini dipakai untuk dataset MAUPUN dashboard (mis.
+  // di halaman detail JIGN yang menggabungkan keduanya).
+  // Sebelumnya selalu diarahkan ke /katalog/:id walau
+  // jenisnya dashboard, sehingga gagal diambil (endpoint
+  // dataset dipanggil untuk id geoapp). Sekarang dicek
+  // dulu resource_type-nya.
+  //
+  // =====================================================
+
+  const linkTo =
+    dataset.resource_type === 'dashboard'
+      ? `/aplikasi/${dataset.pk}`
+      : `/katalog/${dataset.pk}`
+
   return (
     <Link
-      to={`/katalog/${dataset.pk}`}
+      to={linkTo}
       className="text-decoration-none text-reset dataset-card-link"
     >
       <article className="card katalog-card h-100">

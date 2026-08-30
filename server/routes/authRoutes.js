@@ -97,11 +97,15 @@ router.post('/login', async (req, res) => {
       message: 'Login berhasil.',
       token,
 
+      // #4: avatar_url WAJIB disertakan, sebelumnya
+      // hilang sehingga sidebar/navbar tidak pernah
+      // tahu user punya foto profil.
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        avatar_url: user.avatar_url
       }
     })
 
@@ -141,6 +145,7 @@ router.get(
             username,
             email,
             role,
+            avatar_url,
             created_at
           FROM users
           WHERE id = $1

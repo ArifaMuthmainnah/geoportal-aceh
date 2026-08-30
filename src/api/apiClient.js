@@ -24,10 +24,22 @@ const AUTH_API_URL =
 // BUILD GEO API URL
 // =====================================================
 
+// =====================================================
+// BUILD GEO API URL
+// =====================================================
+//
+// PENTING: endpoint (datasets, geoapps, owners, dll)
+// sekarang diarahkan ke PROXY backend kita sendiri
+// (bukan langsung ke sig.acehprov.go.id), supaya tidak
+// diblokir CORS oleh browser. Backend kita yang akan
+// meneruskan permintaan ke API lama secara server-to-server.
+//
+// =====================================================
+
 function buildUrl(endpoint) {
 
   if (!endpoint) {
-    return API_BASE_URL
+    return `${AUTH_API_URL}/proxy`
   }
 
 
@@ -40,7 +52,7 @@ function buildUrl(endpoint) {
   }
 
 
-  return `${API_BASE_URL}${endpoint}`
+  return `${AUTH_API_URL}/proxy/${endpoint}`
 }
 
 

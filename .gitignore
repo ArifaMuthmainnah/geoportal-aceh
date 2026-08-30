@@ -22,6 +22,10 @@ server/.env
 server/geoportal.db
 server/node_modules
 
+# uploads (file hasil upload user, jangan di-track)
+server/uploads/*
+!server/uploads/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

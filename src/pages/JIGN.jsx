@@ -8,6 +8,16 @@ import {
   getAllOwners,
 } from '../api/jignApi'
 
+import {
+  getPublicOwners,
+} from '../api/userApi'
+
+import {
+  mergeOwnerLists,
+} from '../utils/ownDataAdapter'
+
+import { Link } from 'react-router'
+
 
 function JIGN() {
 
@@ -54,8 +64,10 @@ function JIGN() {
 
 
       // =======================================
-      // OWNERS / SIMPUL JARINGAN
+      // OWNERS / SIMPUL JARINGAN - API LAMA
       // =======================================
+
+      let oldOwnerList = []
 
       try {
 
@@ -63,40 +75,73 @@ function JIGN() {
           await getAllOwners()
 
         console.log(
-          'JIGN Owners:',
+          'JIGN Owners (API Lama):',
           ownerList
         )
 
 
-        const validOwners =
+        oldOwnerList =
           Array.isArray(ownerList)
             ? ownerList
             : []
 
+      } catch (err) {
 
-        setOwners(
-          validOwners
+        console.error(
+          'Gagal mengambil owners API lama:',
+          err
+        )
+
+        setError(
+          'Sebagian data simpul jaringan belum dapat dimuat.'
+        )
+
+      }
+
+
+      // =======================================
+      // PENGGUNA SENDIRI (LOKAL)
+      // =======================================
+
+      let ownUserList = []
+
+      try {
+
+        ownUserList =
+          await getPublicOwners()
+
+        console.log(
+          'JIGN Owners (Sendiri):',
+          ownUserList
         )
 
       } catch (err) {
 
         console.error(
-          'Gagal mengambil owners:',
+          'Gagal mengambil pengguna sendiri:',
           err
         )
 
+      }
 
-        setOwners([])
 
-        setError(
-          'Gagal mengambil data simpul jaringan.'
+      // =======================================
+      // GABUNGKAN
+      // =======================================
+
+      const mergedOwners =
+        mergeOwnerLists(
+          oldOwnerList,
+          ownUserList
         )
 
-      } finally {
 
-        setLoading(false)
+      setOwners(
+        mergedOwners
+      )
 
-      }
+
+      setLoading(false)
 
     }
 
@@ -576,13 +621,15 @@ function JIGN() {
 
                   return (
 
-                    <article
+                    <Link
+                      to={`/jign/${encodeURIComponent(owner.username || '')}`}
                       className="jign-owner-card"
                       key={
                         owner.pk ||
                         owner.username ||
                         name
                       }
+                      style={{ textDecoration: 'none', color: 'inherit' }}
                     >
 
 
@@ -690,7 +737,7 @@ function JIGN() {
 
                       </div>
 
-                    </article>
+                    </Link>
 
                   )
 

@@ -1,5 +1,8 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
 
 const db = require('../config/database')
 
@@ -10,6 +13,83 @@ const {
 
 
 const router = express.Router()
+
+
+// =====================================================
+// FOLDER UPLOAD AVATAR
+// =====================================================
+
+const avatarDir = path.join(
+  __dirname,
+  '..',
+  'uploads',
+  'avatars'
+)
+
+if (!fs.existsSync(avatarDir)) {
+  fs.mkdirSync(avatarDir, { recursive: true })
+}
+
+const avatarStorage = multer.diskStorage({
+
+  destination: (req, file, cb) => {
+    cb(null, avatarDir)
+  },
+
+  filename: (req, file, cb) => {
+    const unique =
+      Date.now() + '-' + Math.round(Math.random() * 1e9)
+    cb(null, unique + path.extname(file.originalname))
+  }
+
+})
+
+const uploadAvatar = multer({ storage: avatarStorage })
+
+
+// =====================================================
+// DAFTAR PENGGUNA PUBLIK (UNTUK HALAMAN JIGN)
+// =====================================================
+
+router.get('/public', async (req, res) => {
+
+  try {
+
+    const users = await db
+      .prepare(`
+        SELECT
+          u.id,
+          u.username,
+          u.email,
+          u.avatar_url,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1
+          ) AS count
+        FROM users u
+        LEFT JOIN datasets d
+          ON d.owner_id = u.id
+        GROUP BY u.id, u.username, u.email, u.avatar_url
+        ORDER BY u.id ASC
+      `)
+      .all()
+
+    res.json({
+      success: true,
+      users
+    })
+
+  } catch (error) {
+
+    console.error('GET PUBLIC USERS ERROR:', error)
+
+    res.status(500).json({
+      success: false,
+      message: 'Gagal mengambil data pengguna publik.'
+    })
+
+  }
+
+})
 
 
 // =====================================================
@@ -37,12 +117,12 @@ router.get('/', async (req, res) => {
           username,
           email,
           role,
+          avatar_url,
           created_at
         FROM users
         ORDER BY id DESC
       `)
       .all()
-
 
     res.json({
       success: true,
@@ -51,10 +131,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
 
-    console.error(
-      'GET USERS ERROR:',
-      error
-    )
+    console.error('GET USERS ERROR:', error)
 
     res.status(500).json({
       success: false,
@@ -67,198 +144,333 @@ router.get('/', async (req, res) => {
 
 
 // =====================================================
-// CREATE USER
+// CREATE USER (mendukung upload avatar)
 // =====================================================
 
-router.post('/', async (req, res) => {
+router.post(
+  '/',
+  uploadAvatar.single('avatar'),
+  async (req, res) => {
 
-  try {
+    try {
 
-    const {
-      username,
-      email,
-      password,
-      role
-    } = req.body
-
-
-    // -------------------------------------------------
-    // VALIDASI
-    // -------------------------------------------------
-
-    if (
-      !username ||
-      !email ||
-      !password
-    ) {
-
-      return res.status(400).json({
-        success: false,
-        message:
-          'Username, email, dan password wajib diisi.'
-      })
-
-    }
+      const {
+        username,
+        email,
+        password,
+        role
+      } = req.body
 
 
-    const cleanUsername =
-      username.trim()
+      if (!username || !email || !password) {
 
-    const cleanEmail =
-      email.trim().toLowerCase()
+        if (req.file) fs.unlinkSync(req.file.path)
 
-
-    if (
-      cleanUsername.length < 3
-    ) {
-
-      return res.status(400).json({
-        success: false,
-        message:
-          'Username minimal 3 karakter.'
-      })
-
-    }
-
-
-    if (
-      password.length < 6
-    ) {
-
-      return res.status(400).json({
-        success: false,
-        message:
-          'Password minimal 6 karakter.'
-      })
-
-    }
-
-
-    // -------------------------------------------------
-    // ROLE
-    // -------------------------------------------------
-
-    const selectedRole =
-      role === 'admin'
-        ? 'admin'
-        : 'operator'
-
-
-    // -------------------------------------------------
-    // CEK USERNAME / EMAIL
-    // -------------------------------------------------
-
-    const existing =
-      await db
-        .prepare(`
-          SELECT
-            id,
-            username,
-            email
-          FROM users
-          WHERE username = $1
-          OR email = $2
-        `)
-        .get(
-          cleanUsername,
-          cleanEmail
-        )
-
-
-    if (existing) {
-
-      if (
-        existing.username ===
-        cleanUsername
-      ) {
-
-        return res.status(409).json({
+        return res.status(400).json({
           success: false,
-          message:
-            'Username sudah digunakan.'
+          message: 'Username, email, dan password wajib diisi.'
         })
 
       }
 
 
-      return res.status(409).json({
+      const cleanUsername = username.trim()
+      const cleanEmail = email.trim().toLowerCase()
+
+
+      if (cleanUsername.length < 3) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        return res.status(400).json({
+          success: false,
+          message: 'Username minimal 3 karakter.'
+        })
+
+      }
+
+
+      if (password.length < 6) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        return res.status(400).json({
+          success: false,
+          message: 'Password minimal 6 karakter.'
+        })
+
+      }
+
+
+      const selectedRole = role === 'admin' ? 'admin' : 'operator'
+
+
+      const existing =
+        await db
+          .prepare(`
+            SELECT id, username, email
+            FROM users
+            WHERE username = $1 OR email = $2
+          `)
+          .get(cleanUsername, cleanEmail)
+
+
+      if (existing) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        if (existing.username === cleanUsername) {
+          return res.status(409).json({
+            success: false,
+            message: 'Username sudah digunakan.'
+          })
+        }
+
+        return res.status(409).json({
+          success: false,
+          message: 'Email sudah digunakan.'
+        })
+
+      }
+
+
+      const hashedPassword = bcrypt.hashSync(password, 12)
+
+      const avatarUrl =
+        req.file ? `avatars/${req.file.filename}` : null
+
+
+      const result =
+        await db
+          .prepare(`
+            INSERT INTO users
+            (username, email, password, role, avatar_url)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING id
+          `)
+          .run(
+            cleanUsername,
+            cleanEmail,
+            hashedPassword,
+            selectedRole,
+            avatarUrl
+          )
+
+
+      res.status(201).json({
+        success: true,
+        message: 'User berhasil dibuat.',
+        user: {
+          id: result.lastInsertRowid,
+          username: cleanUsername,
+          email: cleanEmail,
+          role: selectedRole,
+          avatar_url: avatarUrl
+        }
+      })
+
+
+    } catch (error) {
+
+      console.error('CREATE USER ERROR:', error)
+
+      if (req.file) {
+        try { fs.unlinkSync(req.file.path) } catch {}
+      }
+
+      res.status(500).json({
         success: false,
-        message:
-          'Email sudah digunakan.'
+        message: 'Gagal membuat user.'
       })
 
     }
 
+  }
+)
 
-    // -------------------------------------------------
-    // HASH PASSWORD
-    // -------------------------------------------------
 
-    const hashedPassword =
-      bcrypt.hashSync(
+// =====================================================
+// UPDATE USER (BARU — INI YANG SEBELUMNYA HILANG,
+// PENYEBAB ERROR 404 SAAT EDIT PENGGUNA)
+// =====================================================
+
+router.patch(
+  '/:id',
+  uploadAvatar.single('avatar'),
+  async (req, res) => {
+
+    try {
+
+      const id = Number(req.params.id)
+
+      if (!Number.isInteger(id)) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        return res.status(400).json({
+          success: false,
+          message: 'ID pengguna tidak valid.'
+        })
+
+      }
+
+
+      const existingUser =
+        await db
+          .prepare(`SELECT * FROM users WHERE id = $1`)
+          .get(id)
+
+
+      if (!existingUser) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        return res.status(404).json({
+          success: false,
+          message: 'Pengguna tidak ditemukan.'
+        })
+
+      }
+
+
+      const {
+        username,
+        email,
         password,
-        12
-      )
+        role
+      } = req.body
 
 
-    // -------------------------------------------------
-    // INSERT USER
-    // -------------------------------------------------
+      const nextUsername =
+        username !== undefined && username.trim()
+          ? username.trim()
+          : existingUser.username
 
-    const result =
+      const nextEmail =
+        email !== undefined && email.trim()
+          ? email.trim().toLowerCase()
+          : existingUser.email
+
+      const nextRole =
+        role !== undefined
+          ? (role === 'admin' ? 'admin' : 'operator')
+          : existingUser.role
+
+
+      // cek bentrok username/email dengan user lain
+      const conflict =
+        await db
+          .prepare(`
+            SELECT id FROM users
+            WHERE (username = $1 OR email = $2)
+            AND id != $3
+          `)
+          .get(nextUsername, nextEmail, id)
+
+      if (conflict) {
+
+        if (req.file) fs.unlinkSync(req.file.path)
+
+        return res.status(409).json({
+          success: false,
+          message: 'Username atau email sudah digunakan pengguna lain.'
+        })
+
+      }
+
+
+      let nextPasswordHash = existingUser.password
+
+      if (password && password.trim()) {
+
+        if (password.trim().length < 6) {
+
+          if (req.file) fs.unlinkSync(req.file.path)
+
+          return res.status(400).json({
+            success: false,
+            message: 'Password minimal 6 karakter.'
+          })
+
+        }
+
+        nextPasswordHash = bcrypt.hashSync(password.trim(), 12)
+
+      }
+
+
+      let nextAvatarUrl = existingUser.avatar_url
+
+      if (req.file) {
+
+        // hapus avatar lama kalau ada
+        if (existingUser.avatar_url) {
+
+          const oldPath =
+            path.join(__dirname, '..', 'uploads', existingUser.avatar_url)
+
+          if (fs.existsSync(oldPath)) {
+            try { fs.unlinkSync(oldPath) } catch {}
+          }
+
+        }
+
+        nextAvatarUrl = `avatars/${req.file.filename}`
+
+      }
+
+
       await db
         .prepare(`
-          INSERT INTO users
-          (
-            username,
-            email,
-            password,
-            role
-          )
-          VALUES ($1, $2, $3, $4)
-          RETURNING id
+          UPDATE users
+          SET
+            username = $1,
+            email = $2,
+            role = $3,
+            password = $4,
+            avatar_url = $5
+          WHERE id = $6
         `)
         .run(
-          cleanUsername,
-          cleanEmail,
-          hashedPassword,
-          selectedRole
+          nextUsername,
+          nextEmail,
+          nextRole,
+          nextPasswordHash,
+          nextAvatarUrl,
+          id
         )
 
 
-    // -------------------------------------------------
-    // RESPONSE
-    // -------------------------------------------------
+      res.json({
+        success: true,
+        message: 'Pengguna berhasil diperbarui.',
+        user: {
+          id,
+          username: nextUsername,
+          email: nextEmail,
+          role: nextRole,
+          avatar_url: nextAvatarUrl
+        }
+      })
 
-    res.status(201).json({
-      success: true,
-      message:
-        'User berhasil dibuat.',
-      user: {
-        id: result.lastInsertRowid,
-        username: cleanUsername,
-        email: cleanEmail,
-        role: selectedRole
+
+    } catch (error) {
+
+      console.error('UPDATE USER ERROR:', error)
+
+      if (req.file) {
+        try { fs.unlinkSync(req.file.path) } catch {}
       }
-    })
 
+      res.status(500).json({
+        success: false,
+        message: 'Gagal memperbarui pengguna.'
+      })
 
-  } catch (error) {
-
-    console.error(
-      'CREATE USER ERROR:',
-      error
-    )
-
-    res.status(500).json({
-      success: false,
-      message:
-        'Gagal membuat user.'
-    })
+    }
 
   }
-
-})
+)
 
 
 // =====================================================
@@ -271,66 +483,52 @@ router.delete(
 
     try {
 
-      const id =
-        Number(req.params.id)
+      const id = Number(req.params.id)
 
-
-      // -------------------------------------------------
-      // ADMIN TIDAK BOLEH HAPUS DIRI SENDIRI
-      // -------------------------------------------------
-
-      if (
-        id === req.user.id
-      ) {
-
+      if (id === req.user.id) {
         return res.status(400).json({
           success: false,
-          message:
-            'Admin yang sedang login tidak dapat menghapus dirinya sendiri.'
+          message: 'Admin yang sedang login tidak dapat menghapus dirinya sendiri.'
         })
-
       }
 
+      const target =
+        await db
+          .prepare(`SELECT avatar_url FROM users WHERE id = $1`)
+          .get(id)
 
       const result =
         await db
-          .prepare(`
-            DELETE FROM users
-            WHERE id = $1
-          `)
+          .prepare(`DELETE FROM users WHERE id = $1`)
           .run(id)
 
-
-      if (
-        result.changes === 0
-      ) {
-
+      if (result.changes === 0) {
         return res.status(404).json({
           success: false,
-          message:
-            'User tidak ditemukan.'
+          message: 'User tidak ditemukan.'
         })
-
       }
 
+      if (target?.avatar_url) {
+        const avatarPath =
+          path.join(__dirname, '..', 'uploads', target.avatar_url)
+        if (fs.existsSync(avatarPath)) {
+          try { fs.unlinkSync(avatarPath) } catch {}
+        }
+      }
 
       res.json({
         success: true,
-        message:
-          'User berhasil dihapus.'
+        message: 'User berhasil dihapus.'
       })
 
     } catch (error) {
 
-      console.error(
-        'DELETE USER ERROR:',
-        error
-      )
+      console.error('DELETE USER ERROR:', error)
 
       res.status(500).json({
         success: false,
-        message:
-          'Gagal menghapus user.'
+        message: 'Gagal menghapus user.'
       })
 
     }
