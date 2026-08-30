@@ -195,6 +195,7 @@ const GEO_SERVER_URL =
   'https://sig.acehprov.go.id/geoserver/ows'
 
 // =====================================================
+// =====================================================
 // HELPER: REQUEST GEOSERVER
 // =====================================================
 
@@ -207,6 +208,46 @@ async function fetchGeoServer(params) {
   if (!response.ok) {
     throw new Error(
       `GeoServer error: ${response.status}`
+    )
+  }
+
+  return response.json()
+}
+
+// =====================================================
+// DATASET FEATURES / GEOJSON
+// =====================================================
+
+export async function getDatasetFeatures(
+  alternate
+) {
+
+  if (!alternate) {
+    throw new Error(
+      'Nama layer GeoServer tidak tersedia.'
+    )
+  }
+
+  const params =
+    new URLSearchParams({
+      service: 'WFS',
+      version: '1.0.0',
+      request: 'GetFeature',
+      typeName: alternate,
+      outputFormat:
+        'application/json',
+    })
+
+  const url =
+    `${GEO_SERVER_URL}?${params.toString()}`
+
+  const response =
+    await fetch(url)
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Gagal mengambil layer GIS (${response.status})`
     )
   }
 

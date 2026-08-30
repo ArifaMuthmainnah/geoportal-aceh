@@ -11988,3 +11988,347 @@ main {
   }
 
 }
+
+/* 
+==========================================================================
+   ADD LAYER MODAL - STYLE PERBAIKAN TAB & SIMPUL
+========================================================================== 
+*/
+
+/* Mengatur Tab agar tombol yang aktif terlihat berbeda */
+.modal-tabs .tab {
+  cursor: pointer;
+  padding: 10px 20px;
+  border: none;
+  background: #222;
+  color: #888;
+  transition: 0.3s;
+}
+
+.modal-tabs .tab.active {
+  background: #0b5cab; /* Warna biru Aceh */
+  color: #fff;
+  font-weight: bold;
+}
+
+.simpul-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Jarak antar baris lebih rapat */
+  padding-top: 5px;
+}
+
+.form-group-simpul {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-group-simpul label {
+  width: 120px;
+  font-size: 13px; /* Ukuran keterangan luar */
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+.form-group-simpul select, 
+.form-group-simpul input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: white;
+  padding: 6px 10px; /* Padding dikecilkan */
+  border-radius: 4px;
+  font-size: 13px; /* Ukuran tulisan dalam kotak disamakan dengan label luar */
+  height: 34px; /* Tinggi kotak seragam */
+  outline: none;
+}
+
+.input-with-btn {
+  display: flex;
+  flex: 1;
+  gap: 5px;
+}
+
+.btn-search-simpul {
+  background: #27ae60;
+  color: white;
+  border: none;
+  padding: 0 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 13px;
+  height: 34px; /* Tinggi disamakan persis dengan input di sampingnya */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Warning Box Tanpa Ikon */
+.warning-box-simpul {
+  background: #fff3cd;
+  color: #856404;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-top: 5px;
+  text-align: left;
+  border: 1px solid #ffeeba;
+}
+
+.simpul-result-placeholder {
+  height: 180px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 4px;
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   ADD LAYER MODAL - FILE TAB STYLE (THAHIRA)
+========================================================================== 
+*/
+
+.file-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding-top: 10px;
+}
+
+/* Notice Box Kuning (ATM Gambar 2) */
+.notice-box-file {
+  background: #fff3cd;
+  color: #856404;
+  padding: 12px 15px;
+  border-radius: 4px;
+  font-size: 12px;
+  position: relative;
+  border: 1px solid #ffeeba;
+  line-height: 1.5;
+}
+
+.notice-box-file strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+}
+
+.notice-box-file p {
+  margin: 0;
+  padding-right: 20px;
+}
+
+.close-notice {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #856404;
+  cursor: pointer;
+}
+
+/* File Input Design */
+.file-input-wrapper {
+  display: flex;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.file-path-display {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 10px 15px;
+  font-size: 13px;
+  outline: none;
+}
+
+.btn-browse {
+  background: #fff;
+  color: #333;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-left: 1px solid #333;
+  transition: 0.2s;
+}
+
+.btn-browse:hover {
+  background: #e0e0e0;
+}
+
+/* Info file saat terpilih */
+.file-info-selected {
+  margin-top: 20px;
+  padding: 15px;
+  background: #111;
+  border: 1px dashed #4da6df;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-info-selected span {
+  color: #4da6df;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.file-info-selected small {
+  color: #666;
+}
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
+
+/* 
+==========================================================================
+   ADD LAYER MODAL - URL TAB STYLE (THAHIRA)
+========================================================================== 
+*/
+
+.url-tab-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.form-group-url {
+  display: flex;
+  align-items: center;
+}
+
+.form-group-url label {
+  width: 140px;
+  font-size: 13px;
+  color: #ccc;
+  flex-shrink: 0;
+}
+
+.form-group-url select, 
+.url-display-input {
+  flex: 1;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.url-display-input {
+  color: #2ecc71; /* Hijau neon untuk URL sesuai rujukan */
+  font-family: monospace;
+}
+
+.type-action-group {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+}
+
+.btn-get-data {
+  background: white;
+  color: #041d38;
+  border: 1px solid #0b5cab;
+  padding: 0 15px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Error Box ATM Gambar 8 */
+.url-error-box {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+  border: 1px solid #f5c6cb;
+}
+
+/* Metadata Card ATM Gambar 10 */
+.url-results-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.metadata-card {
+  background: #252525;
+  border: 1px solid #333;
+  display: flex;
+  padding: 10px;
+  gap: 15px;
+  border-radius: 4px;
+}
+
+.metadata-thumb {
+  width: 80px;
+  height: 80px;
+  background: #444;
+  font-size: 9px;
+  color: #888;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  border: 1px solid #555;
+}
+
+.metadata-content h6 {
+  color: #f1c40f; /* Kuning rujukan */
+  font-size: 12px;
+  margin: 0 0 5px;
+  line-height: 1.4;
+}
+
+.metadata-content p {
+  font-size: 10px;
+  color: #aaa;
+}
+
+.metadata-links {
+  display: flex;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.badge-link {
+  background: #17a2b8;
+  color: white;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 2px;
+}
+
+.badge-link:nth-child(2) { background: #ffc107; color: black; }
+.badge-link:nth-child(3) { background: #28a745; }
+
+/* 
+==========================================================================
+   AKHIR PEKERJAAN THAHIRA
+========================================================================== 
+*/
