@@ -96,15 +96,7 @@ function getToken() {
 
 function getGeoAuthHeaders() {
 
-  const token = getToken()
-
-  if (!token) {
-    return {}
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  }
+  return {}
 
 }
 

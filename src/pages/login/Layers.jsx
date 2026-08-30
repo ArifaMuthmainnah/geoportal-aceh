@@ -1,4 +1,11 @@
-import React, { useState } from 'react';
+import React, {
+  useEffect,
+  useState,
+} from 'react'
+
+import {
+  getDatasets,
+} from '../../api/datasetApi'
 
 function Layers() {
   // State diatur ke null agar defaultnya semua list tertutup
@@ -16,14 +23,78 @@ function Layers() {
     'TPB/SDGs': ['TANPA KEMISKINAN', 'TANPA KELAPARAN', 'KEHIDUPAN SEHAT', 'PENDIDIKAN BERKUALITAS']
   };
 
-  const dummyLayers = [
-    { id: 1, title: '[1] Pos Keamanan Lingkungan', date: '01 July 2026', status: 'Dibatasi', type: 'POLA RUANG LAUT' },
-    { id: 2, title: '[2] BATAS ADMINISTRASI KABUPATEN', date: '09 March 2026', status: 'SKPD', type: 'RTRW' },
-    { id: 3, title: '[3] ASET TANAH DAN BANGUNAN ACEH', date: '01 January 2025', status: 'Dibatasi', type: 'TOPONIMI' },
-    { id: 4, title: '[4] DESA TOPONIM PT 10K', date: '01 January 2020', status: 'Dibatasi', type: 'TOPONIMI' },
-    { id: 5, title: '[5] KECAMATAN ADMINISTRASI PT 25K', date: '19 December 2025', status: 'SKPD', type: 'RTRW' },
-    { id: 6, title: '[6] PETA PENERTIBAN TRANTIBUM 2026', date: '12 June 2026', status: 'SKPD', type: 'POLA RUANG LAUT' },
-  ];
+  const [
+    datasets,
+    setDatasets
+  ] = useState([])
+  
+  const [
+    loading,
+    setLoading
+  ] = useState(true)
+  
+  const [
+    error,
+    setError
+  ] = useState('')
+  
+  const [
+    page,
+    setPage
+  ] = useState(1)
+  
+  const [
+    hasNext,
+    setHasNext
+  ] = useState(false)
+
+  useEffect(() => {
+
+    async function loadDatasets() {
+  
+      try {
+  
+        setLoading(true)
+        setError('')
+  
+        const response =
+          await getDatasets(
+            `?page=${page}`
+          )
+  
+        setDatasets(
+          response?.datasets ||
+          []
+        )
+  
+        setHasNext(
+          Boolean(
+            response?.links?.next
+          )
+        )
+  
+      } catch (error) {
+  
+        console.error(
+          'Gagal memuat layer:',
+          error
+        )
+  
+        setError(
+          'Data layer gagal dimuat.'
+        )
+  
+      } finally {
+  
+        setLoading(false)
+  
+      }
+  
+    }
+  
+    loadDatasets()
+  
+  }, [page])
 
   return (
     <div className="login-content-page">
@@ -81,29 +152,153 @@ function Layers() {
           </div>
 
           <div className="geoservice-grid">
-            {dummyLayers.map(layer => (
-              <div key={layer.id} className="layer-card-item">
-                <div className="card-header-icons">
-                  <button title="Peta">🗺️</button>
-                  <button title="Globe">🌐</button>
-                  <button title="Info">ℹ️</button>
-                  <button title="Download">📥</button>
-                </div>
-                <div className="card-image-placeholder">
-                  <div className="skeleton-map"></div>
-                </div>
-                <div className="card-body-info">
-                  <h3>{layer.title}</h3>
-                  <p className="card-date">{layer.date}</p>
-                  <span className={`status-badge ${layer.status.toLowerCase()}`}>
-                    {layer.status}
-                  </span>
-                </div>
-              </div>
-            ))}
+          {loading && (
+  <p>
+    Memuat data layer...
+  </p>
+)}
+
+{error && (
+  <p>
+    {error}
+  </p>
+)}
+
+{!loading &&
+  !error &&
+  datasets.map(
+    (dataset) => (
+
+      <div
+        key={
+          dataset.pk ??
+          dataset.id
+        }
+        className="layer-card-item"
+      >
+
+        <div className="card-header-icons">
+
+          <button title="Peta">
+            🗺️
+          </button>
+
+          <button title="Globe">
+            🌐
+          </button>
+
+          <button title="Info">
+            ℹ️
+          </button>
+
+          <button title="Download">
+            📥
+          </button>
+
+        </div>
+
+
+        <div className="card-image-placeholder">
+
+          {dataset.thumbnail_url ? (
+
+            <img
+              src={
+                dataset.thumbnail_url
+              }
+              alt={
+                dataset.title ||
+                dataset.name
+              }
+              className="peta-thumb"
+            />
+
+          ) : (
+
+            <div className="skeleton-map" />
+
+          )}
+
+        </div>
+
+
+        <div className="card-body-info">
+
+          <h3>
+            [
+            {dataset.pk ??
+             dataset.id}
+            ]{' '}
+            {dataset.title ||
+             dataset.name ||
+             'Dataset'}
+          </h3>
+
+          <p className="card-date">
+
+            {dataset.date
+              ? new Date(
+                  dataset.date
+                ).toLocaleDateString(
+                  'id-ID'
+                )
+              : '-'}
+
+          </p>
+
+          <span className="status-badge">
+
+            {dataset.is_published
+              ? 'Publik'
+              : 'Dibatasi'}
+
+          </span>
+
+        </div>
+
+      </div>
+
+    )
+  )}
           </div>
 
-          <button className="load-more-btn">︾ Halaman Selanjutnya</button>
+          <div className="pagination-actions">
+
+  {page > 1 && (
+
+    <button
+      className="load-more-btn"
+      onClick={
+        () =>
+          setPage(
+            (previous) =>
+              previous - 1
+          )
+      }
+    >
+      ← Halaman Sebelumnya
+    </button>
+
+  )}
+
+  {hasNext && (
+
+    <button
+      className="load-more-btn"
+      onClick={
+        () =>
+          setPage(
+            (previous) =>
+              previous + 1
+          )
+      }
+    >
+      Halaman Selanjutnya →
+    </button>
+
+  )}
+
+</div>
         </main>
       </section>
     </div>
