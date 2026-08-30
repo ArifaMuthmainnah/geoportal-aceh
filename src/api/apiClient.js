@@ -2,8 +2,6 @@
 // API BASE URL
 // =====================================================
 
-// API Geoportal Aceh / GeoNode lama
-// Digunakan untuk dataset, maps, documents, geoapps, dll.
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL
 
@@ -12,17 +10,10 @@ const API_BASE_URL =
 // AUTH API URL
 // =====================================================
 
-// Backend authentication milik project kita
-// Contoh:
-// http://localhost:5000/api
 const AUTH_API_URL =
   import.meta.env.VITE_AUTH_API_URL ||
   'http://localhost:5000/api'
 
-
-// =====================================================
-// BUILD GEO API URL
-// =====================================================
 
 // =====================================================
 // BUILD GEO API URL
@@ -43,7 +34,6 @@ function buildUrl(endpoint) {
   }
 
 
-  // Kalau endpoint sudah berupa URL lengkap
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -67,7 +57,6 @@ function buildAuthUrl(endpoint) {
   }
 
 
-  // Kalau endpoint sudah berupa URL lengkap
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -97,18 +86,30 @@ function getToken() {
 // GET AUTH HEADERS UNTUK GEO API
 // =====================================================
 //
-// Geoportal API lama tetap dipakai seperti sebelumnya.
+// PERBAIKAN: sekarang endpoint geo (datasets, geoapps,
+// dll) ditembak lewat proxy backend kita sendiri, dan
+// beberapa di antaranya (/admin/datasets, /admin/geoapps,
+// /overrides) DILINDUNGI oleh authenticateToken +
+// requireAdmin di backend. Jadi token WAJIB disertakan
+// di sini, bukan dikosongkan seperti sebelumnya.
 //
-// Kalau nanti API GeoNode lama membutuhkan
-// authentication tertentu, bisa ditambahkan di sini.
-//
-// Untuk sekarang TIDAK menggunakan Basic Auth.
+// Untuk endpoint publik (datasets, geoapps, owners biasa),
+// menyertakan token tetap aman karena backend tidak
+// mewajibkannya di situ.
 //
 // =====================================================
 
 function getGeoAuthHeaders() {
 
-  return {}
+  const token = getToken()
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
 
 }
 
@@ -164,18 +165,71 @@ export async function apiPost(
   endpoint,
   body
 ) {
-  // ...isi function yang sudah ada, JANGAN diubah...
+
+  const response =
+    await fetch(
+      buildUrl(endpoint),
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          Accept:
+            'application/json',
+
+          ...getGeoAuthHeaders(),
+        },
+
+        body:
+          JSON.stringify(body),
+      }
+    )
+
+
+  if (!response.ok) {
+
+    const errorText =
+      await response.text()
+
+    console.error(
+      'API POST Error:',
+      response.status,
+      errorText
+    )
+
+    throw new Error(
+      `Gagal mengirim data (${response.status})`
+    )
+  }
+
+
+  const text =
+    await response.text()
+
+
+  if (!text) {
+    return {}
+  }
+
+
+  try {
+
+    return JSON.parse(text)
+
+  } catch {
+
+    return {
+      message: text,
+    }
+
+  }
 }
 
 
 // =====================================================
 // POST FILE (MULTIPART) - GEO API
-// =====================================================
-//
-// Khusus untuk upload file (FormData).
-// Tidak set Content-Type manual, karena browser
-// akan otomatis menambahkan boundary yang benar.
-//
 // =====================================================
 
 export async function apiPostFile(
@@ -446,16 +500,6 @@ export async function apiGetAll(
 // =====================================================
 // AUTH REQUEST
 // =====================================================
-//
-// Khusus backend authentication.
-//
-// Backend:
-// POST /api/auth/login
-// GET  /api/auth/me
-//
-// Authentication menggunakan JWT Bearer Token.
-//
-// =====================================================
 
 async function authRequest(
   endpoint,
@@ -477,9 +521,6 @@ async function authRequest(
     ...(options.headers || {}),
   }
 
-
-  // Kalau sudah login,
-  // kirim JWT ke backend.
 
   if (token) {
 
@@ -616,16 +657,9 @@ export function authDelete(
 
 }
 
+
 // =====================================================
 // AUTH POST FILE (MULTIPART) - BACKEND SENDIRI
-// =====================================================
-//
-// Khusus upload file ke backend kita sendiri
-// (bukan ke geoportal lama).
-//
-// Tidak set Content-Type manual, browser akan
-// otomatis menambahkan boundary yang benar.
-//
 // =====================================================
 
 export async function authPostFile(
