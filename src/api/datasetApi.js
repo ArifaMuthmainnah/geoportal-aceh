@@ -195,7 +195,6 @@ const GEO_SERVER_URL =
   'https://sig.acehprov.go.id/geoserver/ows'
 
 // =====================================================
-// =====================================================
 // HELPER: REQUEST GEOSERVER
 // =====================================================
 
@@ -210,11 +209,8 @@ async function fetchGeoServer(params) {
       `GeoServer error: ${response.status}`
     )
   }
-
-  return response.json()
 }
 
-// =====================================================
 // DATASET FEATURES / GEOJSON
 // =====================================================
 
