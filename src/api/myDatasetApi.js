@@ -12,9 +12,11 @@ import {
 
 export function uploadMyDataset({
   files,
+  thumbnailFile,
   title,
   abstract,
   resourceType = 'dataset',
+  subType,
   category,
   keywords,
   externalUrl,
@@ -27,11 +29,19 @@ export function uploadMyDataset({
     files.forEach((file) => formData.append('base_file', file))
   }
 
+  if (thumbnailFile) {
+    formData.append('thumbnail', thumbnailFile)
+  }
+
   formData.append('title', title || '')
   formData.append('abstract', abstract || '')
   formData.append('resource_type', resourceType || 'dataset')
   formData.append('category', category || '')
   formData.append('keywords', keywords || '')
+
+  if (subType) {
+    formData.append('sub_type', subType)
+  }
 
   if (externalUrl && externalUrl.trim()) {
     formData.append('external_url', externalUrl.trim())

@@ -55,9 +55,10 @@ function DatasetCard({ dataset, owner }) {
   // =====================================================
 
   const linkTo =
-    dataset.resource_type === 'dashboard'
-      ? `/aplikasi/${dataset.pk}`
-      : `/katalog/${dataset.pk}`
+    dataset.resource_type === 'dashboard' ? `/aplikasi/${dataset.pk}`
+    : dataset.resource_type === 'map' ? `/peta/${dataset.pk}`
+    : dataset.resource_type === 'document' ? `/dokumen/${dataset.pk}`
+    : `/katalog/${dataset.pk}`
 
   return (
     <Link

@@ -10,9 +10,14 @@ import { useAuth } from '../../context/AuthContext'
 
 import {
   RESOURCE_TYPE_OPTIONS,
+  INFORMASI_SUBTYPE_OPTIONS,
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
   supportsAttributeTable,
+  supportsBboxLocation,
+  supportsLinkedResources,
+  supportsEmbedUrl,
+  supportsExtraMetadataForm,
   buildExtraMetadata,
   parseExtraMetadata,
 } from '../../utils/resourceFields'
@@ -41,6 +46,9 @@ function EditMyDataset() {
   const [customCategory, setCustomCategory] = useState('')
   const [keywords, setKeywords] = useState('')
   const [externalUrl, setExternalUrl] = useState('')
+  const [embedUrl, setEmbedUrl] = useState('')
+  const [subType, setSubType] = useState('pemberitahuan')
+  const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
   const [language, setLanguage] = useState('')
@@ -74,6 +82,7 @@ function EditMyDataset() {
         setResourceType(dataset.resource_type || 'dataset')
         setKeywords(dataset.keywords || '')
         setExternalUrl(dataset.external_url || '')
+        setSubType(dataset.sub_type || 'pemberitahuan')
         setIsPublished(Boolean(dataset.is_published))
 
         const isKnown = CATEGORY_OPTIONS.includes(dataset.category)
@@ -88,6 +97,10 @@ function EditMyDataset() {
         setPurpose(metadata.purpose || '')
         setSupplementalInformation(metadata.supplemental_information || '')
         setConstraintsOther(metadata.constraints_other || '')
+        setEmbedUrl(metadata.embed_url || '')
+        setLinkedResourcesText(
+          Array.isArray(metadata.linked_resources) ? metadata.linked_resources.join('\n') : ''
+        )
         setBbox({
           minLon: metadata.bbox?.minLon ?? '',
           minLat: metadata.bbox?.minLat ?? '',
@@ -126,10 +139,6 @@ function EditMyDataset() {
     setAttributes((current) => current.filter((_, i) => i !== index))
   }
 
-
-  // ===================================================
-  // UPLOAD EXCEL ATTRIBUTES (#5)
-  // ===================================================
 
   async function handleAttributeExcelUpload(event) {
 
@@ -176,6 +185,14 @@ function EditMyDataset() {
   }
 
 
+  // =====================================================
+  // FIX: sebelumnya di sini memanggil uploadMyDataset()
+  // (fungsi yang tidak di-import & bukan untuk edit), jadi
+  // tombol simpan selalu error. Sekarang benar memanggil
+  // updateMyDataset(id, ...) dan mengirim JSON biasa
+  // (bukan file — endpoint PATCH tidak menerima multipart).
+  // =====================================================
+
   async function handleSubmit(event) {
 
     event.preventDefault()
@@ -196,16 +213,24 @@ function EditMyDataset() {
         buildExtraMetadata({
           resourceType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
+          embedUrl,
+          linkedResources: linkedResourcesText.split('\n'),
         })
 
-      await updateMyDataset(id, {
+      const payload = {
         title,
         abstract,
         category: finalCategory,
         keywords,
         external_url: externalUrl || null,
         extra_metadata: extraMetadata,
-      })
+      }
+
+      if (resourceType === 'informasi') {
+        payload.sub_type = subType
+      }
+
+      await updateMyDataset(id, payload)
 
       window.alert('Data berhasil diperbarui.')
       navigate('/dashboard/datasets')
@@ -317,10 +342,34 @@ function EditMyDataset() {
                   <small>Jenis resource hanya bisa diubah oleh admin.</small>
                 </div>
 
+                {resourceType === 'informasi' && (
+                  <div className="admin-form-group">
+                    <label>Jenis Informasi</label>
+                    <select value={subType} onChange={(e) => setSubType(e.target.value)} disabled={isPublished}>
+                      {INFORMASI_SUBTYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <p style={{ fontSize: '13px', opacity: 0.7 }}>
+                  File dan gambar sampul tidak bisa diubah lewat halaman edit.
+                  Kalau ingin mengganti file, hapus data ini dan unggah ulang.
+                </p>
+
                 <div className="admin-form-group">
                   <label>Link / URL (opsional)</label>
                   <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} disabled={isPublished} />
                 </div>
+
+                {supportsEmbedUrl(resourceType) && (
+                  <div className="admin-form-group">
+                    <label>Embed URL (opsional)</label>
+                    <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} disabled={isPublished} placeholder="https://..." />
+                    <small>Kalau diisi, halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini.</small>
+                  </div>
+                )}
 
                 <div className="admin-form-group">
                   <label>Judul</label>
@@ -339,20 +388,21 @@ function EditMyDataset() {
                     {CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
                     <option value="__custom__">Lainnya...</option>
                   </select>
-                    {category === '__custom__' && (
-                      <>
-                        <input
-                          type="text"
-                          style={{ marginTop: '8px' }}
-                          value={customCategory}
-                          onChange={(e) => setCustomCategory(e.target.value)}
-                          placeholder="Ketik kategori baru"
-                        />
-                        <small style={{ display: 'block', marginTop: '4px' }}>
-                          Gunakan bahasa Indonesia untuk kategori baru ini.
-                        </small>
-                      </>
-                    )}
+                  {category === '__custom__' && (
+                    <>
+                      <input
+                        type="text"
+                        style={{ marginTop: '8px' }}
+                        value={customCategory}
+                        onChange={(e) => setCustomCategory(e.target.value)}
+                        placeholder="Ketik kategori baru"
+                        disabled={isPublished}
+                      />
+                      <small style={{ display: 'block', marginTop: '4px' }}>
+                        Gunakan bahasa Indonesia untuk kategori baru ini.
+                      </small>
+                    </>
+                  )}
                 </div>
 
                 <div className="admin-form-group">
@@ -364,10 +414,16 @@ function EditMyDataset() {
             </section>
 
 
-            {resourceType === 'dataset' && (
+            {supportsExtraMetadataForm(resourceType) && (
 
               <section className="admin-panel">
-                <div className="admin-panel-header"><h2>Metadata Dataset</h2></div>
+
+                <div className="admin-panel-header">
+                  <div>
+                    <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'}</h2>
+                  </div>
+                </div>
+
                 <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                   <div className="admin-form-group">
@@ -405,33 +461,49 @@ function EditMyDataset() {
                     <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} disabled={isPublished} />
                   </div>
 
-                  <div className="admin-form-group">
-                    <label>Bounding Box (WGS84)</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      {DATASET_BBOX_FIELDS.map((field) => {
-                        const shortKey =
-                          field.key
-                            .replace('bbox_min_lon', 'minLon')
-                            .replace('bbox_min_lat', 'minLat')
-                            .replace('bbox_max_lon', 'maxLon')
-                            .replace('bbox_max_lat', 'maxLat')
+                  {supportsBboxLocation(resourceType) && (
+                    <div className="admin-form-group">
+                      <label>Bounding Box (WGS84)</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        {DATASET_BBOX_FIELDS.map((field) => {
+                          const shortKey =
+                            field.key
+                              .replace('bbox_min_lon', 'minLon')
+                              .replace('bbox_min_lat', 'minLat')
+                              .replace('bbox_max_lon', 'maxLon')
+                              .replace('bbox_max_lat', 'maxLat')
 
-                        return (
-                          <input
-                            key={field.key}
-                            type="number"
-                            step="any"
-                            placeholder={field.label}
-                            value={bbox[shortKey] || ''}
-                            disabled={isPublished}
-                            onChange={(e) => setBbox((current) => ({ ...current, [shortKey]: e.target.value }))}
-                          />
-                        )
-                      })}
+                          return (
+                            <input
+                              key={field.key}
+                              type="number"
+                              step="any"
+                              placeholder={field.label}
+                              value={bbox[shortKey] || ''}
+                              disabled={isPublished}
+                              onChange={(e) => setBbox((current) => ({ ...current, [shortKey]: e.target.value }))}
+                            />
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {supportsLinkedResources(resourceType) && (
+                    <div className="admin-form-group">
+                      <label>Linked Resources (opsional)</label>
+                      <textarea
+                        rows={4}
+                        value={linkedResourcesText}
+                        onChange={(e) => setLinkedResourcesText(e.target.value)}
+                        disabled={isPublished}
+                        placeholder={'Satu item per baris'}
+                      />
+                    </div>
+                  )}
 
                 </div>
+
               </section>
 
             )}
@@ -449,23 +521,13 @@ function EditMyDataset() {
 
                   {!isPublished && (
 
-                    <div
-                      className="admin-panel-actions"
-                      style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
-                    >
+                    <div className="admin-panel-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
 
-                      <button
-                        type="button"
-                        className="admin-secondary-button"
-                        onClick={downloadAttributeTemplate}
-                      >
+                      <button type="button" className="admin-secondary-button" onClick={downloadAttributeTemplate}>
                         ⬇ Unduh Template Excel
                       </button>
 
-                      <label
-                        className="admin-secondary-button"
-                        style={{ cursor: 'pointer', margin: 0 }}
-                      >
+                      <label className="admin-secondary-button" style={{ cursor: 'pointer', margin: 0 }}>
                         ⬆ Upload Excel
                         <input
                           type="file"

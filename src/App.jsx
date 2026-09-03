@@ -44,6 +44,11 @@ import WebGIS
 import Aplikasi
   from './pages/Aplikasi'
 
+import Peta from './pages/Peta'
+import PetaDetail from './pages/PetaDetail'
+import Dokumen from './pages/Dokumen'
+import DokumenDetail from './pages/DokumenDetail'
+
 import ApplicationDetail
   from './pages/ApplicationDetail'
 
@@ -62,7 +67,10 @@ import Pemberitahuan
   from './pages/Pemberitahuan'
 
 import EditMyDataset from './pages/user/EditMyDataset'
+import CreateDataset from './pages/user/CreateDataset'
+import CreateMap from './pages/user/CreateMap'
 
+import CreateDashboard from './pages/user/CreateDashboard'
 
 // =====================================================
 // AUTH
@@ -282,14 +290,38 @@ function App() {
               UPLOAD
           ================================================= */}
 
-          <Route
+                    <Route
             path="/dashboard/upload"
             element={
-
               <ProtectedRoute>
-
                 <UploadDataset />
+              </ProtectedRoute>
+            }
+          />
 
+          <Route
+            path="/dashboard/create-dataset"
+            element={
+              <ProtectedRoute>
+                <CreateDataset />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/create-map"
+            element={
+              <ProtectedRoute>
+                <CreateMap />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/create-dashboard"
+            element={
+              <ProtectedRoute>
+                <CreateDashboard />
               </ProtectedRoute>
             }
           />
@@ -385,6 +417,11 @@ function App() {
               </PublicPage>
             }
           />
+
+          <Route path="/peta" element={<PublicPage><Peta /></PublicPage>} />
+          <Route path="/peta/:id" element={<PublicPage><PetaDetail /></PublicPage>} />
+          <Route path="/dokumen" element={<PublicPage><Dokumen /></PublicPage>} />
+          <Route path="/dokumen/:id" element={<PublicPage><DokumenDetail /></PublicPage>} />
 
 
           {/* =================================================

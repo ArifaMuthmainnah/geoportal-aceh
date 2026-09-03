@@ -12,13 +12,20 @@ const {
 
 const router = express.Router()
 
+const ALLOWED_RESOURCE_TYPES = [
+  'dataset',
+  'dashboard',
+  'webgis',
+  'map',
+  'document',
+  'informasi',
+]
 
 const uploadDir = path.join(__dirname, '..', 'uploads')
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
 }
-
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
@@ -30,6 +37,10 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
+const uploadWithThumbnail = upload.fields([
+  { name: 'base_file', maxCount: 10 },
+  { name: 'thumbnail', maxCount: 1 },
+])
 
 function deleteFileByName(filename) {
   if (!filename) return
@@ -45,6 +56,7 @@ function deleteUploadedFiles(files) {
 }
 
 function deleteDatasetFiles(dataset) {
+  if (dataset.thumbnail_path) deleteFileByName(dataset.thumbnail_path)
   if (dataset.files_json) {
     try {
       const filesList = JSON.parse(dataset.files_json)
@@ -57,13 +69,14 @@ function deleteDatasetFiles(dataset) {
   if (dataset.file_path) deleteFileByName(dataset.file_path)
 }
 
-
 // =====================================================
 // DATASET PUBLIK
 // =====================================================
 
 router.get('/published', async (req, res) => {
+
   try {
+
     const datasets =
       await db.prepare(`
         SELECT d.*, u.username AS owner_username, u.avatar_url AS owner_avatar_url
@@ -71,21 +84,40 @@ router.get('/published', async (req, res) => {
         WHERE d.is_published = 1
         ORDER BY d.created_at DESC
       `).all()
+
     return res.json({ success: true, datasets })
+
   } catch (error) {
+
     console.error('GET PUBLISHED DATASETS ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil dataset publik.' })
+
   }
+
 })
 
 
-router.get('/public/:resourceType', async (req, res) => {
-  try {
-    const resourceType = String(req.params.resourceType).trim().toLowerCase()
-    const allowedTypes = ['dataset', 'dashboard', 'webgis']
+// =====================================================
+// RESOURCE PUBLIK BERDASARKAN TYPE
+// =====================================================
+//
+// FIX (#3): daftar allowedTypes sekarang memakai konstanta
+// bersama ALLOWED_RESOURCE_TYPES, sehingga map/document/
+// informasi tidak lagi ditolak dengan 400.
+//
+// =====================================================
 
-    if (!allowedTypes.includes(resourceType)) {
+router.get('/public/:resourceType', async (req, res) => {
+
+  try {
+
+    const resourceType = String(req.params.resourceType).trim().toLowerCase()
+
+    if (!ALLOWED_RESOURCE_TYPES.includes(resourceType)) {
+
       return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
+
     }
 
     const datasets =
@@ -97,17 +129,27 @@ router.get('/public/:resourceType', async (req, res) => {
       `).all(resourceType)
 
     return res.json({ success: true, resource_type: resourceType, datasets })
+
   } catch (error) {
+
     console.error('GET PUBLIC RESOURCE TYPE ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil data resource.' })
+
   }
+
 })
 
 
 router.get('/public/detail/:id', async (req, res) => {
+
   try {
+
     const id = Number(req.params.id)
-    if (!Number.isInteger(id)) return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
 
     const dataset =
       await db.prepare(`
@@ -121,10 +163,15 @@ router.get('/public/detail/:id', async (req, res) => {
     }
 
     return res.json({ success: true, dataset })
+
   } catch (error) {
+
     console.error('GET PUBLIC DETAIL ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil detail data.' })
+
   }
+
 })
 
 
@@ -132,9 +179,14 @@ router.use(authenticateToken)
 
 
 router.get('/mine/detail/:id', async (req, res) => {
+
   try {
+
     const id = Number(req.params.id)
-    if (!Number.isInteger(id)) return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
 
     const dataset =
       await db.prepare(`
@@ -143,25 +195,39 @@ router.get('/mine/detail/:id', async (req, res) => {
         WHERE d.id = $1
       `).get(id)
 
-    if (!dataset) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
 
     const isOwner = Number(dataset.owner_id) === Number(req.user.id)
     const isAdmin = req.user.role === 'admin'
 
-    if (!isOwner && !isAdmin) return res.status(403).json({ success: false, message: 'Tidak punya izin melihat data ini.' })
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Tidak punya izin melihat data ini.' })
+    }
 
     return res.json({ success: true, dataset })
+
   } catch (error) {
+
     console.error('GET MINE DETAIL ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil detail data.' })
+
   }
+
 })
 
 
 router.get('/admin/detail/:id', requireAdmin, async (req, res) => {
+
   try {
+
     const id = Number(req.params.id)
-    if (!Number.isInteger(id)) return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
 
     const dataset =
       await db.prepare(`
@@ -170,54 +236,58 @@ router.get('/admin/detail/:id', requireAdmin, async (req, res) => {
         WHERE d.id = $1
       `).get(id)
 
-    if (!dataset) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
 
     return res.json({ success: true, dataset })
+
   } catch (error) {
+
     console.error('GET ADMIN DETAIL ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil detail data.' })
+
   }
+
 })
 
 
 // =====================================================
 // UPLOAD RESOURCE
 // =====================================================
-//
-// #4: file dan link SEKARANG BOLEH DIISI BERSAMAAN,
-// tidak lagi harus pilih salah satu. content_type
-// dihitung otomatis: 'file' | 'link' | 'both'.
-// Minimal salah satu (file ATAU link) wajib diisi.
-//
-// =====================================================
 
-router.post('/', upload.array('base_file', 10), async (req, res) => {
+router.post('/', uploadWithThumbnail, async (req, res) => {
 
   try {
 
     const {
       title, abstract, resource_type, category, keywords,
-      external_url, extra_metadata
+      external_url, extra_metadata, sub_type
     } = req.body
 
-    const files = req.files || []
+    const files = req.files?.base_file || []
+    const thumbnailFile = req.files?.thumbnail?.[0] || null
+
     const hasExternalUrl = Boolean(external_url && external_url.trim())
     const hasFiles = files.length > 0
 
     if (!title || !title.trim()) {
       deleteUploadedFiles(files)
+      if (thumbnailFile) deleteFileByName(thumbnailFile.filename)
       return res.status(400).json({ success: false, message: 'Judul wajib diisi.' })
     }
 
     const normalizedResourceType = String(resource_type || 'dataset').trim().toLowerCase()
-    const allowedTypes = ['dataset', 'dashboard', 'webgis']
 
-    if (!allowedTypes.includes(normalizedResourceType)) {
+    if (!ALLOWED_RESOURCE_TYPES.includes(normalizedResourceType)) {
       deleteUploadedFiles(files)
+      if (thumbnailFile) deleteFileByName(thumbnailFile.filename)
       return res.status(400).json({ success: false, message: 'Jenis resource tidak valid.' })
     }
 
     if (!hasFiles && !hasExternalUrl) {
+      if (thumbnailFile) deleteFileByName(thumbnailFile.filename)
       return res.status(400).json({ success: false, message: 'Isi minimal salah satu: file atau link.' })
     }
 
@@ -233,8 +303,9 @@ router.post('/', upload.array('base_file', 10), async (req, res) => {
       await db.prepare(`
         INSERT INTO datasets
         (title, abstract, resource_type, category, keywords, file_path, file_name,
-         owner_id, is_published, content_type, external_url, extra_metadata, files_json)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,$9,$10,$11,$12)
+         owner_id, is_published, content_type, external_url, extra_metadata, files_json,
+         thumbnail_path, sub_type)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,$9,$10,$11,$12,$13,$14)
         RETURNING id
       `).run(
         title.trim(),
@@ -248,7 +319,9 @@ router.post('/', upload.array('base_file', 10), async (req, res) => {
         normalizedContentType,
         hasExternalUrl ? external_url.trim() : null,
         extra_metadata || null,
-        filesJson
+        filesJson,
+        thumbnailFile ? thumbnailFile.filename : null,
+        sub_type || null
       )
 
     return res.status(201).json({
@@ -258,35 +331,52 @@ router.post('/', upload.array('base_file', 10), async (req, res) => {
     })
 
   } catch (error) {
+
     console.error('UPLOAD RESOURCE ERROR:', error)
-    deleteUploadedFiles(req.files)
+
+    deleteUploadedFiles(req.files?.base_file)
+    if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
+
     return res.status(500).json({ success: false, message: 'Gagal mengunggah data.' })
+
   }
 
 })
 
 
 router.get('/mine', async (req, res) => {
+
   try {
+
     const datasets =
       await db.prepare(`
         SELECT d.*, u.username AS owner_username, u.avatar_url AS owner_avatar_url
         FROM datasets d LEFT JOIN users u ON u.id = d.owner_id
         WHERE d.owner_id = $1 ORDER BY d.created_at DESC
       `).all(req.user.id)
+
     return res.json({ success: true, datasets })
+
   } catch (error) {
+
     console.error('GET MY DATASETS ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil data milik saya.' })
+
   }
+
 })
 
 
 router.get('/mine/:resourceType', async (req, res) => {
+
   try {
+
     const resourceType = String(req.params.resourceType).trim().toLowerCase()
-    const allowedTypes = ['dataset', 'dashboard', 'webgis']
-    if (!allowedTypes.includes(resourceType)) return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
+
+    if (!ALLOWED_RESOURCE_TYPES.includes(resourceType)) {
+      return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
+    }
 
     const datasets =
       await db.prepare(`
@@ -297,34 +387,51 @@ router.get('/mine/:resourceType', async (req, res) => {
       `).all(req.user.id, resourceType)
 
     return res.json({ success: true, resource_type: resourceType, datasets })
+
   } catch (error) {
+
     console.error('GET MY RESOURCE TYPE ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil resource.' })
+
   }
+
 })
 
 
 router.get('/', requireAdmin, async (req, res) => {
+
   try {
+
     const datasets =
       await db.prepare(`
         SELECT d.*, u.username AS owner_username, u.avatar_url AS owner_avatar_url
         FROM datasets d LEFT JOIN users u ON u.id = d.owner_id
         ORDER BY d.created_at DESC
       `).all()
+
     return res.json({ success: true, datasets })
+
   } catch (error) {
+
     console.error('GET ALL DATASETS ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil semua data.' })
+
   }
+
 })
 
 
 router.get('/admin/:resourceType', requireAdmin, async (req, res) => {
+
   try {
+
     const resourceType = String(req.params.resourceType).trim().toLowerCase()
-    const allowedTypes = ['dataset', 'dashboard', 'webgis']
-    if (!allowedTypes.includes(resourceType)) return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
+
+    if (!ALLOWED_RESOURCE_TYPES.includes(resourceType)) {
+      return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
+    }
 
     const datasets =
       await db.prepare(`
@@ -335,31 +442,40 @@ router.get('/admin/:resourceType', requireAdmin, async (req, res) => {
       `).all(resourceType)
 
     return res.json({ success: true, resource_type: resourceType, datasets })
+
   } catch (error) {
+
     console.error('GET ADMIN RESOURCE TYPE ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal mengambil data resource.' })
+
   }
+
 })
 
-
-// =====================================================
-// EDIT / PUBLISH RESOURCE
-// =====================================================
 
 router.patch('/:id', async (req, res) => {
 
   try {
 
     const id = Number(req.params.id)
-    if (!Number.isInteger(id)) return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
 
     const dataset = await db.prepare(`SELECT * FROM datasets WHERE id = $1`).get(id)
-    if (!dataset) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
 
     const isOwner = Number(dataset.owner_id) === Number(req.user.id)
     const isAdmin = req.user.role === 'admin'
 
-    if (!isOwner && !isAdmin) return res.status(403).json({ success: false, message: 'Tidak punya izin mengubah data ini.' })
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: 'Tidak punya izin mengubah data ini.' })
+    }
 
     if (isOwner && !isAdmin && dataset.is_published) {
       return res.status(403).json({
@@ -370,7 +486,7 @@ router.patch('/:id', async (req, res) => {
 
     const {
       title, abstract, resource_type, category, keywords,
-      is_published, external_url, extra_metadata, remove_link
+      is_published, external_url, extra_metadata, remove_link, sub_type
     } = req.body
 
     const nextTitle = title !== undefined ? String(title).trim() : dataset.title
@@ -378,6 +494,7 @@ router.patch('/:id', async (req, res) => {
     const nextCategory = category !== undefined ? category : dataset.category
     const nextKeywords = keywords !== undefined ? keywords : dataset.keywords
     const nextExtraMetadata = extra_metadata !== undefined ? extra_metadata : dataset.extra_metadata
+    const nextSubType = sub_type !== undefined ? sub_type : dataset.sub_type
 
     const nextExternalUrl =
       remove_link ? null : (external_url !== undefined ? external_url : dataset.external_url)
@@ -389,12 +506,12 @@ router.patch('/:id', async (req, res) => {
       hasFiles && hasLink ? 'both' : (hasFiles ? 'file' : (hasLink ? 'link' : dataset.content_type))
 
     let nextResourceType = dataset.resource_type || 'dataset'
+
     if (isAdmin && resource_type !== undefined) {
       nextResourceType = String(resource_type).trim().toLowerCase()
     }
 
-    const allowedTypes = ['dataset', 'dashboard', 'webgis']
-    if (!allowedTypes.includes(nextResourceType)) {
+    if (!ALLOWED_RESOURCE_TYPES.includes(nextResourceType)) {
       return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
     }
 
@@ -404,49 +521,60 @@ router.patch('/:id', async (req, res) => {
     await db.prepare(`
       UPDATE datasets
       SET title=$1, abstract=$2, resource_type=$3, category=$4, keywords=$5,
-          is_published=$6, content_type=$7, external_url=$8, extra_metadata=$9
-      WHERE id=$10
+          is_published=$6, content_type=$7, external_url=$8, extra_metadata=$9,
+          sub_type=$10
+      WHERE id=$11
     `).run(
       nextTitle, nextAbstract, nextResourceType, nextCategory, nextKeywords,
-      nextPublished, nextContentType, nextExternalUrl, nextExtraMetadata, id
+      nextPublished, nextContentType, nextExternalUrl, nextExtraMetadata,
+      nextSubType, id
     )
 
     return res.json({ success: true, message: 'Data berhasil diperbarui.' })
 
   } catch (error) {
+
     console.error('UPDATE RESOURCE ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal memperbarui data.' })
+
   }
 
 })
 
-
-// =====================================================
-// HAPUS RESOURCE — #3: HANYA ADMIN, OPERATOR SAMA SEKALI
-// TIDAK BOLEH HAPUS (baik published maupun belum)
-// =====================================================
 
 router.delete('/:id', requireAdmin, async (req, res) => {
 
   try {
 
     const id = Number(req.params.id)
-    if (!Number.isInteger(id)) return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
 
     const dataset = await db.prepare(`SELECT * FROM datasets WHERE id = $1`).get(id)
-    if (!dataset) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
 
     deleteDatasetFiles(dataset)
 
     const result = await db.prepare(`DELETE FROM datasets WHERE id = $1`).run(id)
 
-    if (result.changes === 0) return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    if (result.changes === 0) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
 
     return res.json({ success: true, message: 'Data berhasil dihapus.' })
 
   } catch (error) {
+
     console.error('DELETE RESOURCE ERROR:', error)
+
     return res.status(500).json({ success: false, message: 'Gagal menghapus data.' })
+
   }
 
 })

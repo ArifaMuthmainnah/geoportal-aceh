@@ -43,6 +43,9 @@ export function adaptOwnResource(item) {
   const hasLink = Boolean(item.external_url)
   const hasFiles = fileList.length > 0
 
+  // #1: gambar sampul untuk card
+  const thumbnailUrl = buildOwnFileUrl(item.thumbnail_path)
+
   const fileLinks =
     fileList.map((f) => ({
       name: f.file_name || 'File',
@@ -56,8 +59,9 @@ export function adaptOwnResource(item) {
       ? [{ name: 'Link Sumber', link_type: 'data', url: item.external_url, extension: 'LINK' }]
       : []
 
-  // Prioritas embed: link eksternal (dashboard/webgis pihak ketiga)
-  const embedUrl = hasLink ? item.external_url : null
+  // #9: embed_url manual dari form (dataset/map/dashboard)
+  // diprioritaskan, baru fallback ke link eksternal
+  const embedUrl = metadata.embed_url || (hasLink ? item.external_url : null)
 
   // detail_url: link kalau ada, kalau tidak file pertama
   const detailUrl = hasLink ? item.external_url : buildOwnFileUrl(fileList[0]?.file_path)
@@ -101,17 +105,27 @@ export function adaptOwnResource(item) {
     file_path: fileList[0]?.file_path,
     external_url: item.external_url,
 
-    srid: metadata.srid,
+        srid: metadata.srid,
     attribution: metadata.attribution,
     purpose: metadata.purpose,
     supplemental_information: metadata.supplemental_information,
     constraints_other: metadata.constraints_other,
     extent,
     language: metadata.language,
+    license: metadata.license,
+    group: metadata.group,
+    date_type: metadata.date_type,
+
+    thumbnail_url: thumbnailUrl,
 
     download_url: hasFiles ? buildOwnFileUrl(fileList[0]?.file_path) : null,
 
     links: [...linkEntries, ...fileLinks],
+
+    // #8: untuk halaman detail Peta (tab Linked Resources)
+    _linked_resources: Array.isArray(metadata.linked_resources) ? metadata.linked_resources : [],
+
+    sub_type: item.sub_type || null,
 
     embed_url: embedUrl,
     detail_url: detailUrl,

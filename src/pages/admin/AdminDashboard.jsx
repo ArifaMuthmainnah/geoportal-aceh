@@ -41,11 +41,16 @@ import {
 } from '../../context/AuthContext'
 
 import {
+  RESOURCE_TYPE_OPTIONS,
+  INFORMASI_SUBTYPE_OPTIONS,
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
   supportsAttributeTable,
+  supportsBboxLocation,
+  supportsLinkedResources,
+  supportsEmbedUrl,
+  supportsExtraMetadataForm,
   buildExtraMetadata,
-  parseExtraMetadata,
 } from '../../utils/resourceFields'
 
 import {
@@ -104,7 +109,12 @@ function normalizeLocalRow(item) {
     date: item.created_at,
     published: Boolean(item.is_published),
     typeLabel:
-      item.resource_type === 'dashboard' ? 'Dashboard' : item.resource_type === 'webgis' ? 'WebGIS' : 'Dataset',
+      item.resource_type === 'dashboard' ? 'Dashboard'
+      : item.resource_type === 'webgis' ? 'WebGIS'
+      : item.resource_type === 'map' ? 'Peta'
+      : item.resource_type === 'document' ? 'Dokumen'
+      : item.resource_type === 'informasi' ? `Informasi (${item.sub_type || '-'})`
+      : 'Dataset',
     resourceType: item.resource_type || 'dataset',
     raw: item,
   }
@@ -127,13 +137,20 @@ function AdminDashboard() {
   const [localDatasets, setLocalDatasets] = useState([])
   const [users, setUsers] = useState([])
 
+  const [files, setFiles] = useState([])
+  const [thumbnailFile, setThumbnailFile] = useState(null)
+  const [externalUrl, setExternalUrl] = useState('')
+  const [embedUrl, setEmbedUrl] = useState('')
+  const [subType, setSubType] = useState('pemberitahuan')
+  const [linkedResourcesText, setLinkedResourcesText] = useState('')
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeMenu, setActiveMenu] = useState('dashboard')
 
   const [filterOpen, setFilterOpen] = useState(false)
-  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, webgis: true })
+  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
@@ -145,8 +162,25 @@ function AdminDashboard() {
 
   function toggleFilterPopover() {
     if (!filterOpen && filterButtonRef.current) {
+
       const rect = filterButtonRef.current.getBoundingClientRect()
-      setPopoverPos({ top: rect.bottom + 8, left: rect.left })
+      const popoverWidth = 320
+      const estimatedHeight = 420
+
+      // #10: kalau ruang di bawah tombol tidak cukup, buka
+      // ke ATAS supaya popover tidak terpotong layar/footer.
+      const spaceBelow = window.innerHeight - rect.bottom
+      const openUpward = spaceBelow < estimatedHeight && rect.top > estimatedHeight
+
+      const top = openUpward
+        ? Math.max(8, rect.top - estimatedHeight - 8)
+        : rect.bottom + 8
+
+      // Jangan sampai keluar sisi kanan layar
+      const left = Math.min(rect.left, window.innerWidth - popoverWidth - 16)
+
+      setPopoverPos({ top, left: Math.max(8, left) })
+
     }
     setFilterOpen((current) => !current)
   }
@@ -227,7 +261,16 @@ function AdminDashboard() {
     ]
   }, [allRows, users])
 
-  const filteredRows = useMemo(() => {
+    const activeFilterCount = useMemo(() => {
+      let count = 0
+      if (!filterType.dataset || !filterType.dashboard || !filterType.map || !filterType.document || !filterType.informasi) count++
+      if (!filterStatus.published || !filterStatus.unpublished) count++
+      if (filterCategory !== 'Semua') count++
+      if (filterInstansi !== 'Semua') count++
+      return count
+    }, [filterType, filterStatus, filterCategory, filterInstansi])
+    
+    const filteredRows = useMemo(() => {
     const keyword = search.trim().toLowerCase()
     return allRows.filter((row) => {
       const matchSearch = !keyword || row.title.toLowerCase().includes(keyword)
@@ -578,8 +621,11 @@ function AdminDashboard() {
               <h1>Dashboard</h1>
               <p>Kelola data dan pengguna Geoportal Aceh.</p>
             </div>
-            <div className="admin-header-actions">
-              <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
+              <div className="admin-header-actions">
+                              <Link to="/dashboard/create-dataset" className="admin-secondary-button">+ Create Dataset</Link>
+              <Link to="/dashboard/create-map" className="admin-secondary-button">+ Create Map</Link>
+              <Link to="/dashboard/create-dashboard" className="admin-secondary-button">+ Create Dashboard</Link>
+                <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
                 ↻ {loading ? 'Memuat...' : 'Refresh'}
               </button>
               <Link to="/" className="admin-view-site">Lihat Website →</Link>
@@ -612,13 +658,12 @@ function AdminDashboard() {
               {/* =============================================
                   TOOLBAR — #5: filter (hamburger) di PALING KIRI,
                   jauh dari search box.
-              ============================================= */}
+                ============================================= */}
 
               <div
                 className="admin-toolbar"
                 style={{ display: 'flex', gap: '20px', alignItems: 'center', position: 'relative' }}
               >
-
                 <div style={{ position: 'relative' }}>
                   <button
                     ref={filterButtonRef}
@@ -626,18 +671,25 @@ function AdminDashboard() {
                     onClick={toggleFilterPopover}
                     title="Filter"
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
+                      display: 'flex', alignItems: 'center', gap: '8px', position: 'relative',
                       padding: '10px 14px', borderRadius: '8px',
                       border: '1px solid #d1d5db', background: filterOpen ? '#eef2ff' : '#fff',
                       cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '14px',
                     }}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <line x1="3" y1="6" x2="21" y2="6" />
-                      <line x1="3" y1="12" x2="21" y2="12" />
-                      <line x1="3" y1="18" x2="21" y2="18" />
+                    {/* #5: ikon corong filter (funnel), bukan hamburger */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4" />
                     </svg>
                     Filter
+                    {/* #10: titik hijau kecil menandakan ada filter aktif */}
+                    {activeFilterCount > 0 && (
+                      <span style={{
+                        position: 'absolute', top: '-3px', right: '-3px',
+                        width: '9px', height: '9px', borderRadius: '50%',
+                        background: '#22c55e', border: '2px solid #fff',
+                      }} />
+                    )}
                   </button>
 
                   {filterOpen && (
@@ -646,7 +698,7 @@ function AdminDashboard() {
                         position: 'fixed', top: popoverPos.top, left: popoverPos.left, zIndex: 1000,
                         background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
                         boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '16px', width: '320px',
-                        maxHeight: '70vh', overflowY: 'auto',
+                        maxHeight: 'min(70vh, 420px)', overflowY: 'auto',
                         display: 'flex', flexDirection: 'column', gap: '16px',
                       }}
                     >
@@ -654,7 +706,13 @@ function AdminDashboard() {
                       <div>
                         <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>TYPE</strong>
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {[{ key: 'dataset', label: 'Dataset' }, { key: 'dashboard', label: 'Dashboard' }, { key: 'webgis', label: 'WebGIS' }].map((option) => (
+                          {[
+                            { key: 'dataset', label: 'Dataset' },
+                            { key: 'dashboard', label: 'Dashboard' },
+                            { key: 'map', label: 'Peta' },
+                            { key: 'document', label: 'Dokumen' },
+                            { key: 'informasi', label: 'Informasi' },
+                          ].map((option) => (
                             <label key={option.key} style={{
                               display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
                               borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
@@ -702,10 +760,8 @@ function AdminDashboard() {
                       <button type="button" className="admin-secondary-button" onClick={() => setFilterOpen(false)}>
                         Terapkan
                       </button>
-
                     </div>
                   )}
-
                 </div>
 
                 <input
@@ -715,7 +771,6 @@ function AdminDashboard() {
                   onChange={(event) => setSearch(event.target.value)}
                   style={{ flex: 1 }}
                 />
-
               </div>
 
               {loading ? (
@@ -879,9 +934,10 @@ function AdminDashboard() {
                   <div className="admin-form-group">
                     <label>Jenis Resource</label>
                     <select value={datasetForm.resourceType} onChange={(e) => setDatasetForm((c) => ({ ...c, resourceType: e.target.value }))}>
-                      <option value="dataset">Dataset</option>
-                      <option value="dashboard">Dashboard / Aplikasi</option>
-                      <option value="webgis">WebGIS</option>
+                      {RESOURCE_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                      <option value="webgis">WebGIS (data lama)</option>
                     </select>
                   </div>
                 )}
@@ -933,7 +989,7 @@ function AdminDashboard() {
                   )}
                 </div>
 
-                {isLocalEditing && datasetForm.resourceType === 'dataset' && (
+                  {isLocalEditing && supportsExtraMetadataForm(datasetForm.resourceType) && (
 
                   <>
                     <div className="admin-form-group"><label>Wilayah / Region</label><input type="text" value={metadataForm.region} onChange={(e) => setMetadataForm((c) => ({ ...c, region: e.target.value }))} /></div>

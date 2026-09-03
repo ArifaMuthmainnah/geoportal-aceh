@@ -252,19 +252,48 @@ function UserDashboard() {
             </Link>
 
 
-            {/* UPLOAD */}
+                        {/* CREATE DATASET */}
+            <Link
+              to="/dashboard/create-dataset"
+              className="admin-sidebar-link"
+            >
+              <span>
+                ◈
+              </span>
+              Create Dataset
+            </Link>
 
+            {/* CREATE DASHBOARD */}
+            <Link
+              to="/dashboard/create-dashboard"
+              className="admin-sidebar-link"
+            >
+              <span>
+                ▥
+              </span>
+              Create Dashboard
+            </Link>
+
+            {/* CREATE DASHBOARD */}
+            <Link
+              to="/dashboard/create-dashboard"
+              className="admin-sidebar-link"
+            >
+              <span>
+                ▥
+              </span>
+              Create Dashboard
+            </Link>
+
+            {/* UPLOAD */}
             <Link
               to="/dashboard/upload"
               className="admin-sidebar-link"
             >
-
               <span>
                 ⬆
               </span>
-
-              Upload
-
+              Upload Lainnya
             </Link>
 
 

@@ -133,6 +133,14 @@ function Navbar() {
               WebGIS
             </NavLink>
 
+            <NavLink className="nav-link" to="/peta" style={navLinkStyle}>
+              Peta
+            </NavLink>
+
+            <NavLink className="nav-link" to="/dokumen" style={navLinkStyle}>
+              Dokumen
+            </NavLink>
+
             <NavLink className="nav-link" to="/aplikasi" style={navLinkStyle}>
               Aplikasi
             </NavLink>

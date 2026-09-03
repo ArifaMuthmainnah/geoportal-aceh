@@ -6,9 +6,14 @@ import { useAuth } from '../../context/AuthContext'
 
 import {
   RESOURCE_TYPE_OPTIONS,
+  INFORMASI_SUBTYPE_OPTIONS,
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
   supportsAttributeTable,
+  supportsBboxLocation,
+  supportsLinkedResources,
+  supportsEmbedUrl,
+  supportsExtraMetadataForm,
   buildExtraMetadata,
 } from '../../utils/resourceFields'
 
@@ -16,6 +21,11 @@ import {
   downloadAttributeTemplate,
   parseAttributeExcel,
 } from '../../utils/attributeExcel'
+
+import {
+  extractDbfFieldNames,
+  findDbfFile,
+} from '../../utils/shapefileFields'
 
 
 function UploadDataset() {
@@ -31,7 +41,11 @@ function UploadDataset() {
   const [keywords, setKeywords] = useState('')
 
   const [files, setFiles] = useState([])
+  const [thumbnailFile, setThumbnailFile] = useState(null)
   const [externalUrl, setExternalUrl] = useState('')
+  const [embedUrl, setEmbedUrl] = useState('')
+  const [subType, setSubType] = useState('pemberitahuan')
+  const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
   const [language, setLanguage] = useState('Indonesia')
@@ -150,13 +164,17 @@ function UploadDataset() {
         buildExtraMetadata({
           resourceType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
+          embedUrl,
+          linkedResources: linkedResourcesText.split('\n'),
         })
 
       await uploadMyDataset({
         files,
+        thumbnailFile,
         title,
         abstract,
         resourceType,
+        subType: resourceType === 'informasi' ? subType : undefined,
         category: finalCategory,
         keywords,
         externalUrl,
@@ -299,12 +317,79 @@ function UploadDataset() {
                     </select>
                   </div>
 
+                  {resourceType === 'informasi' && (
+                    <div className="admin-form-group">
+                      <label>Jenis Informasi</label>
+                      <select value={subType} onChange={(e) => setSubType(e.target.value)}>
+                        {INFORMASI_SUBTYPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* #1: gambar sampul, muncul di card semua jenis resource */}
+                  <div className="admin-form-group">
+                    <label>Gambar Sampul / Thumbnail (opsional)</label>
+                    <input type="file" accept="image/*" onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)} />
+                    <small>Gambar ini yang akan tampil di bagian atas card, seperti data dari API lama.</small>
+                  </div>
+
                   <div className="admin-form-group">
                     <label>File (opsional, bisa pilih lebih dari satu)</label>
-                    <input type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files || []))} />
+                    <input
+                      type="file"
+                      multiple
+                      onChange={async (e) => {
+
+                        const selectedFiles = Array.from(e.target.files || [])
+                        setFiles(selectedFiles)
+
+                        // Kalau ada .dbf (bagian dari shapefile) dan
+                        // resource type-nya dataset, otomatis tarik
+                        // nama kolomnya jadi baris Attributes.
+                        if (resourceType === 'dataset') {
+
+                          const dbfFile = findDbfFile(selectedFiles)
+
+                          if (dbfFile) {
+
+                            try {
+
+                              const fieldNames = await extractDbfFieldNames(dbfFile)
+
+                              if (fieldNames.length > 0) {
+
+                                setAttributes((current) => [
+                                  ...current,
+                                  ...fieldNames.map((name) => ({ name, label: '', description: '' })),
+                                ])
+
+                                window.alert(
+                                  `${fieldNames.length} nama kolom berhasil ditarik otomatis dari ${dbfFile.name}. Silakan lengkapi Label/Description bila perlu.`
+                                )
+
+                              }
+
+                            } catch (err) {
+
+                              console.error('Gagal membaca .dbf:', err)
+
+                            }
+
+                          }
+
+                        }
+
+                      }}
+                    />
                     {files.length > 0 && (
                       <small>{files.length} file dipilih: {files.map((f) => f.name).join(', ')}</small>
                     )}
+                    <small style={{ display: 'block', marginTop: '4px' }}>
+                      Untuk data spasial, unggah file shapefile lengkap (.shp, .dbf, .prj, .shx) sekaligus —
+                      nama kolom akan otomatis ditarik dari .dbf ke tabel Attributes di bawah.
+                    </small>
                   </div>
 
                   <div className="admin-form-group">
@@ -312,6 +397,14 @@ function UploadDataset() {
                     <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
                     <small>Isi minimal salah satu: file atau link. Boleh isi keduanya.</small>
                   </div>
+
+                  {supportsEmbedUrl(resourceType) && (
+                    <div className="admin-form-group">
+                      <label>Embed URL (opsional)</label>
+                      <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                      <small>Halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini.</small>
+                    </div>
+                  )}
 
                   <div className="admin-form-group">
                     <label>Judul</label>
@@ -363,13 +456,13 @@ function UploadDataset() {
               </section>
 
 
-              {resourceType === 'dataset' && (
+              {supportsExtraMetadataForm(resourceType) && (
 
                 <section className="admin-panel">
 
                   <div className="admin-panel-header">
                     <div>
-                      <h2>Metadata Dataset</h2>
+                      <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'}</h2>
                       <p>Diisi agar tab Info & Location di halaman detail bisa lengkap.</p>
                     </div>
                   </div>
@@ -411,6 +504,7 @@ function UploadDataset() {
                       <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} />
                     </div>
 
+                    {supportsBboxLocation(resourceType) && (
                     <div className="admin-form-group">
                       <label>Bounding Box (WGS84) — opsional</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -432,9 +526,23 @@ function UploadDataset() {
                               onChange={(e) => setBbox((current) => ({ ...current, [shortKey]: e.target.value }))}
                             />
                           )
-                        })}
+                                                })}
                       </div>
                     </div>
+                    )}
+
+                    {supportsLinkedResources(resourceType) && (
+                      <div className="admin-form-group">
+                        <label>Linked Resources (opsional)</label>
+                        <textarea
+                          rows={4}
+                          value={linkedResourcesText}
+                          onChange={(e) => setLinkedResourcesText(e.target.value)}
+                          placeholder={'Satu item per baris, contoh:\nPeta Fasilitas Perlengkapan Jalan\nRELKA_LN_25K\nHALTE_PT_25K'}
+                        />
+                        <small>Daftar layer/dataset terkait yang ditampilkan di tab "Linked Resources" halaman detail peta.</small>
+                      </div>
+                    )}
 
                   </div>
 
