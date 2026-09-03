@@ -157,8 +157,17 @@ function JIGNDetail() {
             ===================================================== */}
 
             <span
-              className="application-detail-category"
-              style={{ display: 'inline-block', marginTop: '10px' }}
+              style={{
+                display: 'inline-block',
+                width: 'fit-content',
+                marginTop: '10px',
+                padding: '6px 16px',
+                borderRadius: '999px',
+                background: 'rgba(255,255,255,0.15)',
+                fontSize: '13px',
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+              }}
             >
               {displayName || 'Instansi'}
             </span>

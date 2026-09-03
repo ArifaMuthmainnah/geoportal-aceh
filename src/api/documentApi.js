@@ -1,4 +1,4 @@
-import { apiGet, apiGetAll, } from './apiClient'
+import { apiGet, apiGetAll } from './apiClient'
 
 export function getDocuments(query = '') {
   return apiGet(`documents${query}`)
@@ -6,4 +6,8 @@ export function getDocuments(query = '') {
 
 export function getAllDocuments() {
   return apiGetAll('documents')
+}
+
+export function getDocumentDetail(id) {
+  return apiGet(`documents/${id}`)
 }

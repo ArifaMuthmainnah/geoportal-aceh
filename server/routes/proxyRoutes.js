@@ -199,10 +199,14 @@ router.get('/datasets', async (req, res) => {
         overridesMap
       )
 
-    return res.json({
-      ...data,
-      results,
-    })
+    // PENTING: timpa juga field ASLI-nya (datasets), bukan
+    // cuma menambahkan field "results". Kalau tidak, halaman
+    // yang membaca response.datasets akan tetap dapat data
+    // mentah yang belum difilter override.
+    const responseBody = { ...data, results }
+    if (data.datasets !== undefined) responseBody.datasets = results
+
+    return res.json(responseBody)
 
   } catch (error) {
 
@@ -307,10 +311,10 @@ router.get('/geoapps', async (req, res) => {
         overridesMap
       )
 
-    return res.json({
-      ...data,
-      results,
-    })
+    const responseBody = { ...data, results }
+    if (data.geoapps !== undefined) responseBody.geoapps = results
+
+    return res.json(responseBody)
 
   } catch (error) {
 
@@ -489,6 +493,56 @@ router.get('/documents', async (req, res) => {
       success: false,
       message:
         'Gagal mengambil dokumen dari API lama.',
+    })
+
+  }
+
+})
+
+// =====================================================
+// MAPS - DETAIL
+// =====================================================
+
+router.get('/maps/:id', async (req, res) => {
+
+  try {
+
+    const data = await fetchOldApi(`/maps/${req.params.id}`)
+
+    return res.json(data)
+
+  } catch (error) {
+
+    console.error('PROXY MAP DETAIL ERROR:', error.message)
+
+    return res.status(502).json({
+      success: false,
+      message: 'Gagal mengambil detail peta dari API lama.',
+    })
+
+  }
+
+})
+
+// =====================================================
+// DOCUMENTS - DETAIL
+// =====================================================
+
+router.get('/documents/:id', async (req, res) => {
+
+  try {
+
+    const data = await fetchOldApi(`/documents/${req.params.id}`)
+
+    return res.json(data)
+
+  } catch (error) {
+
+    console.error('PROXY DOCUMENT DETAIL ERROR:', error.message)
+
+    return res.status(502).json({
+      success: false,
+      message: 'Gagal mengambil detail dokumen dari API lama.',
     })
 
   }

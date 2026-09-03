@@ -1,74 +1,63 @@
-import { useState } from 'react'
-import agendas from '../data/agendas'
+import { useEffect, useState } from 'react'
+import { getPublishedByType } from '../api/myDatasetApi'
+import { stripHtml } from '../utils/datasetUtils'
 
 function Agenda() {
+
+  const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('Semua')
+  const [loading, setLoading] = useState(true)
 
-  const categories = [
-    'Semua',
-    'GEOPORTAL',
-    'INFRASTRUKTUR',
-    'JIGN',
-    'SDM',
-  ]
+  useEffect(() => {
 
-  const filteredAgendas = agendas.filter((item) => {
+    async function fetchData() {
+
+      try {
+
+        setLoading(true)
+
+        const allInformasi = await getPublishedByType('informasi')
+
+        setItems(
+          allInformasi
+            .filter((item) => item.sub_type === 'agenda')
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        )
+
+      } catch (err) {
+
+        console.error('Gagal mengambil agenda:', err)
+        setItems([])
+
+      } finally {
+
+        setLoading(false)
+
+      }
+
+    }
+
+    fetchData()
+
+  }, [])
+
+  const filteredItems = items.filter((item) => {
     const keyword = search.toLowerCase().trim()
-
-    const matchSearch =
-      item.title.toLowerCase().includes(keyword) ||
-      item.description.toLowerCase().includes(keyword)
-
-    const matchCategory =
-      category === 'Semua' ||
-      item.category === category
-
-    return matchSearch && matchCategory
+    return !keyword || (item.title || '').toLowerCase().includes(keyword)
   })
 
   return (
     <main className="information-page">
 
-      {/* Header */}
       <section className="information-header">
-
         <div className="container information-header-inner">
-
-          <div className="information-breadcrumb">
-
-            <span className="text-muted">
-              Informasi
-            </span>
-
-            <span className="text-muted mx-2">
-              /
-            </span>
-
-            <span className="current">
-              Agenda
-            </span>
-
-          </div>
-
-          <h1>
-            Agenda
-          </h1>
-
-          <p>
-            Informasi agenda dan kegiatan terkait geospasial Aceh.
-          </p>
-
+          <h1>Agenda</h1>
+          <p>Informasi agenda dan kegiatan terkait geospasial Aceh.</p>
         </div>
-
       </section>
 
-
-      {/* Search */}
       <section className="container information-toolbar-wrapper">
-
         <div className="information-toolbar">
-
           <input
             type="text"
             className="information-search"
@@ -76,143 +65,40 @@ function Agenda() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-
-          <small className="information-result-count">
-            Menampilkan {filteredAgendas.length} agenda
-          </small>
-
+          <small className="information-result-count">Menampilkan {filteredItems.length} agenda</small>
         </div>
-
       </section>
 
-
-      {/* Content */}
       <section className="container information-content">
 
-        {/* Heading + Filter */}
-        <div className="information-section-heading">
+        {loading && <div className="information-empty"><p>Memuat agenda...</p></div>}
 
-          <div>
-
-            <h2>
-              Agenda Terbaru
-            </h2>
-
-            <p>
-              Temukan agenda berdasarkan kategori informasi.
-            </p>
-
-          </div>
-
-
-          <div className="information-categories">
-
-            {categories.map((item) => (
-
-              <button
-                key={item}
-                type="button"
-                className={`information-category ${
-                  category === item ? 'active' : ''
-                }`}
-                onClick={() => setCategory(item)}
-              >
-                {item}
-              </button>
-
-            ))}
-
-          </div>
-
-        </div>
-
-
-        {/* Agenda Cards */}
-        {filteredAgendas.length > 0 ? (
-
-          <div className="information-list">
-
-            {filteredAgendas.map((item) => (
-
-              <article
-                className="information-card"
-                key={item.id}
-              >
-
-                {/* Visual */}
-                <div className="information-card-visual">
-
-                  <div className="information-card-label">
-
-                    AGENDA
-
-                    <small>
-                      GEOPORTAL ACEH
-                    </small>
-
-                  </div>
-
-                </div>
-
-
-                {/* Content */}
-                <div className="information-card-body">
-
-                  <div className="information-card-meta">
-
-                    <span className="information-card-category">
-                      {item.category}
-                    </span>
-
-                    <span className="information-card-date">
-                      {item.date}
-                    </span>
-
-                  </div>
-
-
-                  <h5 className="information-card-title">
-                    {item.title}
-                  </h5>
-
-
-                  <p className="information-card-description">
-                    {item.description}
-                  </p>
-
-
-                  <button
-                    type="button"
-                    className="information-card-link"
-                  >
-                    Lihat agenda
-                    <span>
-                      →
-                    </span>
-                  </button>
-
-                </div>
-
-              </article>
-
-            ))}
-
-          </div>
-
-        ) : (
-
+        {!loading && filteredItems.length === 0 && (
           <div className="information-empty">
-
-            <h5>
-              Agenda tidak ditemukan
-            </h5>
-
-            <p>
-              Coba gunakan kata kunci atau kategori yang berbeda.
-            </p>
-
+            <h5>Belum ada agenda</h5>
+            <p>Agenda yang diunggah dan dipublikasikan admin akan tampil di sini.</p>
           </div>
+        )}
 
+        {!loading && filteredItems.length > 0 && (
+          <div className="information-list">
+            {filteredItems.map((item) => (
+              <article className="information-card" key={item.id}>
+                <div className="information-card-visual">
+                  <div className="information-card-label">AGENDA<small>GEOPORTAL ACEH</small></div>
+                </div>
+                <div className="information-card-body">
+                  <div className="information-card-meta">
+                    <span className="information-card-date">
+                      {item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID') : '-'}
+                    </span>
+                  </div>
+                  <h5 className="information-card-title">{item.title}</h5>
+                  <p className="information-card-description">{stripHtml(item.abstract || '')}</p>
+                </div>
+              </article>
+            ))}
+          </div>
         )}
 
       </section>

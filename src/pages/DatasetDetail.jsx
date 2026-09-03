@@ -1554,24 +1554,38 @@ function DatasetDetail() {
               )}
 
 
-              {dataset.constraints_other && (
-
+                            {dataset.constraints_other && (
                 <div className="dataset-info-item dataset-info-item-full">
-
                   <span className="dataset-info-label">
                     Constraints
                   </span>
-
                   <span className="dataset-info-value">
-
                     {stripHtml(
                       dataset.constraints_other
                     )}
-
                   </span>
-
                 </div>
+              )}
 
+              {dataset.license && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">License</span>
+                  <span className="dataset-info-value">{dataset.license}</span>
+                </div>
+              )}
+
+              {dataset.group && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">Group</span>
+                  <span className="dataset-info-value">{dataset.group}</span>
+                </div>
+              )}
+
+              {dataset.date_type && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">Date Type</span>
+                  <span className="dataset-info-value">{dataset.date_type}</span>
+                </div>
               )}
 
             </div>

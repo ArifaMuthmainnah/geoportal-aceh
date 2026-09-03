@@ -287,6 +287,20 @@ async function initializeDatabase() {
   //
   // ---------------------------------------------------
 
+    // Kolom thumbnail (#1) dan sub_type (#11, untuk
+  // membedakan pemberitahuan/agenda/berita pada resource
+  // type 'informasi')
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS thumbnail_path TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE datasets
+    ADD COLUMN IF NOT EXISTS sub_type TEXT
+  `)
+
   await pool.query(`
     ALTER TABLE datasets
     DROP CONSTRAINT IF EXISTS datasets_resource_type_check
@@ -299,7 +313,9 @@ async function initializeDatabase() {
       resource_type IN (
         'dataset',
         'dashboard',
-        'webgis'
+        'map',
+        'document',
+        'informasi'
       )
     )
   `)

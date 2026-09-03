@@ -53,7 +53,8 @@ import {
 import DatasetCard from '../components/DatasetCard'
 import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
-
+import HomeMapsSection from '../components/HomeMapsSection'
+import HomeDocumentsSection from '../components/HomeDocumentsSection'
 
 function Home() {
 
@@ -214,58 +215,43 @@ function Home() {
 
 
       // ===============================================
-      // MAPS (API LAMA) + WEBGIS SENDIRI
+      // MAPS (API LAMA) + PETA UPLOAD SENDIRI (#1)
       // ===============================================
-
-      let ownWebgisTotal = 0
-
+      
+      let ownMapTotal = 0
       try {
-
-        ownWebgisTotal =
-          (await getPublishedByType('webgis')).length
-
+        ownMapTotal =
+          (await getPublishedByType('map')).length
       } catch (err) {
-
         console.error(
-          'Gagal mengambil webgis sendiri:',
+          'Gagal mengambil peta sendiri:',
           err
         )
-
       }
-
       try {
-
         const response =
           await getMaps(
             '?page_size=1'
           )
-
         if (mounted) {
-
           const oldMapTotal =
             Number(
               response?.total ??
               response?.count ??
               0
             )
-
           setMapTotal(
-            oldMapTotal + ownWebgisTotal
+            oldMapTotal + ownMapTotal
           )
-
         }
-
       } catch (err) {
-
         console.error(
           'Gagal mengambil maps:',
           err
         )
-
         if (mounted) {
-          setMapTotal(ownWebgisTotal)
+          setMapTotal(ownMapTotal)
         }
-
       }
 
 
@@ -273,36 +259,43 @@ function Home() {
       // DOCUMENTS (API LAMA)
       // ===============================================
 
+            // ===============================================
+      // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
+      // ===============================================
+      let ownDocumentTotal = 0
       try {
-
+        ownDocumentTotal =
+          (await getPublishedByType('document')).length
+      } catch (err) {
+        console.error(
+          'Gagal mengambil dokumen sendiri:',
+          err
+        )
+      }
+      try {
         const response =
           await getDocuments(
             '?page_size=1'
           )
-
         if (mounted) {
-
-          setDocumentTotal(
+          const oldDocumentTotal =
             Number(
               response?.total ??
               response?.count ??
               0
             )
+          setDocumentTotal(
+            oldDocumentTotal + ownDocumentTotal
           )
-
         }
-
       } catch (err) {
-
         console.error(
           'Gagal mengambil documents:',
           err
         )
-
         if (mounted) {
-          setDocumentTotal(0)
+          setDocumentTotal(ownDocumentTotal)
         }
-
       }
 
 
@@ -1012,7 +1005,14 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
+
+
+      {/* =================================================
+          PETA
+      ================================================= */}
+
+      <HomeMapsSection />
 
 
       {/* =================================================
@@ -1191,13 +1191,19 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
+
+
+      {/* =================================================
+          DOKUMEN
+      ================================================= */}
+
+      <HomeDocumentsSection />
 
 
       {/* =================================================
           AGENCY
       ================================================= */}
-
       <section className="home-agency-section">
 
         <div className="container">
