@@ -178,6 +178,75 @@ router.get('/public/detail/:id', async (req, res) => {
 router.use(authenticateToken)
 
 
+// =====================================================
+// SESI 6: VISIBILITAS BERSAMA (ADMIN + OPERATOR)
+// Endpoint ini TIDAK memakai requireAdmin — dipakai supaya
+// operator bisa melihat SEMUA data (semua owner, semua status
+// publish) di Dashboard operator, mode lihat saja. Edit & hapus
+// tetap dibatasi lewat endpoint PATCH/DELETE di bawah.
+// =====================================================
+
+router.get('/all-visible', async (req, res) => {
+
+  try {
+
+    const datasets =
+      await db.prepare(`
+        SELECT d.*, u.username AS owner_username, u.avatar_url AS owner_avatar_url
+        FROM datasets d LEFT JOIN users u ON u.id = d.owner_id
+        ORDER BY d.created_at DESC
+      `).all()
+
+    return res.json({ success: true, datasets })
+
+  } catch (error) {
+
+    console.error('GET ALL VISIBLE DATASETS ERROR:', error)
+
+    return res.status(500).json({ success: false, message: 'Gagal mengambil semua data.' })
+
+  }
+
+})
+
+
+router.get('/view/:id', async (req, res) => {
+
+  try {
+
+    const id = Number(req.params.id)
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
+
+    const dataset =
+      await db.prepare(`
+        SELECT d.*, u.username AS owner_username, u.avatar_url AS owner_avatar_url
+        FROM datasets d LEFT JOIN users u ON u.id = d.owner_id
+        WHERE d.id = $1
+      `).get(id)
+
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
+
+    // Read-only: siapa pun yang sudah login boleh melihat data ini,
+    // walau belum dipublikasikan atau bukan miliknya. Tidak ada
+    // hak edit/hapus lewat endpoint ini.
+    return res.json({ success: true, dataset })
+
+  } catch (error) {
+
+    console.error('GET VIEW DATASET ERROR:', error)
+
+    return res.status(500).json({ success: false, message: 'Gagal mengambil detail data.' })
+
+  }
+
+})
+
+
 router.get('/mine/detail/:id', async (req, res) => {
 
   try {
@@ -278,18 +347,16 @@ router.post('/', uploadWithThumbnail, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Judul wajib diisi.' })
     }
 
-    const normalizedResourceType = String(resource_type || 'dataset').trim().toLowerCase()
-
-    if (!ALLOWED_RESOURCE_TYPES.includes(normalizedResourceType)) {
+    if (!hasFiles && !hasExternalUrl) {
       deleteUploadedFiles(files)
       if (thumbnailFile) deleteFileByName(thumbnailFile.filename)
-      return res.status(400).json({ success: false, message: 'Jenis resource tidak valid.' })
+      return res.status(400).json({ success: false, message: 'Unggah minimal satu file atau isi link URL.' })
     }
 
-    if (!hasFiles && !hasExternalUrl) {
-      if (thumbnailFile) deleteFileByName(thumbnailFile.filename)
-      return res.status(400).json({ success: false, message: 'Isi minimal salah satu: file atau link.' })
-    }
+    const normalizedResourceType =
+      ALLOWED_RESOURCE_TYPES.includes(String(resource_type).trim().toLowerCase())
+        ? String(resource_type).trim().toLowerCase()
+        : 'dataset'
 
     const normalizedContentType =
       hasFiles && hasExternalUrl ? 'both' : (hasFiles ? 'file' : 'link')

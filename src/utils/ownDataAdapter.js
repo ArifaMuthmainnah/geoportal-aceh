@@ -60,7 +60,10 @@ export function adaptOwnResource(item) {
       : []
 
   // #9: embed_url manual dari form (dataset/map/dashboard)
-  // diprioritaskan, baru fallback ke link eksternal
+  // diprioritaskan, baru fallback ke link eksternal — ini juga
+  // yang membuat resource "Aplikasi" (yang cuma punya link, tanpa
+  // embed_url tersimpan) otomatis memakai link aplikasinya sendiri
+  // sebagai sumber iframe.
   const embedUrl = metadata.embed_url || (hasLink ? item.external_url : null)
 
   // detail_url: link kalau ada, kalau tidak file pertama
@@ -116,6 +119,15 @@ export function adaptOwnResource(item) {
     group: metadata.group,
     date_type: metadata.date_type,
 
+    // SESI 6: tipe geometri hasil parsing shapefile (Titik/Garis/
+    // Poligon) — dipakai di field "Representation" tab Location.
+    spatial_representation_type: metadata.geometry_type || null,
+
+    // SESI 6: GeoJSON geometri asli hasil parsing .shp+.dbf,
+    // dipakai untuk render peta interaktif beneran di tab Location
+    // (DatasetDetail.jsx & PetaDetail.jsx). null kalau tidak ada.
+    _geojson: metadata.geojson || null,
+
     thumbnail_url: thumbnailUrl,
 
     download_url: hasFiles ? buildOwnFileUrl(fileList[0]?.file_path) : null,
@@ -126,6 +138,12 @@ export function adaptOwnResource(item) {
     _linked_resources: Array.isArray(metadata.linked_resources) ? metadata.linked_resources : [],
 
     sub_type: item.sub_type || null,
+
+    // Sesi 5 (lanjutan): jadwal Agenda — diisi manual oleh
+    // user saat upload, beda dari tanggal publish (item.date).
+    event_date: metadata.event_date || null,
+    event_time: metadata.event_time || null,
+    event_location: metadata.event_location || null,
 
     embed_url: embedUrl,
     detail_url: detailUrl,
@@ -167,6 +185,18 @@ export function adaptOwnOwner(user) {
     first_name: fullName,
     last_name: '',
     count: Number(user.count || 0),
+
+    // #8 (Sesi 4): rincian jumlah data per jenis resource,
+    // supaya halaman JIGN & JIGNDetail bisa menampilkan
+    // Dataset/Dashboard/Aplikasi/Peta/Dokumen/Informasi
+    // secara terpisah, bukan cuma total gabungan.
+    dataset_count: Number(user.dataset_count || 0),
+    dashboard_count: Number(user.dashboard_count || 0),
+    application_count: Number(user.application_count || 0),
+    map_count: Number(user.map_count || 0),
+    document_count: Number(user.document_count || 0),
+    informasi_count: Number(user.informasi_count || 0),
+
     avatar: buildOwnAvatarUrl(user.avatar_url),
     _source: 'own',
   }
@@ -174,7 +204,19 @@ export function adaptOwnOwner(user) {
 
 export function mergeOwnerLists(oldOwners = [], ownUsers = []) {
 
-  const merged = Array.isArray(oldOwners) ? [...oldOwners] : []
+  const merged =
+    Array.isArray(oldOwners)
+      ? oldOwners.map((owner) => ({
+          ...owner,
+          dataset_count: Number(owner.dataset_count || 0),
+          dashboard_count: Number(owner.dashboard_count || 0),
+          application_count: Number(owner.application_count || 0),
+          map_count: Number(owner.map_count || 0),
+          document_count: Number(owner.document_count || 0),
+          informasi_count: Number(owner.informasi_count || 0),
+        }))
+      : []
+
   const safeOwnUsers = Array.isArray(ownUsers) ? ownUsers.map(adaptOwnOwner).filter(Boolean) : []
 
   safeOwnUsers.forEach((ownOwner) => {
@@ -185,6 +227,12 @@ export function mergeOwnerLists(oldOwners = [], ownUsers = []) {
       merged[existingIndex] = {
         ...merged[existingIndex],
         count: Number(merged[existingIndex].count || 0) + Number(ownOwner.count || 0),
+        dataset_count: Number(merged[existingIndex].dataset_count || 0) + Number(ownOwner.dataset_count || 0),
+        dashboard_count: Number(merged[existingIndex].dashboard_count || 0) + Number(ownOwner.dashboard_count || 0),
+        application_count: Number(merged[existingIndex].application_count || 0) + Number(ownOwner.application_count || 0),
+        map_count: Number(merged[existingIndex].map_count || 0) + Number(ownOwner.map_count || 0),
+        document_count: Number(merged[existingIndex].document_count || 0) + Number(ownOwner.document_count || 0),
+        informasi_count: Number(merged[existingIndex].informasi_count || 0) + Number(ownOwner.informasi_count || 0),
         avatar: merged[existingIndex].avatar || ownOwner.avatar,
       }
     } else {

@@ -18,6 +18,9 @@ const datasetRoutes =
 const proxyRoutes =
   require('./routes/proxyRoutes')
 
+const agencyRoutes =
+  require('./routes/agencyRoutes')
+
 
 const app = express()
 
@@ -83,6 +86,11 @@ app.use(
   proxyRoutes
 )
 
+app.use(
+  '/api/agency-profiles',
+  agencyRoutes
+)
+
 // =====================================================
 // API INDEX (mirip gaya GeoNode /api/v2/)
 // =====================================================
@@ -93,6 +101,7 @@ app.get('/api', (req, res) => {
     users: 'users',
     datasets: 'datasets',
     proxy: 'proxy (datasets, geoapps, owners, maps, documents dari API lama)',
+    agencyProfiles: 'agency-profiles (deskripsi + link website resmi instansi)',
   })
 })
 

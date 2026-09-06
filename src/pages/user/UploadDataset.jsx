@@ -14,6 +14,8 @@ import {
   supportsLinkedResources,
   supportsEmbedUrl,
   supportsExtraMetadataForm,
+  supportsAgendaSchedule,
+  supportsShapefileUpload,
   buildExtraMetadata,
 } from '../../utils/resourceFields'
 
@@ -23,9 +25,11 @@ import {
 } from '../../utils/attributeExcel'
 
 import {
-  extractDbfFieldNames,
-  findDbfFile,
+  extractShapefileMetadata,
+  hasAnyShapefilePart,
 } from '../../utils/shapefileFields'
+
+import GeoJsonPreviewMap from '../../components/GeoJsonPreviewMap'
 
 
 function UploadDataset() {
@@ -40,11 +44,24 @@ function UploadDataset() {
   const [customCategory, setCustomCategory] = useState('')
   const [keywords, setKeywords] = useState('')
 
-  const [files, setFiles] = useState([])
+  // SESI 6: file dipisah jadi 2 kelompok yang jelas —
+  // - spatialFiles : shp/shx/dbf/prj -> dipakai untuk narik
+  //   otomatis metadata + peta di tab Info/Location/Attributes.
+  // - assetFiles   : file lain (PDF, gambar pendukung, dst) ->
+  //   HANYA muncul di tab Assets untuk diunduh, tidak diparsing.
+  const [spatialFiles, setSpatialFiles] = useState([])
+  const [assetFiles, setAssetFiles] = useState([])
+  const [geometryType, setGeometryType] = useState('')
+  const [geojson, setGeojson] = useState(null)
+  const [shapefileNotice, setShapefileNotice] = useState('')
+
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [externalUrl, setExternalUrl] = useState('')
   const [embedUrl, setEmbedUrl] = useState('')
   const [subType, setSubType] = useState('pemberitahuan')
+  const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
   const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
@@ -135,6 +152,93 @@ function UploadDataset() {
   }
 
 
+  // ===================================================
+  // SESI 6: UPLOAD FILE SHAPEFILE (.shp/.shx/.dbf/.prj)
+  // — tanpa refresh halaman, langsung parsing di browser
+  // lalu isi otomatis: Sistem Koordinat, Bounding Box,
+  // Tipe Geometri, daftar Attributes (nama kolom), DAN
+  // peta pratinjau interaktif dari geometri aslinya.
+  // Yang belum bisa dibaca dari file (Label/Description
+  // atribut, Wilayah, dll) tetap harus diisi manual.
+  // ===================================================
+
+  async function handleSpatialFilesChange(event) {
+
+    const selectedFiles = Array.from(event.target.files || [])
+    setSpatialFiles(selectedFiles)
+    setShapefileNotice('')
+    setGeojson(null)
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    if (!hasAnyShapefilePart(selectedFiles)) {
+      setShapefileNotice('File terpilih tidak dikenali sebagai bagian shapefile (.shp/.shx/.dbf/.prj). Data tetap akan diunggah, tapi metadata tidak bisa ditarik otomatis.')
+      return
+    }
+
+    try {
+
+      const meta = await extractShapefileMetadata(selectedFiles)
+
+      if (meta.bbox) {
+        setBbox({
+          minLon: String(meta.bbox.minLon),
+          minLat: String(meta.bbox.minLat),
+          maxLon: String(meta.bbox.maxLon),
+          maxLat: String(meta.bbox.maxLat),
+        })
+      }
+
+      if (meta.srid) {
+        setSrid(meta.srid)
+      }
+
+      if (meta.geometryType) {
+        setGeometryType(meta.geometryType)
+      }
+
+      if (meta.geojson) {
+        setGeojson(meta.geojson)
+      }
+
+      if (meta.attributes.length > 0) {
+        setAttributes((current) => {
+          const existingNames = new Set(current.map((row) => row.name))
+          const newRows = meta.attributes.filter((row) => !existingNames.has(row.name))
+          return [...current, ...newRows]
+        })
+      }
+
+      const filled = []
+      if (meta.bbox) filled.push('Bounding Box')
+      if (meta.srid) filled.push('Sistem Koordinat')
+      if (meta.geometryType) filled.push('Tipe Geometri')
+      if (meta.attributes.length > 0) filled.push(`${meta.attributes.length} kolom Attributes`)
+      if (meta.geojson) filled.push(`peta pratinjau (${meta.geojson.features.length} fitur)`)
+
+      let noticeText =
+        filled.length > 0
+          ? `Berhasil membaca ${meta.filesUsed.join(', ')}. Otomatis terisi: ${filled.join(', ')}.`
+          : 'File shapefile terbaca, tapi tidak ada metadata yang berhasil ditarik. Isi manual di bawah.'
+
+      if (meta.geojsonSkipped) {
+        noticeText += ' File .shp berukuran besar — peta pratinjau interaktif dilewati, tapi bounding box tetap terisi.'
+      }
+
+      setShapefileNotice(noticeText)
+
+    } catch (err) {
+
+      console.error('Gagal membaca metadata shapefile:', err)
+      setShapefileNotice('Gagal membaca sebagian file shapefile. Isi metadata secara manual di bawah.')
+
+    }
+
+  }
+
+
   async function handleSubmit(event) {
 
     event.preventDefault()
@@ -144,7 +248,8 @@ function UploadDataset() {
       return
     }
 
-    const hasFiles = files.length > 0
+    const combinedFiles = [...spatialFiles, ...assetFiles]
+    const hasFiles = combinedFiles.length > 0
     const hasLink = externalUrl.trim().length > 0
 
     if (!hasFiles && !hasLink) {
@@ -162,14 +267,16 @@ function UploadDataset() {
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType, region, language, srid, attribution, purpose,
+          resourceType, subType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           linkedResources: linkedResourcesText.split('\n'),
+          eventDate, eventTime, eventLocation,
+          geometryType, geojson,
         })
 
       await uploadMyDataset({
-        files,
+        files: combinedFiles,
         thumbnailFile,
         title,
         abstract,
@@ -195,6 +302,8 @@ function UploadDataset() {
 
 
   const showAttributeTable = supportsAttributeTable(resourceType)
+  const showAgendaSchedule = supportsAgendaSchedule(resourceType, subType)
+  const showShapefileUpload = supportsShapefileUpload(resourceType)
 
 
   return (
@@ -328,6 +437,38 @@ function UploadDataset() {
                     </div>
                   )}
 
+                  {/* SESI 5 (lanjutan): jadwal khusus Agenda — diisi
+                      sendiri oleh user, tampil di card Agenda nantinya. */}
+                  {showAgendaSchedule && (
+                    <>
+                      <div className="admin-form-group">
+                        <label>Tanggal Acara</label>
+                        <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                        <small>Tanggal pelaksanaan kegiatan (boleh beda dari tanggal upload ini).</small>
+                      </div>
+
+                      <div className="admin-form-group">
+                        <label>Waktu</label>
+                        <input
+                          type="text"
+                          value={eventTime}
+                          onChange={(e) => setEventTime(e.target.value)}
+                          placeholder="mis: 10:00 s/d 15:00 WIB"
+                        />
+                      </div>
+
+                      <div className="admin-form-group">
+                        <label>Tempat</label>
+                        <input
+                          type="text"
+                          value={eventLocation}
+                          onChange={(e) => setEventLocation(e.target.value)}
+                          placeholder="mis: Aula Diskominsa Provinsi Aceh"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   {/* #1: gambar sampul, muncul di card semua jenis resource */}
                   <div className="admin-form-group">
                     <label>Gambar Sampul / Thumbnail (opsional)</label>
@@ -335,62 +476,95 @@ function UploadDataset() {
                     <small>Gambar ini yang akan tampil di bagian atas card, seperti data dari API lama.</small>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label>File (opsional, bisa pilih lebih dari satu)</label>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={async (e) => {
+                  {/* =========================================================
+                      SESI 6: DUA KOTAK UPLOAD TERPISAH untuk Dataset & Peta —
+                      supaya jelas mana yang dipakai untuk mengisi tab
+                      Info/Location/Attributes (Shapefile) dan mana yang
+                      HANYA jadi file unduhan biasa di tab Assets.
+                  ========================================================= */}
 
-                        const selectedFiles = Array.from(e.target.files || [])
-                        setFiles(selectedFiles)
+                  {showShapefileUpload ? (
 
-                        // Kalau ada .dbf (bagian dari shapefile) dan
-                        // resource type-nya dataset, otomatis tarik
-                        // nama kolomnya jadi baris Attributes.
-                        if (resourceType === 'dataset') {
+                    <>
 
-                          const dbfFile = findDbfFile(selectedFiles)
+                      <div className="admin-form-group">
+                        <label>File Shapefile — .shp, .shx, .dbf, .prj (opsional, untuk data spasial)</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".shp,.shx,.dbf,.prj"
+                          onChange={handleSpatialFilesChange}
+                        />
+                        {spatialFiles.length > 0 && (
+                          <small>{spatialFiles.length} file dipilih: {spatialFiles.map((f) => f.name).join(', ')}</small>
+                        )}
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Unggah 4 file ini SEKALIGUS (pilih semua lewat satu dialog file). Sistem otomatis
+                          menarik Sistem Koordinat, Bounding Box, Tipe Geometri, dan nama kolom Attributes
+                          dari sini, PLUS menampilkan peta pratinjau geometrinya di bawah — muncul di tab{' '}
+                          <strong>Info</strong>, <strong>Location</strong>, dan <strong>Attributes</strong> pada
+                          halaman detail. File-file ini juga tetap bisa diunduh lewat tab <strong>Assets</strong>.
+                        </small>
 
-                          if (dbfFile) {
+                        {shapefileNotice && (
+                          <div
+                            style={{
+                              marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
+                              background: 'var(--admin-success-bg)', color: 'var(--admin-success)',
+                              fontSize: '13px', fontWeight: 600,
+                            }}
+                          >
+                            {shapefileNotice}
+                          </div>
+                        )}
 
-                            try {
+                        {geometryType && (
+                          <div style={{ marginTop: '8px' }}>
+                            <span className="admin-status published">Tipe Geometri: {geometryType}</span>
+                          </div>
+                        )}
 
-                              const fieldNames = await extractDbfFieldNames(dbfFile)
+                        {geojson && (
+                          <div style={{ marginTop: '12px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px' }}>Pratinjau Peta</label>
+                            <GeoJsonPreviewMap geojson={geojson} height={280} />
+                          </div>
+                        )}
+                      </div>
 
-                              if (fieldNames.length > 0) {
+                      <div className="admin-form-group">
+                        <label>File Assets Tambahan (opsional)</label>
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(e) => setAssetFiles(Array.from(e.target.files || []))}
+                        />
+                        {assetFiles.length > 0 && (
+                          <small>{assetFiles.length} file dipilih: {assetFiles.map((f) => f.name).join(', ')}</small>
+                        )}
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Untuk file pendukung lain (PDF laporan, gambar, dokumen resmi, dll) yang HANYA
+                          perlu bisa diunduh di tab <strong>Assets</strong> — tidak diparsing sebagai metadata.
+                        </small>
+                      </div>
 
-                                setAttributes((current) => [
-                                  ...current,
-                                  ...fieldNames.map((name) => ({ name, label: '', description: '' })),
-                                ])
+                    </>
 
-                                window.alert(
-                                  `${fieldNames.length} nama kolom berhasil ditarik otomatis dari ${dbfFile.name}. Silakan lengkapi Label/Description bila perlu.`
-                                )
+                  ) : (
 
-                              }
+                    <div className="admin-form-group">
+                      <label>File (opsional, bisa pilih lebih dari satu)</label>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => setAssetFiles(Array.from(e.target.files || []))}
+                      />
+                      {assetFiles.length > 0 && (
+                        <small>{assetFiles.length} file dipilih: {assetFiles.map((f) => f.name).join(', ')}</small>
+                      )}
+                    </div>
 
-                            } catch (err) {
-
-                              console.error('Gagal membaca .dbf:', err)
-
-                            }
-
-                          }
-
-                        }
-
-                      }}
-                    />
-                    {files.length > 0 && (
-                      <small>{files.length} file dipilih: {files.map((f) => f.name).join(', ')}</small>
-                    )}
-                    <small style={{ display: 'block', marginTop: '4px' }}>
-                      Untuk data spasial, unggah file shapefile lengkap (.shp, .dbf, .prj, .shx) sekaligus —
-                      nama kolom akan otomatis ditarik dari .dbf ke tabel Attributes di bawah.
-                    </small>
-                  </div>
+                  )}
 
                   <div className="admin-form-group">
                     <label>Link / URL (opsional)</label>
@@ -412,12 +586,12 @@ function UploadDataset() {
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Deskripsi / Abstract</label>
+                    <label>Deskripsi / Abstract (opsional)</label>
                     <textarea rows={4} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Kategori</label>
+                    <label>Kategori (opsional)</label>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="">Pilih kategori</option>
                       {CATEGORY_OPTIONS.map((cat) => (
@@ -442,7 +616,7 @@ function UploadDataset() {
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Keyword</label>
+                    <label>Keyword (opsional)</label>
                     <input
                       type="text"
                       value={keywords}
@@ -463,14 +637,17 @@ function UploadDataset() {
                   <div className="admin-panel-header">
                     <div>
                       <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'}</h2>
-                      <p>Diisi agar tab Info & Location di halaman detail bisa lengkap.</p>
+                      <p>
+                        Diisi agar tab Info & Location di halaman detail bisa lengkap.
+                        {showShapefileUpload && ' Sebagian sudah otomatis terisi dari file shapefile di atas — tinggal lengkapi sisanya.'}
+                      </p>
                     </div>
                   </div>
 
                   <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     <div className="admin-form-group">
-                      <label>Wilayah / Region</label>
+                      <label>Wilayah / Region (opsional)</label>
                       <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="mis: Kabupaten Aceh Besar" />
                     </div>
 
@@ -482,25 +659,26 @@ function UploadDataset() {
                     <div className="admin-form-group">
                       <label>Sistem Koordinat (CRS)</label>
                       <input type="text" value={srid} onChange={(e) => setSrid(e.target.value)} placeholder="EPSG:4326" />
+                      {showShapefileUpload && <small>Otomatis terisi dari file .prj bila diunggah di atas.</small>}
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Atribusi</label>
+                      <label>Atribusi (opsional)</label>
                       <input type="text" value={attribution} onChange={(e) => setAttribution(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Tujuan</label>
+                      <label>Tujuan (opsional)</label>
                       <textarea rows={3} value={purpose} onChange={(e) => setPurpose(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Informasi Tambahan</label>
+                      <label>Informasi Tambahan (opsional)</label>
                       <textarea rows={3} value={supplementalInformation} onChange={(e) => setSupplementalInformation(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Batasan Penggunaan</label>
+                      <label>Batasan Penggunaan (opsional)</label>
                       <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} />
                     </div>
 
@@ -528,6 +706,7 @@ function UploadDataset() {
                           )
                                                 })}
                       </div>
+                      {showShapefileUpload && <small>Otomatis terisi dari file .shp bila diunggah di atas.</small>}
                     </div>
                     )}
 
@@ -558,7 +737,10 @@ function UploadDataset() {
                   <div className="admin-panel-header">
                     <div>
                       <h2>Attributes (Opsional)</h2>
-                      <p>Daftar kolom/atribut dataset — isi manual, atau unggah lewat Excel.</p>
+                      <p>
+                        Daftar kolom/atribut dataset — otomatis terisi dari file .dbf (nama & tipe kolom),
+                        atau isi manual/lewat Excel. Label & Description tetap perlu dilengkapi manual.
+                      </p>
                     </div>
 
                     <div
@@ -623,7 +805,7 @@ function UploadDataset() {
                         <table className="admin-table">
                           <thead>
                             <tr>
-                              <th>Name</th><th>Label</th><th>Description</th><th></th>
+                              <th>Name</th><th>Label</th><th>Description</th><th>Tipe</th><th></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -637,6 +819,9 @@ function UploadDataset() {
                                 </td>
                                 <td>
                                   <input type="text" value={row.description} onChange={(e) => updateAttributeRow(index, 'description', e.target.value)} placeholder="Deskripsi" />
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '12px', opacity: 0.7 }}>{row.type || '-'}</span>
                                 </td>
                                 <td>
                                   <button type="button" className="admin-action-delete" onClick={() => removeAttributeRow(index)}>Hapus</button>

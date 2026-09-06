@@ -209,6 +209,16 @@ async function fetchGeoServer(params) {
       `GeoServer error: ${response.status}`
     )
   }
+
+  // PENTING (BUG FIX #7): sebelumnya fungsi ini tidak
+  // mengembalikan apa pun setelah fetch berhasil, sehingga
+  // setiap pemanggil selalu menerima `undefined`. Akibatnya
+  // getDatasetAttributes() selalu jatuh ke fallback [] tanpa
+  // pernah error (karena tidak ada exception yang dilempar),
+  // dan tab "Attributes" di halaman detail dataset selalu
+  // menampilkan "Atribut belum tersedia" walau GeoServer
+  // sebenarnya merespons dengan benar.
+  return response.json()
 }
 
 // DATASET FEATURES / GEOJSON

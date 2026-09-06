@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink } from 'react-router'
 import { useAuth } from '../context/AuthContext'
+import { getPublishedByType } from '../api/myDatasetApi'
+import { hasUnseenInformasi } from '../utils/datasetUtils'
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5000/api'
 const SERVER_BASE_URL = AUTH_API_URL.replace(/\/api\/?$/, '')
@@ -28,6 +30,12 @@ function Navbar() {
 
   const [open, setOpen] = useState(false)
 
+  const [unread, setUnread] = useState({
+    berita: false,
+    agenda: false,
+    pemberitahuan: false,
+  })
+
   const {
     currentUser,
     logout,
@@ -44,6 +52,55 @@ function Navbar() {
     }
 
   }
+
+
+  // =====================================================
+  // SESI 5: CEK APAKAH ADA BERITA/AGENDA/PEMBERITAHUAN
+  // YANG BELUM DIBACA (titik notifikasi di dropdown)
+  // =====================================================
+
+  useEffect(() => {
+
+    let active = true
+
+    async function checkUnreadInformasi() {
+
+      try {
+
+        const allInformasi = await getPublishedByType('informasi')
+
+        if (!active) return
+
+        setUnread({
+          berita: hasUnseenInformasi(
+            'berita',
+            allInformasi.filter((item) => item.sub_type === 'berita')
+          ),
+          agenda: hasUnseenInformasi(
+            'agenda',
+            allInformasi.filter((item) => item.sub_type === 'agenda')
+          ),
+          pemberitahuan: hasUnseenInformasi(
+            'pemberitahuan',
+            allInformasi.filter((item) => item.sub_type === 'pemberitahuan')
+          ),
+        })
+
+      } catch (err) {
+
+        console.error('Gagal memeriksa informasi terbaru:', err)
+
+      }
+
+    }
+
+    checkUnreadInformasi()
+
+    return () => { active = false }
+
+  }, [])
+
+  const anyUnread = unread.berita || unread.agenda || unread.pemberitahuan
 
 
   return (
@@ -159,6 +216,7 @@ function Navbar() {
                 aria-expanded={open}
               >
                 Informasi
+                {anyUnread && <span className="navbar-informasi-dot" title="Ada informasi baru" />}
               </button>
 
               {open && (
@@ -170,19 +228,28 @@ function Navbar() {
 
                   <li>
                     <NavLink className="dropdown-item" to="/informasi/berita" onClick={() => setOpen(false)}>
-                      Berita
+                      <span className="navbar-dropdown-item-row">
+                        Berita
+                        {unread.berita && <span className="navbar-unread-dot" title="Ada berita baru" />}
+                      </span>
                     </NavLink>
                   </li>
 
                   <li>
                     <NavLink className="dropdown-item" to="/informasi/agenda" onClick={() => setOpen(false)}>
-                      Agenda
+                      <span className="navbar-dropdown-item-row">
+                        Agenda
+                        {unread.agenda && <span className="navbar-unread-dot" title="Ada agenda baru" />}
+                      </span>
                     </NavLink>
                   </li>
 
                   <li>
                     <NavLink className="dropdown-item" to="/informasi/pemberitahuan" onClick={() => setOpen(false)}>
-                      Pemberitahuan
+                      <span className="navbar-dropdown-item-row">
+                        Pemberitahuan
+                        {unread.pemberitahuan && <span className="navbar-unread-dot" title="Ada pemberitahuan baru" />}
+                      </span>
                     </NavLink>
                   </li>
 
