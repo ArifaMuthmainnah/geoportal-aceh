@@ -18,6 +18,7 @@ import {
   supportsLinkedResources,
   supportsEmbedUrl,
   supportsExtraMetadataForm,
+  supportsAgendaSchedule,
   buildExtraMetadata,
   parseExtraMetadata,
 } from '../../utils/resourceFields'
@@ -48,6 +49,9 @@ function EditMyDataset() {
   const [externalUrl, setExternalUrl] = useState('')
   const [embedUrl, setEmbedUrl] = useState('')
   const [subType, setSubType] = useState('pemberitahuan')
+  const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
   const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
@@ -108,6 +112,11 @@ function EditMyDataset() {
           maxLat: metadata.bbox?.maxLat ?? '',
         })
         setAttributes(Array.isArray(metadata.attributes) ? metadata.attributes : [])
+
+        // SESI 5 (lanjutan): jadwal Agenda
+        setEventDate(metadata.event_date || '')
+        setEventTime(metadata.event_time || '')
+        setEventLocation(metadata.event_location || '')
 
       } catch (err) {
 
@@ -211,10 +220,11 @@ function EditMyDataset() {
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType, region, language, srid, attribution, purpose,
+          resourceType, subType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           linkedResources: linkedResourcesText.split('\n'),
+          eventDate, eventTime, eventLocation,
         })
 
       const payload = {
@@ -275,6 +285,8 @@ function EditMyDataset() {
       </main>
     )
   }
+
+  const showAgendaSchedule = supportsAgendaSchedule(resourceType, subType)
 
 
   return (
@@ -351,6 +363,39 @@ function EditMyDataset() {
                       ))}
                     </select>
                   </div>
+                )}
+
+                {/* SESI 5 (lanjutan): jadwal khusus Agenda */}
+                {showAgendaSchedule && (
+                  <>
+                    <div className="admin-form-group">
+                      <label>Tanggal Acara</label>
+                      <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} disabled={isPublished} />
+                      <small>Tanggal pelaksanaan kegiatan (boleh beda dari tanggal upload).</small>
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label>Waktu</label>
+                      <input
+                        type="text"
+                        value={eventTime}
+                        onChange={(e) => setEventTime(e.target.value)}
+                        disabled={isPublished}
+                        placeholder="mis: 10:00 s/d 15:00 WIB"
+                      />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label>Tempat</label>
+                      <input
+                        type="text"
+                        value={eventLocation}
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        disabled={isPublished}
+                        placeholder="mis: Aula Diskominsa Provinsi Aceh"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <p style={{ fontSize: '13px', opacity: 0.7 }}>
@@ -607,7 +652,7 @@ function EditMyDataset() {
 
     </main>
 
-  )
+  ) 
 
 }
 

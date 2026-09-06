@@ -60,6 +60,9 @@ import JIGNDetail from './pages/JIGNDetail'
 import Berita
   from './pages/Berita'
 
+import BeritaDetail
+  from './pages/BeritaDetail'
+
 import Agenda
   from './pages/Agenda'
 
@@ -491,6 +494,18 @@ function App() {
               <PublicPage>
 
                 <Berita />
+
+              </PublicPage>
+            }
+          />
+
+          <Route
+            path="/informasi/berita/:id"
+            element={
+
+              <PublicPage>
+
+                <BeritaDetail />
 
               </PublicPage>
             }

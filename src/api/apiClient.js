@@ -445,12 +445,26 @@ export async function apiGetAll(
       )
 
 
+    // ---------------------------------------------------
+    // BUG FIX (#8): sebelumnya key "maps" dan "documents"
+    // tidak ada di daftar fallback ini. Endpoint /maps dan
+    // /documents dari API Geoportal Aceh lama mengembalikan
+    // list-nya di bawah field "maps" / "documents" (bukan
+    // "results"), sehingga sebelumnya `results` selalu
+    // kosong dan halaman Peta & Dokumen (yang memakai
+    // getAllMaps()/getAllDocuments() -> apiGetAll) tidak
+    // pernah menampilkan card apa pun walau API sebenarnya
+    // mengembalikan data.
+    // ---------------------------------------------------
+
     const results =
       Array.isArray(response)
         ? response
         : response?.results ||
           response?.datasets ||
           response?.geoapps ||
+          response?.maps ||
+          response?.documents ||
           response?.owners ||
           response?.users ||
           response?.data ||

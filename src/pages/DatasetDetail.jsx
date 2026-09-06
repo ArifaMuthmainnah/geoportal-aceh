@@ -17,6 +17,7 @@ import {
   getPublishedDetail,
   getMyDatasetDetail, 
   getAdminDatasetDetail,
+  getDatasetViewDetail,
 } from '../api/myDatasetApi'
 
 import {
@@ -31,6 +32,11 @@ import {
 } from '../utils/datasetUtils'
 
 import { useAuth } from '../context/AuthContext'
+
+import CopyLinkButton from '../components/CopyLinkButton'
+import BackToTopButton from '../components/BackToTopButton'
+
+import GeoFeatureExplorer from '../components/GeoFeatureExplorer'
 
 // =====================================================
 // FORMAT DATE
@@ -201,6 +207,86 @@ function getCenter(coords) {
 
   }
 
+}
+
+
+// =====================================================
+// WKT (Well Known Text) — dipakai untuk tombol copy
+// di Bounding Box & Center, mengikuti format yang sama
+// dengan halaman detail Peta & Dokumen.
+// =====================================================
+
+function toBboxWKT(bbox) {
+
+  if (!bbox) {
+    return ''
+  }
+
+  const {
+    minLon,
+    minLat,
+    maxLon,
+    maxLat,
+  } = bbox
+
+
+  return `POLYGON ((${minLon} ${minLat}, ${minLon} ${maxLat}, ${maxLon} ${maxLat}, ${maxLon} ${minLat}, ${minLon} ${minLat}))`
+}
+
+
+function toPointWKT(center) {
+
+  if (!center) {
+    return ''
+  }
+
+  return `POINT (${center.lon} ${center.lat})`
+
+}
+
+
+// =====================================================
+// GAMBAR LOKASI (mirip preview lokasi di web SIG lama),
+// dirender dari static map OpenStreetMap berdasarkan
+// titik tengah & bounding box dataset.
+// =====================================================
+
+function buildLocationImageUrl(bbox, center) {
+  if (!center) return null
+
+  const zoom = 6
+  const width = 640
+  const height = 320
+  const color = '3a6ea5'
+
+  // Kotak Bounding Box (garis tepi biru saja, tanpa isi),
+  // sama seperti tampilan tab Location di web SIG lama.
+  const bboxPath = bbox
+    ? `&path=color:0x${color}ff|weight:3|${bbox.minLat},${bbox.minLon}|${bbox.minLat},${bbox.maxLon}|${bbox.maxLat},${bbox.maxLon}|${bbox.maxLat},${bbox.minLon}|${bbox.minLat},${bbox.minLon}`
+    : ''
+
+  // Tanda "+" (crosshair) di titik tengah — digambar sebagai
+  // garis pendek yang berpotongan (BUKAN pin marker), persis
+  // seperti web SIG lama. Panjang lengan dihitung dari
+  // resolusi peta (meter/pixel) di zoom & latitude tersebut,
+  // supaya ukurannya konsisten (~9px) di posisi mana pun.
+  const latRad = (center.lat * Math.PI) / 180
+  const metersPerPixel = (156543.03392 * Math.cos(latRad)) / Math.pow(2, zoom)
+  const armMeters = 9 * metersPerPixel
+  const armLatDeg = armMeters / 111320
+  const armLonDeg = armMeters / (111320 * Math.max(Math.cos(latRad), 0.1))
+
+  const crosshairPath =
+    `&path=color:0x${color}ff|weight:3` +
+    `|${center.lat},${center.lon - armLonDeg}` +
+    `|${center.lat},${center.lon}` +
+    `|${center.lat + armLatDeg},${center.lon}` +
+    `|${center.lat},${center.lon}` +
+    `|${center.lat},${center.lon + armLonDeg}` +
+    `|${center.lat},${center.lon}` +
+    `|${center.lat - armLatDeg},${center.lon}`
+
+  return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lon}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik${bboxPath}${crosshairPath}`
 }
 
 
@@ -380,12 +466,8 @@ function findMetadataUrl(
 
   }
 
-
-  const metadataLink =
-    links.find(
-      (link) => {
-
-        if (!link) {
+  const metadataLink = links.find((link) => {
+    if (!link) {
           return false
         }
 
@@ -416,9 +498,7 @@ function findMetadataUrl(
           name.includes('iso') ||
           url.includes('metadata')
         )
-
-      }
-    )
+  })
 
 
   if (
@@ -491,10 +571,28 @@ function DatasetDetail() {
   ] = useState(false)
 
 
-  const [
+    const [
     attributesError,
     setAttributesError,
   ] = useState('')
+
+
+  // ===================================================
+  // GAMBAR LOKASI (fallback berlapis)
+  // ===================================================
+  //
+  // 'primary'  = coba thumbnail_url asli dari API dulu
+  // 'fallback' = thumbnail_url gagal, coba peta statis
+  //              hasil generate dari bounding box
+  // 'none'     = keduanya gagal, sembunyikan gambar
+  //              (jangan tampilkan ikon broken image)
+  //
+  // ===================================================
+
+  const [
+    locationImageStage,
+    setLocationImageStage,
+  ] = useState('primary')
 
 
   // ===================================================
@@ -505,6 +603,10 @@ function DatasetDetail() {
 
     let mounted = true
 
+    // Reset fallback gambar lokasi setiap kali pindah
+    // ke dataset lain, supaya tidak "nyangkut" di stage
+    // fallback/none milik dataset sebelumnya.
+    setLocationImageStage('primary')
 
     async function fetchDetail() {
 
@@ -538,6 +640,13 @@ function DatasetDetail() {
 
           if (!rawDataset && isAuthenticated) {
             try { rawDataset = await getMyDatasetDetail(rawId) } catch {}
+          }
+
+          // SESI 6: fallback terakhir — pengguna login mana pun (operator
+          // lain, bukan pemilik & bukan admin) tetap bisa MELIHAT dataset
+          // ini read-only walau belum dipublikasikan.
+          if (!rawDataset && isAuthenticated) {
+            try { rawDataset = await getDatasetViewDetail(rawId) } catch {}
           }
 
           if (!rawDataset) {
@@ -823,15 +932,7 @@ function DatasetDetail() {
 
   }
 
-
-  // ===================================================
-  // ERROR
-  // ===================================================
-
-  if (
-    error ||
-    !dataset
-  ) {
+  if (!dataset) {
 
     return (
 
@@ -884,6 +985,12 @@ function DatasetDetail() {
     getOwnerAvatar(owner)
 
 
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? window.location.href
+      : ''
+
+
   const category =
     mapCategory(
       dataset?.category?.identifier
@@ -923,6 +1030,21 @@ function DatasetDetail() {
   const center =
     getCenter(
       dataset?.extent?.coords
+    )
+
+
+  const bboxWKT =
+    toBboxWKT(bbox)
+
+
+  const pointWKT =
+    toPointWKT(center)
+
+
+  const locationImageUrl =
+    buildLocationImageUrl(
+      bbox,
+      center
     )
 
 
@@ -1024,6 +1146,10 @@ function DatasetDetail() {
 
         <div className="container">
 
+          <div className="dataset-detail-topbar">
+            <BackToTopButton to="/katalog" label="Kembali ke Katalog" />
+          </div>
+
           <div className="dataset-breadcrumb">
 
             <Link to="/katalog">
@@ -1072,9 +1198,19 @@ function DatasetDetail() {
           </div>
 
 
-          <h1>
-            {dataset.title}
-          </h1>
+          <div className="dataset-title-row">
+
+            <h1>
+              {dataset.title}
+            </h1>
+
+            <CopyLinkButton
+              text={shareUrl}
+              label="Salin tautan halaman ini"
+              className="on-dark"
+            />
+
+          </div>
 
 
           <div className="dataset-header-category">
@@ -1114,7 +1250,7 @@ function DatasetDetail() {
             MAP
         ================================================= */}
 
-        {dataset.embed_url && (
+                {dataset.embed_url ? (
 
           <div className="dataset-map-wrapper">
 
@@ -1130,7 +1266,15 @@ function DatasetDetail() {
 
           </div>
 
-        )}
+        ) : dataset._geojson ? (
+
+          <GeoFeatureExplorer
+            geojson={dataset._geojson}
+            title={dataset.title}
+            attributes={dataset._attributes}
+          />
+
+        ) : null}
 
 
         {/* =================================================
@@ -1249,7 +1393,7 @@ function DatasetDetail() {
 
               </div>
 
-
+              
               <div className="dataset-info-item">
 
                 <span className="dataset-info-label">
@@ -1567,17 +1711,25 @@ function DatasetDetail() {
                 </div>
               )}
 
-              {dataset.license && (
+                            {dataset.license && (
                 <div className="dataset-info-item">
                   <span className="dataset-info-label">License</span>
-                  <span className="dataset-info-value">{dataset.license}</span>
+                  <span className="dataset-info-value">
+                    {typeof dataset.license === 'object'
+                      ? dataset.license.identifier || dataset.license.name || '-'
+                      : dataset.license}
+                  </span>
                 </div>
               )}
 
               {dataset.group && (
                 <div className="dataset-info-item">
                   <span className="dataset-info-label">Group</span>
-                  <span className="dataset-info-value">{dataset.group}</span>
+                  <span className="dataset-info-value">
+                    {typeof dataset.group === 'object'
+                      ? dataset.group.name || dataset.group.identifier || '-'
+                      : dataset.group}
+                  </span>
                 </div>
               )}
 
@@ -1667,6 +1819,22 @@ function DatasetDetail() {
 
             </div>
 
+            {locationImageUrl && (
+
+              <div className="dataset-location-image">
+
+                <img
+                  src={locationImageUrl}
+                  alt={
+                    `Lokasi ${dataset.title}`
+                  }
+                  loading="lazy"
+                />
+
+              </div>
+
+            )}
+
 
             <div className="dataset-location-grid">
 
@@ -1742,9 +1910,24 @@ function DatasetDetail() {
 
                   </div>
 
-                  <span className="dataset-crs-badge">
-                    EPSG:4326
-                  </span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+
+                    <span className="dataset-crs-badge">
+                      EPSG:4326
+                    </span>
+
+                    <CopyLinkButton
+                      text={bboxWKT}
+                      label="Salin WKT Bounding Box"
+                    />
+
+                  </div>
 
                 </div>
 
@@ -1804,6 +1987,7 @@ function DatasetDetail() {
 
                 </div>
 
+
               </div>
 
             )}
@@ -1819,9 +2003,24 @@ function DatasetDetail() {
                     MAP CENTER
                   </span>
 
-                  <h4>
-                    Center (WGS84)
-                  </h4>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+
+                    <h4>
+                      Center (WGS84)
+                    </h4>
+
+                    <CopyLinkButton
+                      text={pointWKT}
+                      label="Salin WKT Center"
+                    />
+
+                  </div>
 
                   <p>
                     Titik tengah dari cakupan
@@ -2241,7 +2440,6 @@ function DatasetDetail() {
 
 
                       return (
-
                         <a
                           key={
                             `${link.name || 'metadata'}-${index}`
@@ -2441,18 +2639,6 @@ function DatasetDetail() {
 
         )}
 
-
-        {/* =================================================
-            BACK
-        ================================================= */}
-
-        <div className="dataset-back">
-
-          <Link to="/katalog">
-            ← Kembali ke Katalog
-          </Link>
-
-        </div>
 
       </section>
 

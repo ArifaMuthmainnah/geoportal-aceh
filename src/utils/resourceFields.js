@@ -4,7 +4,8 @@
 
 export const RESOURCE_TYPE_OPTIONS = [
   { value: 'dataset', label: 'Dataset' },
-  { value: 'dashboard', label: 'Dashboard / Aplikasi' },
+  { value: 'dashboard', label: 'Dashboard' },
+  { value: 'application', label: 'Aplikasi' },
   { value: 'map', label: 'Peta' },
   { value: 'document', label: 'Dokumen' },
   { value: 'informasi', label: 'Informasi' },
@@ -60,8 +61,12 @@ export const LICENSE_OPTIONS = [
 // RESOURCE TYPE YANG PUNYA FITUR TERTENTU
 // =====================================================
 
+// SESI 6 (revisi): Attributes sekarang juga berlaku untuk
+// "map" (Peta) — supaya panel info peta hero (klik fitur)
+// bisa menampilkan Label yang rapi, bukan cuma nama kolom
+// mentah dari .dbf, sama seperti Dataset.
 export function supportsAttributeTable(resourceType) {
-  return resourceType === 'dataset'
+  return resourceType === 'dataset' || resourceType === 'map'
 }
 
 export function supportsBboxLocation(resourceType) {
@@ -81,15 +86,48 @@ export function supportsExtraMetadataForm(resourceType) {
 }
 
 // =====================================================
+// SESI 6: dataset & peta punya file spasial (shapefile),
+// jadi form upload untuk 2 tipe ini menampilkan kotak
+// upload shapefile khusus + auto-parse metadata + peta.
+// =====================================================
+
+export function supportsShapefileUpload(resourceType) {
+  return resourceType === 'dataset' || resourceType === 'map'
+}
+
+// =====================================================
+// #9: "Aplikasi" HANYA boleh diisi LINK, tidak menerima
+// upload file (misal PSIH3-WS BARITO, WebGIS, dll — semua
+// berupa link aplikasi eksternal, bukan file mentah).
+// =====================================================
+
+export function requiresLinkOnly(resourceType) {
+  return resourceType === 'application'
+}
+
+// =====================================================
+// SESI 5 (lanjutan): field jadwal khusus Agenda —
+// Tanggal Acara, Waktu, Tempat. Diisi sendiri oleh user
+// saat upload (bukan tanggal publish), disimpan di
+// extra_metadata supaya tidak perlu migrasi tabel.
+// =====================================================
+
+export function supportsAgendaSchedule(resourceType, subType) {
+  return resourceType === 'informasi' && subType === 'agenda'
+}
+
+// =====================================================
 // BANGUN extra_metadata (STRING JSON) DARI FORM STATE
 // =====================================================
 
 export function buildExtraMetadata({
-  resourceType,
+  resourceType, subType,
   region, language, srid, attribution, purpose,
   supplementalInformation, constraintsOther,
   bbox, attributes, embedUrl, linkedResources,
   dateType, publicationDate, group, license,
+  eventDate, eventTime, eventLocation,
+  geometryType, geojson,
 }) {
 
   const metadata = {}
@@ -105,6 +143,7 @@ export function buildExtraMetadata({
     if (constraintsOther) metadata.constraints_other = constraintsOther
 
     if (supportsBboxLocation(resourceType)) {
+
       const hasBbox = bbox && (bbox.minLon || bbox.minLat || bbox.maxLon || bbox.maxLat)
       if (hasBbox) {
         metadata.bbox = {
@@ -114,9 +153,26 @@ export function buildExtraMetadata({
           maxLat: Number(bbox.maxLat) || 0,
         }
       }
+
+      // SESI 6: tipe geometri hasil parsing .shp (Titik/Garis/Poligon),
+      // ditampilkan sebagai "Representation" di tab Location.
+      if (geometryType) {
+        metadata.geometry_type = geometryType
+      }
+
+      // SESI 6 (revisi): GeoJSON geometri asli — dipakai untuk peta
+      // HERO interaktif (klik fitur -> lihat atribut) di atas tab.
+      // Tab Location TETAP pakai gambar statis, tidak pakai ini.
+      if (geojson && Array.isArray(geojson.features) && geojson.features.length > 0) {
+        metadata.geojson = geojson
+      }
+
     }
 
-    if (resourceType === 'dataset' && Array.isArray(attributes) && attributes.length > 0) {
+    // SESI 6 (revisi): attributes sekarang disimpan untuk Dataset
+    // MAUPUN Peta (map), supaya panel info peta hero bisa menampilkan
+    // Label yang rapi untuk kedua jenis resource ini.
+    if ((resourceType === 'dataset' || resourceType === 'map') && Array.isArray(attributes) && attributes.length > 0) {
       metadata.attributes = attributes.filter((a) => a.name && a.name.trim())
     }
 
@@ -135,6 +191,14 @@ export function buildExtraMetadata({
   if (publicationDate) metadata.publication_date = publicationDate
   if (group) metadata.group = group
   if (license) metadata.license = license
+
+  // Jadwal Agenda (Sesi 5 lanjutan) — diisi manual oleh user,
+  // beda dari tanggal upload/publish.
+  if (supportsAgendaSchedule(resourceType, subType)) {
+    if (eventDate) metadata.event_date = eventDate
+    if (eventTime) metadata.event_time = eventTime
+    if (eventLocation) metadata.event_location = eventLocation
+  }
 
   return Object.keys(metadata).length > 0 ? JSON.stringify(metadata) : null
 

@@ -50,13 +50,25 @@ import {
   supportsLinkedResources,
   supportsEmbedUrl,
   supportsExtraMetadataForm,
+  supportsAgendaSchedule,
   buildExtraMetadata,
+  parseExtraMetadata,
 } from '../../utils/resourceFields'
 
 import {
   downloadAttributeTemplate,
   parseAttributeExcel,
 } from '../../utils/attributeExcel'
+
+import {
+  IconSearch,
+  IconFilter,
+  IconEye,
+  IconPencil,
+  IconTrash,
+  IconCheckCircle,
+  IconEyeOff,
+} from '../../components/ActionIcons'
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5000/api'
 const SERVER_BASE_URL = AUTH_API_URL.replace(/\/api\/?$/, '')
@@ -125,6 +137,7 @@ const EMPTY_METADATA_FORM = {
   supplementalInformation: '', constraintsOther: '',
   bbox: { minLon: '', minLat: '', maxLon: '', maxLat: '' },
   attributes: [],
+  eventDate: '', eventTime: '', eventLocation: '',
 }
 
 function AdminDashboard() {
@@ -177,7 +190,7 @@ function AdminDashboard() {
         : rect.bottom + 8
 
       // Jangan sampai keluar sisi kanan layar
-      const left = Math.min(rect.left, window.innerWidth - popoverWidth - 16)
+      const left = Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 16)
 
       setPopoverPos({ top, left: Math.max(8, left) })
 
@@ -193,7 +206,7 @@ function AdminDashboard() {
 
   const [editingRow, setEditingRow] = useState(null)
   const [datasetForm, setDatasetForm] = useState({
-    title: '', abstract: '', category: '', customCategory: '', resourceType: 'dataset', externalUrl: '',
+    title: '', abstract: '', category: '', customCategory: '', resourceType: 'dataset', externalUrl: '', subType: 'pemberitahuan',
   })
   const [metadataForm, setMetadataForm] = useState(EMPTY_METADATA_FORM)
   const [attributeExcelError, setAttributeExcelError] = useState('')
@@ -304,6 +317,13 @@ function AdminDashboard() {
     }
   }
 
+  // ===================================================
+  // SESI 6 (FIX): "Hapus" HANYA untuk data lokal (upload-an
+  // user). Data dari API Geoportal Aceh lama TIDAK punya
+  // tombol Hapus — itu jadi pembeda: API cuma Publish/Unpublish,
+  // upload-an bisa dihapus permanen.
+  // ===================================================
+
   async function handleDelete(row) {
     if (row._source !== 'local') return
     const confirmed = window.confirm(`Hapus "${row.title}"? Data akan dihapus permanen dari server kita.`)
@@ -337,6 +357,7 @@ function AdminDashboard() {
       customCategory: isLocal && !isKnownCategory ? (row.category || '') : '',
       resourceType: row.resourceType,
       externalUrl: row.raw.external_url || '',
+      subType: row.raw.sub_type || 'pemberitahuan',
     })
 
     if (isLocal) {
@@ -358,6 +379,9 @@ function AdminDashboard() {
           maxLat: metadata.bbox?.maxLat ?? '',
         },
         attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
+        eventDate: metadata.event_date || '',
+        eventTime: metadata.event_time || '',
+        eventLocation: metadata.event_location || '',
       })
 
     } else {
@@ -449,6 +473,7 @@ function AdminDashboard() {
         const extraMetadata =
           buildExtraMetadata({
             resourceType: datasetForm.resourceType,
+            subType: datasetForm.subType,
             region: metadataForm.region,
             language: metadataForm.language,
             srid: metadataForm.srid,
@@ -458,16 +483,29 @@ function AdminDashboard() {
             constraintsOther: metadataForm.constraintsOther,
             bbox: metadataForm.bbox,
             attributes: metadataForm.attributes,
+            eventDate: metadataForm.eventDate,
+            eventTime: metadataForm.eventTime,
+            eventLocation: metadataForm.eventLocation,
           })
 
-        await updateMyDataset(editingRow.rawId, {
+        const savePayload = {
           title: datasetForm.title,
           abstract: datasetForm.abstract,
           category: finalCategory,
           resource_type: datasetForm.resourceType,
           external_url: datasetForm.externalUrl || null,
           extra_metadata: extraMetadata,
-        })
+        }
+
+        // FIX: sebelumnya sub_type tidak pernah dikirim dari modal
+        // edit admin, jadi kalau resource type-nya "Informasi",
+        // jenis (Berita/Agenda/Pemberitahuan) tidak pernah bisa
+        // dikoreksi lewat sini.
+        if (datasetForm.resourceType === 'informasi') {
+          savePayload.sub_type = datasetForm.subType
+        }
+
+        await updateMyDataset(editingRow.rawId, savePayload)
 
         setLocalDatasets((current) => current.map((item) =>
           item.id === editingRow.rawId
@@ -479,6 +517,7 @@ function AdminDashboard() {
                 resource_type: datasetForm.resourceType,
                 external_url: datasetForm.externalUrl || null,
                 extra_metadata: extraMetadata,
+                sub_type: datasetForm.resourceType === 'informasi' ? datasetForm.subType : item.sub_type,
               }
             : item
         ))
@@ -575,6 +614,7 @@ function AdminDashboard() {
 
   const isLocalEditing = editingRow?._source === 'local'
   const showAttributeTable = isLocalEditing && supportsAttributeTable(datasetForm.resourceType)
+  const showAgendaSchedule = isLocalEditing && supportsAgendaSchedule(datasetForm.resourceType, datasetForm.subType)
 
   return (
     <main className="admin-page">
@@ -604,12 +644,17 @@ function AdminDashboard() {
             <button type="button" className={activeMenu === 'dashboard' ? 'active' : ''} onClick={() => setActiveMenu('dashboard')}>
               <span>▦</span>Dashboard
             </button>
+
+            <Link to="/dashboard/datasets" className="admin-sidebar-link"><span>◈</span>Data Saya</Link>
+
             <button type="button" className={activeMenu === 'users' ? 'active' : ''} onClick={() => setActiveMenu('users')}>
               <span>♙</span>Pengguna
             </button>
+
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
             <Link to="/webgis" className="admin-sidebar-link"><span>⌖</span>WebGIS</Link>
           </nav>
+
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
         </aside>
 
@@ -621,11 +666,8 @@ function AdminDashboard() {
               <h1>Dashboard</h1>
               <p>Kelola data dan pengguna Geoportal Aceh.</p>
             </div>
-              <div className="admin-header-actions">
-                              <Link to="/dashboard/create-dataset" className="admin-secondary-button">+ Create Dataset</Link>
-              <Link to="/dashboard/create-map" className="admin-secondary-button">+ Create Map</Link>
-              <Link to="/dashboard/create-dashboard" className="admin-secondary-button">+ Create Dashboard</Link>
-                <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
+            <div className="admin-header-actions">
+              <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
                 ↻ {loading ? 'Memuat...' : 'Refresh'}
               </button>
               <Link to="/" className="admin-view-site">Lihat Website →</Link>
@@ -656,14 +698,26 @@ function AdminDashboard() {
               </div>
 
               {/* =============================================
-                  TOOLBAR — #5: filter (hamburger) di PALING KIRI,
-                  jauh dari search box.
+                  TOOLBAR — SESI 6: search di kiri (dengan ikon
+                  kaca pembesar), filter di PALING KANAN.
                 ============================================= */}
 
               <div
                 className="admin-toolbar"
-                style={{ display: 'flex', gap: '20px', alignItems: 'center', position: 'relative' }}
+                style={{ display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}
               >
+
+                <div className="search-box-wrap">
+                  <span className="search-box-icon"><IconSearch /></span>
+                  <input
+                    type="search"
+                    placeholder="Cari berdasarkan judul..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+
                 <div style={{ position: 'relative' }}>
                   <button
                     ref={filterButtonRef}
@@ -677,10 +731,7 @@ function AdminDashboard() {
                       cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '14px',
                     }}
                   >
-                    {/* #5: ikon corong filter (funnel), bukan hamburger */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4" />
-                    </svg>
+                    <IconFilter />
                     Filter
                     {/* #10: titik hijau kecil menandakan ada filter aktif */}
                     {activeFilterCount > 0 && (
@@ -693,84 +744,79 @@ function AdminDashboard() {
                   </button>
 
                   {filterOpen && (
-                    <div
-                      style={{
-                        position: 'fixed', top: popoverPos.top, left: popoverPos.left, zIndex: 1000,
-                        background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '16px', width: '320px',
-                        maxHeight: 'min(70vh, 420px)', overflowY: 'auto',
-                        display: 'flex', flexDirection: 'column', gap: '16px',
-                      }}
-                    >
+                    <>
+                      {/* SESI 6: klik di luar popover otomatis menutup filter */}
+                      <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>TYPE</strong>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {[
-                            { key: 'dataset', label: 'Dataset' },
-                            { key: 'dashboard', label: 'Dashboard' },
-                            { key: 'map', label: 'Peta' },
-                            { key: 'document', label: 'Dokumen' },
-                            { key: 'informasi', label: 'Informasi' },
-                          ].map((option) => (
-                            <label key={option.key} style={{
-                              display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
-                              borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
-                              background: filterType[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
-                            }}>
-                              <input type="checkbox" checked={filterType[option.key]}
-                                onChange={(e) => setFilterType((c) => ({ ...c, [option.key]: e.target.checked }))} />
-                              {option.label}
-                            </label>
-                          ))}
+                      <div
+                        style={{
+                          position: 'fixed', top: popoverPos.top, left: popoverPos.left, zIndex: 1000,
+                          background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '16px', width: '320px',
+                          maxHeight: 'min(70vh, 420px)', overflowY: 'auto',
+                          display: 'flex', flexDirection: 'column', gap: '16px',
+                        }}
+                      >
+
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>TYPE</strong>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {[
+                              { key: 'dataset', label: 'Dataset' },
+                              { key: 'dashboard', label: 'Dashboard' },
+                              { key: 'map', label: 'Peta' },
+                              { key: 'document', label: 'Dokumen' },
+                              { key: 'informasi', label: 'Informasi' },
+                            ].map((option) => (
+                              <label key={option.key} style={{
+                                display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
+                                borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
+                                background: filterType[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
+                              }}>
+                                <input type="checkbox" checked={filterType[option.key]}
+                                  onChange={(e) => setFilterType((c) => ({ ...c, [option.key]: e.target.checked }))} />
+                                {option.label}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>STATUS</strong>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {[{ key: 'published', label: 'Published' }, { key: 'unpublished', label: 'Unpublished' }].map((option) => (
-                            <label key={option.key} style={{
-                              display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
-                              borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
-                              background: filterStatus[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
-                            }}>
-                              <input type="checkbox" checked={filterStatus[option.key]}
-                                onChange={(e) => setFilterStatus((c) => ({ ...c, [option.key]: e.target.checked }))} />
-                              {option.label}
-                            </label>
-                          ))}
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>STATUS</strong>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {[{ key: 'published', label: 'Published' }, { key: 'unpublished', label: 'Unpublished' }].map((option) => (
+                              <label key={option.key} style={{
+                                display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
+                                borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
+                                background: filterStatus[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
+                              }}>
+                                <input type="checkbox" checked={filterStatus[option.key]}
+                                  onChange={(e) => setFilterStatus((c) => ({ ...c, [option.key]: e.target.checked }))} />
+                                {option.label}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>CATEGORY</strong>
-                        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
-                          {categoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </div>
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>CATEGORY</strong>
+                          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                            {categoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>INSTANSI</strong>
-                        <select value={filterInstansi} onChange={(e) => setFilterInstansi(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
-                          {instansiOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </div>
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>INSTANSI</strong>
+                          <select value={filterInstansi} onChange={(e) => setFilterInstansi(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                            {instansiOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </div>
 
-                      <button type="button" className="admin-secondary-button" onClick={() => setFilterOpen(false)}>
-                        Terapkan
-                      </button>
-                    </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
-                <input
-                  type="search"
-                  placeholder="Cari berdasarkan judul..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  style={{ flex: 1 }}
-                />
               </div>
 
               {loading ? (
@@ -807,21 +853,42 @@ function AdminDashboard() {
                                     ? `/aplikasi/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                     : `/katalog/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                 }
-                                className="admin-action-view"
+                                className="icon-btn icon-btn-view"
+                                data-tooltip="Lihat"
                               >
-                                Lihat
+                                <IconEye />
                               </Link>
-                              <button type="button" className="admin-action-view" onClick={() => openEditRow(row)}>Edit</button>
+
                               <button
                                 type="button"
-                                className={row.published ? 'admin-action-delete' : 'admin-action-view'}
+                                className="icon-btn icon-btn-edit"
+                                data-tooltip="Edit"
+                                onClick={() => openEditRow(row)}
+                              >
+                                <IconPencil />
+                              </button>
+
+                              <button
+                                type="button"
+                                className={row.published ? 'icon-btn icon-btn-unpublish' : 'icon-btn icon-btn-publish'}
+                                data-tooltip={row.published ? 'Unpublish' : 'Publish'}
                                 disabled={togglingKey === row.key}
                                 onClick={() => handleTogglePublish(row)}
                               >
-                                {togglingKey === row.key ? '...' : row.published ? 'Unpublish' : 'Publish'}
+                                {row.published ? <IconEyeOff /> : <IconCheckCircle />}
                               </button>
+
+                              {/* SESI 6 (FIX): Hapus HANYA untuk data lokal —
+                                  ini pembeda antara data API vs upload-an user. */}
                               {row._source === 'local' && (
-                                <button type="button" className="admin-action-delete" onClick={() => handleDelete(row)}>Hapus</button>
+                                <button
+                                  type="button"
+                                  className="icon-btn icon-btn-delete"
+                                  data-tooltip="Hapus"
+                                  onClick={() => handleDelete(row)}
+                                >
+                                  <IconTrash />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -871,9 +938,13 @@ function AdminDashboard() {
                           <td>{user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-'}</td>
                           <td>
                             <div className="admin-actions">
-                              <button type="button" className="admin-action-view" onClick={() => openEditUser(user)}>Edit</button>
+                              <button type="button" className="icon-btn icon-btn-edit" data-tooltip="Edit" onClick={() => openEditUser(user)}>
+                                <IconPencil />
+                              </button>
                               {(user.id || user.pk) !== currentUser?.id && (
-                                <button type="button" className="admin-action-delete" onClick={() => handleDeleteUser(user)}>Hapus</button>
+                                <button type="button" className="icon-btn icon-btn-delete" data-tooltip="Hapus" onClick={() => handleDeleteUser(user)}>
+                                  <IconTrash />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -940,6 +1011,36 @@ function AdminDashboard() {
                       <option value="webgis">WebGIS (data lama)</option>
                     </select>
                   </div>
+                )}
+
+                {isLocalEditing && datasetForm.resourceType === 'informasi' && (
+                  <div className="admin-form-group">
+                    <label>Jenis Informasi</label>
+                    <select value={datasetForm.subType} onChange={(e) => setDatasetForm((c) => ({ ...c, subType: e.target.value }))}>
+                      {INFORMASI_SUBTYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* SESI 5 (lanjutan): jadwal khusus Agenda — Tanggal
+                    Acara/Waktu/Tempat, terpisah dari tanggal publish. */}
+                {showAgendaSchedule && (
+                  <>
+                    <div className="admin-form-group">
+                      <label>Tanggal Acara</label>
+                      <input type="date" value={metadataForm.eventDate} onChange={(e) => setMetadataForm((c) => ({ ...c, eventDate: e.target.value }))} />
+                    </div>
+                    <div className="admin-form-group">
+                      <label>Waktu</label>
+                      <input type="text" value={metadataForm.eventTime} onChange={(e) => setMetadataForm((c) => ({ ...c, eventTime: e.target.value }))} placeholder="mis: 10:00 s/d 15:00 WIB" />
+                    </div>
+                    <div className="admin-form-group">
+                      <label>Tempat</label>
+                      <input type="text" value={metadataForm.eventLocation} onChange={(e) => setMetadataForm((c) => ({ ...c, eventLocation: e.target.value }))} placeholder="mis: Aula Diskominsa Provinsi Aceh" />
+                    </div>
+                  </>
                 )}
 
                 {isLocalEditing && (

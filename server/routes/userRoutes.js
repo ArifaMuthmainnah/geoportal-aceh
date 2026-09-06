@@ -50,6 +50,14 @@ const uploadAvatar = multer({ storage: avatarStorage })
 // =====================================================
 // DAFTAR PENGGUNA PUBLIK (UNTUK HALAMAN JIGN)
 // =====================================================
+//
+// #8 (Sesi 4): sebelumnya cuma kasih total gabungan semua
+// jenis resource ("count"). Sekarang dipecah per jenis
+// (dataset/dashboard/application/map/document/informasi)
+// supaya halaman JIGN & JIGNDetail bisa menampilkan rincian
+// Peta/Dokumen/Informasi per instansi, bukan cuma "Dataset".
+//
+// =====================================================
 
 router.get('/public', async (req, res) => {
 
@@ -64,7 +72,25 @@ router.get('/public', async (req, res) => {
           u.avatar_url,
           COUNT(d.id) FILTER (
             WHERE d.is_published = 1
-          ) AS count
+          ) AS count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'dataset'
+          ) AS dataset_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'dashboard'
+          ) AS dashboard_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'application'
+          ) AS application_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'map'
+          ) AS map_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'document'
+          ) AS document_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'informasi'
+          ) AS informasi_count
         FROM users u
         LEFT JOIN datasets d
           ON d.owner_id = u.id

@@ -107,6 +107,23 @@ export async function getAdminDatasetDetail(id) {
 
 
 // =====================================================
+// SESI 6: SEMUA DATA (ADMIN + OPERATOR, MODE LIHAT SAJA)
+// Dipakai di Dashboard operator supaya operator bisa lihat
+// data milik operator lain, termasuk yang belum di-publish.
+// =====================================================
+
+export async function getAllVisibleDatasets() {
+  const response = await authGet('/datasets/all-visible')
+  return response?.datasets || []
+}
+
+export async function getDatasetViewDetail(id) {
+  const response = await authGet(`/datasets/view/${id}`)
+  return response?.dataset || null
+}
+
+
+// =====================================================
 // UPDATE / DELETE
 // =====================================================
 
