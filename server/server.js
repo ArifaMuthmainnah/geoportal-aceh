@@ -2,6 +2,7 @@ require('dotenv').config()
 
 const express = require('express')
 const cors = require('cors')
+const path = require('path')
 
 require('./config/database')
 
@@ -13,6 +14,15 @@ const userRoutes =
 
 const datasetRoutes =
   require('./routes/datasetRoutes')
+
+const proxyRoutes =
+  require('./routes/proxyRoutes')
+
+const agencyRoutes =
+  require('./routes/agencyRoutes')
+
+const externalFetchRoutes =
+  require('./routes/externalFetchRoutes')
 
 
 const app = express()
@@ -41,6 +51,21 @@ app.use(
 
 
 // =====================================================
+// STATIC FILES
+// =====================================================
+
+app.use(
+  '/uploads',
+  express.static(
+    path.join(
+      __dirname,
+      'uploads'
+    )
+  )
+)
+
+
+// =====================================================
 // ROUTES
 // =====================================================
 
@@ -59,6 +84,34 @@ app.use(
   datasetRoutes
 )
 
+app.use(
+  '/api/proxy',
+  proxyRoutes
+)
+
+app.use(
+  '/api/agency-profiles',
+  agencyRoutes
+)
+
+app.use(
+  '/api/external',
+  externalFetchRoutes
+)
+
+// =====================================================
+// API INDEX (mirip gaya GeoNode /api/v2/)
+// =====================================================
+
+app.get('/api', (req, res) => {
+  res.json({
+    auth: 'auth',
+    users: 'users',
+    datasets: 'datasets',
+    proxy: 'proxy (datasets, geoapps, owners, maps, documents dari API lama)',
+    agencyProfiles: 'agency-profiles (deskripsi + link website resmi instansi)',
+  })
+})
 
 // =====================================================
 // HEALTH CHECK
@@ -129,6 +182,7 @@ app.listen(
   () => {
 
     console.log('')
+
     console.log(
       '======================================'
     )
@@ -147,6 +201,10 @@ app.listen(
 
     console.log(
       `  http://localhost:${PORT}/api/health`
+    )
+
+    console.log(
+      `  http://localhost:${PORT}/uploads`
     )
 
     console.log(

@@ -2,8 +2,6 @@
 // API BASE URL
 // =====================================================
 
-// API Geoportal Aceh / GeoNode lama
-// Digunakan untuk dataset, maps, documents, geoapps, dll.
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL
 
@@ -12,9 +10,6 @@ const API_BASE_URL =
 // AUTH API URL
 // =====================================================
 
-// Backend authentication milik project kita
-// Contoh:
-// http://localhost:5000/api
 const AUTH_API_URL =
   import.meta.env.VITE_AUTH_API_URL ||
   'http://localhost:5000/api'
@@ -23,15 +18,22 @@ const AUTH_API_URL =
 // =====================================================
 // BUILD GEO API URL
 // =====================================================
+//
+// PENTING: endpoint (datasets, geoapps, owners, dll)
+// sekarang diarahkan ke PROXY backend kita sendiri
+// (bukan langsung ke sig.acehprov.go.id), supaya tidak
+// diblokir CORS oleh browser. Backend kita yang akan
+// meneruskan permintaan ke API lama secara server-to-server.
+//
+// =====================================================
 
 function buildUrl(endpoint) {
 
   if (!endpoint) {
-    return API_BASE_URL
+    return `${AUTH_API_URL}/proxy`
   }
 
 
-  // Kalau endpoint sudah berupa URL lengkap
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -40,7 +42,7 @@ function buildUrl(endpoint) {
   }
 
 
-  return `${API_BASE_URL}${endpoint}`
+  return `${AUTH_API_URL}/proxy/${endpoint}`
 }
 
 
@@ -55,7 +57,6 @@ function buildAuthUrl(endpoint) {
   }
 
 
-  // Kalau endpoint sudah berupa URL lengkap
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -85,12 +86,16 @@ function getToken() {
 // GET AUTH HEADERS UNTUK GEO API
 // =====================================================
 //
-// Geoportal API lama tetap dipakai seperti sebelumnya.
+// PERBAIKAN: sekarang endpoint geo (datasets, geoapps,
+// dll) ditembak lewat proxy backend kita sendiri, dan
+// beberapa di antaranya (/admin/datasets, /admin/geoapps,
+// /overrides) DILINDUNGI oleh authenticateToken +
+// requireAdmin di backend. Jadi token WAJIB disertakan
+// di sini, bukan dikosongkan seperti sebelumnya.
 //
-// Kalau nanti API GeoNode lama membutuhkan
-// authentication tertentu, bisa ditambahkan di sini.
-//
-// Untuk sekarang TIDAK menggunakan Basic Auth.
+// Untuk endpoint publik (datasets, geoapps, owners biasa),
+// menyertakan token tetap aman karena backend tidak
+// mewajibkannya di situ.
 //
 // =====================================================
 
@@ -160,18 +165,71 @@ export async function apiPost(
   endpoint,
   body
 ) {
-  // ...isi function yang sudah ada, JANGAN diubah...
+
+  const response =
+    await fetch(
+      buildUrl(endpoint),
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+
+          Accept:
+            'application/json',
+
+          ...getGeoAuthHeaders(),
+        },
+
+        body:
+          JSON.stringify(body),
+      }
+    )
+
+
+  if (!response.ok) {
+
+    const errorText =
+      await response.text()
+
+    console.error(
+      'API POST Error:',
+      response.status,
+      errorText
+    )
+
+    throw new Error(
+      `Gagal mengirim data (${response.status})`
+    )
+  }
+
+
+  const text =
+    await response.text()
+
+
+  if (!text) {
+    return {}
+  }
+
+
+  try {
+
+    return JSON.parse(text)
+
+  } catch {
+
+    return {
+      message: text,
+    }
+
+  }
 }
 
 
 // =====================================================
 // POST FILE (MULTIPART) - GEO API
-// =====================================================
-//
-// Khusus untuk upload file (FormData).
-// Tidak set Content-Type manual, karena browser
-// akan otomatis menambahkan boundary yang benar.
-//
 // =====================================================
 
 export async function apiPostFile(
@@ -387,12 +445,26 @@ export async function apiGetAll(
       )
 
 
+    // ---------------------------------------------------
+    // BUG FIX (#8): sebelumnya key "maps" dan "documents"
+    // tidak ada di daftar fallback ini. Endpoint /maps dan
+    // /documents dari API Geoportal Aceh lama mengembalikan
+    // list-nya di bawah field "maps" / "documents" (bukan
+    // "results"), sehingga sebelumnya `results` selalu
+    // kosong dan halaman Peta & Dokumen (yang memakai
+    // getAllMaps()/getAllDocuments() -> apiGetAll) tidak
+    // pernah menampilkan card apa pun walau API sebenarnya
+    // mengembalikan data.
+    // ---------------------------------------------------
+
     const results =
       Array.isArray(response)
         ? response
         : response?.results ||
           response?.datasets ||
           response?.geoapps ||
+          response?.maps ||
+          response?.documents ||
           response?.owners ||
           response?.users ||
           response?.data ||
@@ -442,16 +514,6 @@ export async function apiGetAll(
 // =====================================================
 // AUTH REQUEST
 // =====================================================
-//
-// Khusus backend authentication.
-//
-// Backend:
-// POST /api/auth/login
-// GET  /api/auth/me
-//
-// Authentication menggunakan JWT Bearer Token.
-//
-// =====================================================
 
 async function authRequest(
   endpoint,
@@ -473,9 +535,6 @@ async function authRequest(
     ...(options.headers || {}),
   }
 
-
-  // Kalau sudah login,
-  // kirim JWT ke backend.
 
   if (token) {
 
@@ -612,16 +671,9 @@ export function authDelete(
 
 }
 
+
 // =====================================================
 // AUTH POST FILE (MULTIPART) - BACKEND SENDIRI
-// =====================================================
-//
-// Khusus upload file ke backend kita sendiri
-// (bukan ke geoportal lama).
-//
-// Tidak set Content-Type manual, browser akan
-// otomatis menambahkan boundary yang benar.
-//
 // =====================================================
 
 export async function authPostFile(
@@ -664,6 +716,53 @@ export async function authPostFile(
       data?.message ||
       data?.error ||
       `Gagal mengunggah file (${response.status})`
+    )
+  }
+
+  return data
+
+}
+
+export async function authPatchFile(
+  endpoint,
+  formData
+) {
+
+  const token = getToken()
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response =
+    await fetch(
+      buildAuthUrl(endpoint),
+      {
+        method: 'PATCH',
+        headers,
+        body: formData,
+      }
+    )
+
+  const text = await response.text()
+
+  let data = {}
+
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    data = { message: text }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Gagal memperbarui data (${response.status})`
     )
   }
 

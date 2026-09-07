@@ -201,6 +201,31 @@ export function AuthProvider({
 
   }
 
+    // ===================================================
+  // REFRESH (setelah admin edit profil sendiri)
+  // ===================================================
+
+  async function refreshCurrentUser() {
+
+    const token = sessionStorage.getItem(TOKEN_KEY)
+
+    if (!token) return
+
+    try {
+
+      const response = await getCurrentUser(token)
+
+      if (response.success && response.user) {
+        setCurrentUser(response.user)
+        sessionStorage.setItem(USER_KEY, JSON.stringify(response.user))
+      }
+
+    } catch (error) {
+      console.error('Gagal refresh user:', error)
+    }
+
+  }
+
 
   // ===================================================
   // VALUE
@@ -226,6 +251,8 @@ export function AuthProvider({
     login,
 
     logout,
+
+    refreshCurrentUser
 
   }
 

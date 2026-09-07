@@ -8209,6 +8209,126 @@ main {
     var(--admin-danger-bg);
 }
 
+/* =========================================================
+   SESI 6: SEARCH BOX DENGAN IKON
+========================================================= */
+
+.search-box-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.search-box-wrap .search-box-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-text-light);
+  pointer-events: none;
+}
+
+.search-box-wrap input[type="search"] {
+  width: 100%;
+  padding-left: 36px !important;
+}
+
+
+/* =========================================================
+   SESI 6: TOMBOL AKSI BERBASIS IKON + TOOLTIP
+========================================================= */
+
+.icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-btn::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 30;
+}
+
+.icon-btn::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: #111827;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease;
+  z-index: 30;
+}
+
+.icon-btn:hover::after,
+.icon-btn:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.icon-btn:disabled,
+.icon-btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.icon-btn:disabled:hover::after,
+.icon-btn:disabled:hover::before {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.icon-btn-view { border: 1px solid #bfdbfe; background: #eff6ff; color: #1d4ed8; }
+.icon-btn-view:hover { background: #dbeafe; }
+
+.icon-btn-edit { border: 1px solid #fde68a; background: #fffbeb; color: #b45309; }
+.icon-btn-edit:hover { background: #fef3c7; }
+
+.icon-btn-delete { border: 1px solid #fecaca; background: #fff7f7; color: var(--admin-danger); }
+.icon-btn-delete:hover { background: var(--admin-danger-bg); }
+
+.icon-btn-publish { border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; }
+.icon-btn-publish:hover { background: #dcfce7; }
+
+.icon-btn-unpublish { border: 1px solid #fde68a; background: #fffbeb; color: #b45309; }
+.icon-btn-unpublish:hover { background: #fef3c7; }
 
 /* =========================================================
    LOADING
@@ -10204,7 +10324,146 @@ main {
 
 
 /* =====================================================
+   STATISTICS
+   Sama seperti statistik Homepage
+===================================================== */
+
+.jign-statistics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(5, 1fr);
+
+  overflow: hidden;
+
+  margin-top: 30px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 18px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 10px 30px
+    rgba(15, 23, 42, 0.06);
+}
+
+.jign-stat-item {
+  position: relative;
+
+  min-height: 145px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 22px 15px;
+
+  text-align: center;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease;
+}
+
+.jign-stat-item:hover {
+  background: #f8fafc;
+
+  transform: translateY(-2px);
+}
+
+
+/* separator */
+
+.jign-stat-item:not(:last-child)::after {
+  content: '';
+
+  position: absolute;
+
+  top: 24%;
+  right: 0;
+
+  width: 1px;
+  height: 52%;
+
+  background:
+    linear-gradient(
+      transparent,
+      #e2e8f0,
+      transparent
+    );
+}
+
+
+/* icon */
+
+.jign-stat-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 10px;
+
+  border-radius: 50%;
+
+  background: #eef6f5;
+
+  color: #0f766e;
+
+  font-size: 17px;
+
+  line-height: 1;
+}
+
+
+/* angka */
+
+.jign-stat-number {
+  display: block;
+
+  color: #0f172a;
+
+  font-size:
+    clamp(1.9rem, 3vw, 2.7rem);
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -0.04em;
+}
+
+
+/* label */
+
+.jign-stat-label {
+  margin-top: 9px;
+
+  color: #64748b;
+
+  font-size: 11px;
+
+  font-weight: 700;
+
+  letter-spacing: 0.04em;
+}
+
+
+/* =====================================================
    SEARCH + FILTER
+   Diletakkan SETELAH statistik
+=======
+   SEARCH + FILTER
+>>>>>>> d87b207169e711579f59909b64bd45f21824bbec
 ===================================================== */
 
 .jign-toolbar-section {
@@ -10222,7 +10481,7 @@ main {
 
   border: 1px solid #e2e8f0;
 
-  border-radius: 12px;
+  border-radius: 14px;
 
   background: #ffffff;
 
@@ -11849,6 +12108,10 @@ main {
   }
 
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
 /* 
 ==========================================================================
    ADD LAYER MODAL - STYLE PERBAIKAN TAB & SIMPUL
@@ -13290,6 +13553,7 @@ main {
 
 .vertex-edit-marker:active {
   cursor: grabbing;
+<<<<<<< HEAD
 }
 
 
@@ -13585,3 +13849,6 @@ main {
   }
 
 }
+=======
+}
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298

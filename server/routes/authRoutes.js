@@ -15,7 +15,7 @@ const router = express.Router()
 // LOGIN
 // =====================================================
 
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
 
   try {
 
@@ -36,15 +36,14 @@ router.post('/login', (req, res) => {
     }
 
 
-    const user = db
+    const user = await db
       .prepare(`
         SELECT *
         FROM users
-        WHERE username = ?
-        OR email = ?
+        WHERE username = $1
+        OR email = $1
       `)
       .get(
-        username.trim(),
         username.trim()
       )
 
@@ -98,11 +97,15 @@ router.post('/login', (req, res) => {
       message: 'Login berhasil.',
       token,
 
+      // #4: avatar_url WAJIB disertakan, sebelumnya
+      // hilang sehingga sidebar/navbar tidak pernah
+      // tahu user punya foto profil.
       user: {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role
+        role: user.role,
+        avatar_url: user.avatar_url
       }
     })
 
@@ -131,22 +134,25 @@ router.post('/login', (req, res) => {
 router.get(
   '/me',
   authenticateToken,
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
-      const user = db
+      const user = await db
         .prepare(`
           SELECT
             id,
             username,
             email,
             role,
+            avatar_url,
             created_at
           FROM users
-          WHERE id = ?
+          WHERE id = $1
         `)
-        .get(req.user.id)
+        .get(
+          req.user.id
+        )
 
 
       if (!user) {

@@ -50,12 +50,15 @@ import {
   mergeOwnerLists,
 } from '../utils/ownDataAdapter'
 
+<<<<<<< HEAD
 import {
   MapContainer,
   TileLayer,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
+=======
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
 import DatasetCard from '../components/DatasetCard'
 import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
@@ -633,8 +636,12 @@ function Home() {
 
 
       {/* =================================================
+<<<<<<< HEAD
           HERO + STATISTIK
           (dibungkus 1 wrapper biru penuh, Sesi 11)
+=======
+          HERO
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
       ================================================= */}
 
       <div className="home-hero-wrapper">
@@ -647,8 +654,20 @@ function Home() {
 
               <div className="home-hero-content">
 
+<<<<<<< HEAD
                 <span className="home-eyebrow">
                   GEOPORTAL ACEH
+=======
+
+              <h1>
+
+                Portal Informasi
+
+                <br />
+
+                <span>
+                  Geospasial Aceh
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
                 </span>
 
 
@@ -675,6 +694,7 @@ function Home() {
 
                 <div className="home-hero-actions">
 
+<<<<<<< HEAD
                   <Link
                     to="/webgis"
                     className="home-primary-button"
@@ -692,6 +712,40 @@ function Home() {
                   </Link>
 
                 </div>
+=======
+                <Link
+                  to="/webgis"
+                  className="home-primary-button"
+                >
+                  Jelajahi WebGIS
+                  <span>→</span>
+                </Link>
+
+
+                <Link
+                  to="/katalog"
+                  className="home-secondary-button"
+                >
+                  Lihat Katalog
+                </Link>
+
+              </div>
+
+            </div>
+
+
+            <div className="home-hero-visual">
+
+              <div className="home-logo-placeholder">
+
+                <span>
+                  ACEH
+                </span>
+
+                <small>
+                  Logo Geoportal
+                </small>
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
 
               </div>
 
@@ -724,11 +778,17 @@ function Home() {
         </section>
 
 
+<<<<<<< HEAD
         {/* =================================================
             STATISTICS
         ================================================= */}
 
         <section className="home-statistics">
+=======
+      {/* =================================================
+          STATISTICS
+      ================================================= */}
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
 
           <div className="container">
 
@@ -737,6 +797,7 @@ function Home() {
               {statistics.map(
                 (stat) => (
 
+<<<<<<< HEAD
                   <div
                     className="stat-item"
                     key={stat.label}
@@ -779,6 +840,51 @@ function Home() {
               )}
 
             </div>
+=======
+            {statistics.map(
+              (stat) => (
+
+                <div
+                  className="stat-item"
+                  key={stat.label}
+                >
+
+                  <div className="stat-icon">
+                    {stat.icon}
+                  </div>
+
+
+                  <div className="stat-number">
+
+                    <strong>
+
+                      {loading
+                        ? '...'
+                        : (
+                          <AnimatedCounter
+                            value={
+                              stat.value
+                            }
+                          />
+                        )}
+
+                    </strong>
+
+                  </div>
+
+
+                  <span>
+                    {stat.label}
+                  </span>
+
+
+                  <div className="stat-line" />
+
+                </div>
+
+              )
+            )}
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
 
           </div>
 
@@ -1318,9 +1424,13 @@ function Home() {
 
 
                         <strong>
+<<<<<<< HEAD
                           <AnimatedCounter
                             value={datasetCount}
                           />
+=======
+                          {datasetCount}
+>>>>>>> a03c240da6b932bdde4267cbc6943223e7c37298
                         </strong>
 
 

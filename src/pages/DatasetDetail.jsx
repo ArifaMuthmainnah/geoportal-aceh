@@ -1,9 +1,28 @@
-import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router'
+import {
+  useEffect,
+  useState,
+} from 'react'
+
+import {
+  useParams,
+  Link,
+} from 'react-router'
+
 import {
   getDatasetDetail,
   getDatasetAttributes,
 } from '../api/datasetApi'
+
+import {
+  getPublishedDetail,
+  getMyDatasetDetail, 
+  getAdminDatasetDetail,
+  getDatasetViewDetail,
+} from '../api/myDatasetApi'
+
+import {
+  adaptOwnResource,
+} from '../utils/ownDataAdapter'
 
 import {
   mapCategory,
@@ -12,44 +31,85 @@ import {
   stripHtml,
 } from '../utils/datasetUtils'
 
+import { useAuth } from '../context/AuthContext'
+
+import CopyLinkButton from '../components/CopyLinkButton'
+import BackToTopButton from '../components/BackToTopButton'
+
+import GeoFeatureExplorer from '../components/GeoFeatureExplorer'
+import LocationBoundsMap from '../components/LocationBoundsMap'
 
 // =====================================================
 // FORMAT DATE
 // =====================================================
 
 function formatDate(date) {
-  if (!date) return '-'
 
-  const parsedDate = new Date(date)
-
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (!date) {
     return '-'
   }
 
-  return parsedDate.toLocaleString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+
+  const parsedDate =
+    new Date(date)
+
+
+  if (
+    Number.isNaN(
+      parsedDate.getTime()
+    )
+  ) {
+    return '-'
+  }
+
+
+  return parsedDate.toLocaleString(
+    'id-ID',
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }
+  )
+
 }
 
 
+// =====================================================
+// FORMAT DATE ONLY
+// =====================================================
+
 function formatDateOnly(date) {
-  if (!date) return '-'
 
-  const parsedDate = new Date(date)
-
-  if (Number.isNaN(parsedDate.getTime())) {
+  if (!date) {
     return '-'
   }
 
-  return parsedDate.toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+
+  const parsedDate =
+    new Date(date)
+
+
+  if (
+    Number.isNaN(
+      parsedDate.getTime()
+    )
+  ) {
+    return '-'
+  }
+
+
+  return parsedDate.toLocaleDateString(
+    'id-ID',
+    {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }
+  )
+
 }
 
 
@@ -58,19 +118,30 @@ function formatDateOnly(date) {
 // =====================================================
 
 function getLinkIcon(link) {
-  if (link.link_type === 'data') {
+
+  if (
+    link?.link_type === 'data'
+  ) {
     return '↓'
   }
 
-  if (link.link_type === 'image') {
+
+  if (
+    link?.link_type === 'image'
+  ) {
     return '▧'
   }
 
-  if (link.link_type === 'metadata') {
+
+  if (
+    link?.link_type === 'metadata'
+  ) {
     return '◫'
   }
 
+
   return '↗'
+
 }
 
 
@@ -79,9 +150,14 @@ function getLinkIcon(link) {
 // =====================================================
 
 function getBoundingBox(coords) {
-  if (!Array.isArray(coords) || coords.length < 4) {
+
+  if (
+    !Array.isArray(coords) ||
+    coords.length < 4
+  ) {
     return null
   }
+
 
   const [
     minLon,
@@ -90,12 +166,14 @@ function getBoundingBox(coords) {
     maxLat,
   ] = coords
 
+
   return {
     minLon,
     minLat,
     maxLon,
     maxLat,
   }
+
 }
 
 
@@ -104,68 +182,168 @@ function getBoundingBox(coords) {
 // =====================================================
 
 function getCenter(coords) {
-  const bbox = getBoundingBox(coords)
+
+  const bbox =
+    getBoundingBox(coords)
+
 
   if (!bbox) {
     return null
   }
 
+
   return {
+
     lat:
-      (bbox.minLat + bbox.maxLat) / 2,
+      (
+        bbox.minLat +
+        bbox.maxLat
+      ) / 2,
 
     lon:
-      (bbox.minLon + bbox.maxLon) / 2,
+      (
+        bbox.minLon +
+        bbox.maxLon
+      ) / 2,
+
   }
+
 }
 
 
 // =====================================================
-// NORMALIZE ATTRIBUTE RESPONSE
+// WKT (Well Known Text) — dipakai untuk tombol copy
+// di Bounding Box & Center, mengikuti format yang sama
+// dengan halaman detail Peta & Dokumen.
 // =====================================================
 
-function normalizeAttributes(response) {
+function toBboxWKT(bbox) {
+
+  if (!bbox) {
+    return ''
+  }
+
+  const {
+    minLon,
+    minLat,
+    maxLon,
+    maxLat,
+  } = bbox
+
+
+  return `POLYGON ((${minLon} ${minLat}, ${minLon} ${maxLat}, ${maxLon} ${maxLat}, ${maxLon} ${minLat}, ${minLon} ${minLat}))`
+}
+
+
+function toPointWKT(center) {
+
+  if (!center) {
+    return ''
+  }
+
+  return `POINT (${center.lon} ${center.lat})`
+
+}
+
+
+// =====================================================
+// SESI 7: Gambar lokasi statis (static map OSM) SUDAH
+// DIHAPUS — domain "staticmap.openstreetmap.de" tidak
+// bisa di-resolve (ERR_NAME_NOT_RESOLVED) sehingga gambar
+// tab Location selalu gagal muncul. Diganti dengan
+// <LocationBoundsMap /> (peta Leaflet sungguhan, lihat
+// src/components/LocationBoundsMap.jsx) yang PASTI
+// berhasil dimuat karena memakai tile OpenStreetMap asli.
+// =====================================================
+
+
+// =====================================================
+// NORMALIZE ATTRIBUTES RESPONSE
+// =====================================================
+
+function normalizeAttributes(
+  response
+) {
+
   if (!response) {
     return []
   }
 
-  if (Array.isArray(response)) {
+
+  if (
+    Array.isArray(response)
+  ) {
     return response
   }
 
-  if (Array.isArray(response.attributes)) {
+
+  if (
+    Array.isArray(
+      response.attributes
+    )
+  ) {
     return response.attributes
   }
 
-  if (Array.isArray(response.data)) {
+
+  if (
+    Array.isArray(
+      response.data
+    )
+  ) {
     return response.data
   }
 
-  if (Array.isArray(response.results)) {
+
+  if (
+    Array.isArray(
+      response.results
+    )
+  ) {
     return response.results
   }
 
-  if (Array.isArray(response.fields)) {
+
+  if (
+    Array.isArray(
+      response.fields
+    )
+  ) {
     return response.fields
   }
 
+
   return []
+
 }
 
 
 // =====================================================
-// NORMALIZE SATU ATTRIBUTE
+// NORMALIZE ATTRIBUTE
 // =====================================================
 
-function normalizeAttribute(attribute, index) {
+function normalizeAttribute(
+  attribute,
+  index
+) {
+
   if (!attribute) {
+
     return {
+
       id: index,
-      name: `field_${index + 1}`,
+
+      name:
+        `field_${index + 1}`,
+
       label: 'N/A',
+
       description: 'N/A',
+
     }
+
   }
+
 
   const name =
     attribute.name ||
@@ -175,11 +353,13 @@ function normalizeAttribute(attribute, index) {
     attribute.column ||
     `field_${index + 1}`
 
+
   const label =
     attribute.label ||
     attribute.title ||
     attribute.display_name ||
     'N/A'
+
 
   const description =
     attribute.description ||
@@ -187,7 +367,9 @@ function normalizeAttribute(attribute, index) {
     attribute.abstract ||
     'N/A'
 
+
   return {
+
     id:
       attribute.id ||
       attribute.pk ||
@@ -195,31 +377,30 @@ function normalizeAttribute(attribute, index) {
       index,
 
     name,
+
     label,
+
     description,
+
   }
+
 }
 
 
 // =====================================================
 // FIND METADATA URL
 // =====================================================
-//
-// API GeoNode bisa menyimpan URL metadata dalam beberapa
-// bentuk. Fungsi ini mencoba beberapa kemungkinan.
-// =====================================================
 
-function findMetadataUrl(dataset, links = []) {
-
-  // ---------------------------------------------
-  // 1. Field metadata langsung dari dataset
-  // ---------------------------------------------
+function findMetadataUrl(
+  dataset,
+  links = []
+) {
 
   const directUrl =
     dataset?.metadata_detail_url ||
     dataset?.metadata_url ||
-    dataset?.metadata_detail ||
-    dataset?.metadata
+    dataset?.metadata_detail
+
 
   if (
     typeof directUrl === 'string' &&
@@ -230,80 +411,72 @@ function findMetadataUrl(dataset, links = []) {
   }
 
 
-  // ---------------------------------------------
-  // 2. Cari dari links
-  // ---------------------------------------------
+  if (
+    typeof dataset?.metadata ===
+      'object'
+  ) {
 
-  const metadataLink =
-    links.find((link) => {
+    const metadataObjectUrl =
+      dataset.metadata.url ||
+      dataset.metadata.href ||
+      dataset.metadata.link
 
-      if (!link) {
-        return false
-      }
-
-      const type =
-        String(
-          link.link_type ||
-          ''
-        ).toLowerCase()
-
-      const name =
-        String(
-          link.name ||
-          link.title ||
-          ''
-        ).toLowerCase()
-
-      const url =
-        String(
-          link.url ||
-          ''
-        ).toLowerCase()
-
-      return (
-        type === 'metadata' ||
-        name.includes('metadata') ||
-        name.includes('iso') ||
-        url.includes('metadata')
-      )
-
-    })
-
-
-  if (metadataLink?.url) {
-    return metadataLink.url
-  }
-
-
-  // ---------------------------------------------
-  // 3. Coba field URL lain yang mungkin diberikan API
-  // ---------------------------------------------
-
-  const possibleUrls = [
-    dataset?.metadata?.url,
-    dataset?.metadata?.href,
-    dataset?.metadata?.link,
-    dataset?.links?.metadata,
-  ]
-
-  for (const url of possibleUrls) {
 
     if (
-      typeof url === 'string' &&
-      url.trim() !== '' &&
-      url !== '#'
+      typeof metadataObjectUrl ===
+        'string' &&
+      metadataObjectUrl.trim() !== '' &&
+      metadataObjectUrl !== '#'
     ) {
-      return url
+      return metadataObjectUrl
     }
 
   }
 
+  const metadataLink = links.find((link) => {
+    if (!link) {
+          return false
+        }
 
-  // ---------------------------------------------
-  // Tidak ditemukan
-  // ---------------------------------------------
+
+        const type =
+          String(
+            link.link_type || ''
+          ).toLowerCase()
+
+
+        const name =
+          String(
+            link.name ||
+            link.title ||
+            ''
+          ).toLowerCase()
+
+
+        const url =
+          String(
+            link.url || ''
+          ).toLowerCase()
+
+
+        return (
+          type === 'metadata' ||
+          name.includes('metadata') ||
+          name.includes('iso') ||
+          url.includes('metadata')
+        )
+  })
+
+
+  if (
+    metadataLink?.url
+  ) {
+    return metadataLink.url
+  }
+
 
   return null
+
 }
 
 
@@ -313,8 +486,19 @@ function findMetadataUrl(dataset, links = []) {
 
 function DatasetDetail() {
 
-  const { id } = useParams()
+  const { id } =
+    useParams()
 
+
+  // ===================================================
+  // APAKAH DATA UPLOAD SENDIRI?
+  // ===================================================
+
+  const isOwnId =
+    typeof id === 'string' &&
+    id.startsWith('own-')
+
+  const { isAdmin, isAuthenticated } = useAuth()
 
   // ===================================================
   // DATASET
@@ -323,8 +507,10 @@ function DatasetDetail() {
   const [dataset, setDataset] =
     useState(null)
 
+
   const [loading, setLoading] =
     useState(true)
+
 
   const [error, setError] =
     useState('')
@@ -345,18 +531,48 @@ function DatasetDetail() {
   const [attributes, setAttributes] =
     useState([])
 
-  const [attributesLoading, setAttributesLoading] =
-    useState(false)
 
-  const [attributesError, setAttributesError] =
-    useState('')
+  const [
+    attributesLoading,
+    setAttributesLoading,
+  ] = useState(false)
+
+
+    const [
+    attributesError,
+    setAttributesError,
+  ] = useState('')
 
 
   // ===================================================
-  // FETCH DATASET DETAIL
+  // GAMBAR LOKASI (SESI 7)
+  // ===================================================
+  //
+  // 'primary'  = coba thumbnail_url asli dari API dulu
+  // 'fallback' = thumbnail_url tidak ada / gagal dimuat ->
+  //              pakai <LocationBoundsMap /> (peta Leaflet
+  //              sungguhan, selalu berhasil dimuat)
+  //
+  // ===================================================
+
+  const [
+    locationImageStage,
+    setLocationImageStage,
+  ] = useState('primary')
+
+
+  // ===================================================
+  // FETCH DETAIL
   // ===================================================
 
   useEffect(() => {
+
+    let mounted = true
+
+    // Reset fallback gambar lokasi setiap kali pindah
+    // ke dataset lain, supaya tidak "nyangkut" di stage
+    // fallback/none milik dataset sebelumnya.
+    setLocationImageStage('primary')
 
     async function fetchDetail() {
 
@@ -365,18 +581,104 @@ function DatasetDetail() {
         setLoading(true)
         setError('')
 
-        const data =
+
+        // =============================================
+        // DATA UPLOAD SENDIRI
+        // =============================================
+
+        if (isOwnId) {
+
+          const rawId =
+            id.replace('own-', '')
+
+
+          let rawDataset = null
+
+          try {
+            rawDataset = await getPublishedDetail(rawId)
+          } catch {
+            rawDataset = null
+          }
+
+          if (!rawDataset && isAdmin) {
+            try { rawDataset = await getAdminDatasetDetail(rawId) } catch {}
+          }
+
+          if (!rawDataset && isAuthenticated) {
+            try { rawDataset = await getMyDatasetDetail(rawId) } catch {}
+          }
+
+          // SESI 6: fallback terakhir — pengguna login mana pun (operator
+          // lain, bukan pemilik & bukan admin) tetap bisa MELIHAT dataset
+          // ini read-only walau belum dipublikasikan.
+          if (!rawDataset && isAuthenticated) {
+            try { rawDataset = await getDatasetViewDetail(rawId) } catch {}
+          }
+
+          if (!rawDataset) {
+
+            if (mounted) {
+              setError('Dataset tidak ditemukan atau kamu tidak punya izin melihatnya.')
+            }
+
+            return
+
+          }
+
+
+          const adapted =
+            adaptOwnResource(
+              rawDataset
+            )
+
+
+          console.log(
+            'Detail Dataset Sendiri:',
+            adapted
+          )
+
+
+          if (mounted) {
+
+            setDataset(
+              adapted
+            )
+
+          }
+
+
+          return
+
+        }
+
+
+        // =============================================
+        // DATA API LAMA
+        // =============================================
+
+        const response =
           await getDatasetDetail(id)
+
 
         console.log(
           'Detail API:',
-          data
+          response
         )
 
-        const result =
-          data?.dataset || data
 
-        setDataset(result)
+        const result =
+          response?.dataset ||
+          response?.resource ||
+          response
+
+
+        if (mounted) {
+
+          setDataset(
+            result
+          )
+
+        }
 
       } catch (err) {
 
@@ -385,25 +687,55 @@ function DatasetDetail() {
           err
         )
 
-        setError(
-          'Gagal mengambil detail dataset.'
-        )
+
+        if (mounted) {
+
+          setError(
+            'Gagal mengambil detail dataset.'
+          )
+
+        }
 
       } finally {
 
-        setLoading(false)
+        if (mounted) {
+          setLoading(false)
+        }
 
       }
 
     }
 
-    fetchDetail()
 
-  }, [id])
+    if (id) {
+      fetchDetail()
+    } else {
+
+      setLoading(false)
+
+      setError(
+        'ID dataset tidak tersedia.'
+      )
+
+    }
+
+
+    return () => {
+      mounted = false
+    }
+
+  }, [id, isOwnId])
 
 
   // ===================================================
   // FETCH ATTRIBUTES
+  // ===================================================
+  //
+  // Data upload sendiri (own-*) pakai attributes dari
+  // extra_metadata (diisi lewat form upload), TIDAK
+  // memanggil GeoServer. Data API lama tetap memanggil
+  // GeoServer seperti biasa.
+  //
   // ===================================================
 
   useEffect(() => {
@@ -412,6 +744,31 @@ function DatasetDetail() {
       return
     }
 
+
+    if (isOwnId) {
+
+      setAttributes(
+        Array.isArray(dataset._attributes)
+          ? dataset._attributes.map((attribute, index) => ({
+              id: attribute.name || index,
+              name: attribute.name || `field_${index + 1}`,
+              label: attribute.label || 'N/A',
+              description: attribute.description || 'N/A',
+            }))
+          : []
+      )
+
+      setAttributesLoading(false)
+      setAttributesError('')
+
+      return
+
+    }
+
+
+    let mounted = true
+
+
     async function fetchAttributes() {
 
       try {
@@ -419,42 +776,58 @@ function DatasetDetail() {
         setAttributesLoading(true)
         setAttributesError('')
 
+
         const attributeId =
           dataset.alternate ||
+          dataset.typename ||
+          dataset.type_name ||
           dataset.uuid ||
           id
+
 
         console.log(
           'Attribute ID:',
           attributeId
         )
 
+
         const response =
           await getDatasetAttributes(
             attributeId
           )
+
 
         console.log(
           'Attributes API:',
           response
         )
 
+
         const normalizedResponse =
-          normalizeAttributes(response)
+          normalizeAttributes(
+            response
+          )
+
 
         const normalizedAttributes =
           normalizedResponse.map(
             normalizeAttribute
           )
 
+
         console.log(
           'Normalized attributes:',
           normalizedAttributes
         )
 
-        setAttributes(
-          normalizedAttributes
-        )
+
+        if (mounted) {
+
+          setAttributes(
+            normalizedAttributes
+          )
+
+        }
 
       } catch (err) {
 
@@ -463,23 +836,36 @@ function DatasetDetail() {
           err
         )
 
-        setAttributesError(
-          'Metadata atribut belum lengkap.'
-        )
 
-        setAttributes([])
+        if (mounted) {
+
+          setAttributesError(
+            'Metadata atribut belum lengkap.'
+          )
+
+          setAttributes([])
+
+        }
 
       } finally {
 
-        setAttributesLoading(false)
+        if (mounted) {
+          setAttributesLoading(false)
+        }
 
       }
 
     }
 
+
     fetchAttributes()
 
-  }, [dataset, id])
+
+    return () => {
+      mounted = false
+    }
+
+  }, [dataset, id, isOwnId])
 
 
   // ===================================================
@@ -512,12 +898,7 @@ function DatasetDetail() {
 
   }
 
-
-  // ===================================================
-  // ERROR
-  // ===================================================
-
-  if (error || !dataset) {
+  if (!dataset) {
 
     return (
 
@@ -561,41 +942,84 @@ function DatasetDetail() {
   const owner =
     dataset.owner || null
 
+
   const ownerName =
     getOwnerName(owner)
+
 
   const ownerAvatar =
     getOwnerAvatar(owner)
 
+
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? window.location.href
+      : ''
+
+
   const category =
     mapCategory(
-      dataset.category?.identifier
+      dataset?.category?.identifier
     )
 
+
   const keywords =
-    dataset.keywords || []
+    Array.isArray(
+      dataset.keywords
+    )
+      ? dataset.keywords
+      : []
+
 
   const regions =
-    dataset.regions || []
+    Array.isArray(
+      dataset.regions
+    )
+      ? dataset.regions
+      : []
+
 
   const links =
-    Array.isArray(dataset.links)
+    Array.isArray(
+      dataset.links
+    )
       ? dataset.links
       : []
 
+
   const bbox =
     getBoundingBox(
-      dataset.extent?.coords
+      dataset?.extent?.coords
     )
+
 
   const center =
     getCenter(
-      dataset.extent?.coords
+      dataset?.extent?.coords
     )
 
 
+  const bboxWKT =
+    toBboxWKT(bbox)
+
+
+  const pointWKT =
+    toPointWKT(center)
+
+
+  const primaryLocationImageUrl =
+    dataset.thumbnail_url ||
+    dataset.thumbnail ||
+    dataset.thumbnailUrl ||
+    null
+
+  const showPrimaryLocationImage =
+    Boolean(primaryLocationImageUrl) &&
+    locationImageStage === 'primary'
+
+
   // ===================================================
-  // METADATA URL
+  // METADATA
   // ===================================================
 
   const fullMetadataUrl =
@@ -605,38 +1029,60 @@ function DatasetDetail() {
     )
 
 
-  console.log(
-    'Full Metadata URL:',
-    fullMetadataUrl
-  )
-
-
   // ===================================================
   // RESOURCE LINKS
   // ===================================================
 
   const originalLinks =
     links.filter(
-      (link) =>
-        link.link_type === 'data' &&
-        (
-          link.name?.toLowerCase() === 'original' ||
-          link.title?.toLowerCase() === 'original'
+      (link) => {
+
+        if (
+          link?.link_type !== 'data'
+        ) {
+          return false
+        }
+
+
+        const name =
+          String(
+            link.name ||
+            link.title ||
+            ''
+          ).toLowerCase()
+
+
+        return (
+          name === 'original'
         )
+
+      }
     )
+
+
+  const dataLinks =
+    originalLinks.length > 0
+      ? originalLinks
+      : links.filter(
+          (link) =>
+            link?.link_type ===
+            'data'
+        )
 
 
   const imageLinks =
     links.filter(
       (link) =>
-        link.link_type === 'image'
+        link?.link_type ===
+        'image'
     )
 
 
   const metadataLinks =
     links.filter(
       (link) =>
-        link.link_type === 'metadata'
+        link?.link_type ===
+        'metadata'
     )
 
 
@@ -647,7 +1093,9 @@ function DatasetDetail() {
           'data',
           'image',
           'metadata',
-        ].includes(link.link_type)
+        ].includes(
+          link?.link_type
+        )
     )
 
 
@@ -668,13 +1116,19 @@ function DatasetDetail() {
 
         <div className="container">
 
+          <div className="dataset-detail-topbar">
+            <BackToTopButton to="/katalog" label="Kembali ke Katalog" />
+          </div>
+
           <div className="dataset-breadcrumb">
 
             <Link to="/katalog">
               Katalog
             </Link>
 
-            <span>/</span>
+            <span>
+              /
+            </span>
 
             <span>
               Dataset
@@ -697,27 +1151,36 @@ function DatasetDetail() {
               dari
             </span>
 
-            <Link
-              to="/katalog"
-              className="dataset-owner-link"
-            >
+            <span className="dataset-owner-link">
               {ownerName}
-            </Link>
+            </span>
 
             <span className="dataset-from">
               /
             </span>
 
             <span>
-              {formatDateOnly(dataset.date)}
+              {formatDateOnly(
+                dataset.date
+              )}
             </span>
 
           </div>
 
 
-          <h1>
-            {dataset.title}
-          </h1>
+          <div className="dataset-title-row">
+
+            <h1>
+              {dataset.title}
+            </h1>
+
+            <CopyLinkButton
+              text={shareUrl}
+              label="Salin tautan halaman ini"
+              className="on-dark"
+            />
+
+          </div>
 
 
           <div className="dataset-header-category">
@@ -757,13 +1220,15 @@ function DatasetDetail() {
             MAP
         ================================================= */}
 
-        {dataset.embed_url && (
+        {dataset.embed_url ? (
 
           <div className="dataset-map-wrapper">
 
             <iframe
               src={dataset.embed_url}
-              title={`Peta ${dataset.title}`}
+              title={
+                `Peta ${dataset.title}`
+              }
               className="dataset-map-iframe"
               loading="lazy"
               allowFullScreen
@@ -771,7 +1236,20 @@ function DatasetDetail() {
 
           </div>
 
-        )}
+        ) : (dataset._geojson || bbox) ? (
+
+          // SESI 7: kalau tidak ada embed_url (data upload sendiri),
+          // tapi ADA geojson (shapefile ter-parsing) ATAU minimal
+          // ADA bbox (cakupan area), tetap tampilkan peta — supaya
+          // tab peta TIDAK PERNAH kosong lagi seperti sebelumnya.
+          <GeoFeatureExplorer
+            geojson={dataset._geojson}
+            bbox={bbox}
+            title={dataset.title}
+            attributes={dataset._attributes}
+          />
+
+        ) : null}
 
 
         {/* =================================================
@@ -890,7 +1368,7 @@ function DatasetDetail() {
 
               </div>
 
-
+              
               <div className="dataset-info-item">
 
                 <span className="dataset-info-label">
@@ -898,7 +1376,9 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {formatDate(dataset.date)}
+                  {formatDate(
+                    dataset.date
+                  )}
                 </span>
 
               </div>
@@ -911,7 +1391,9 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {formatDate(dataset.created)}
+                  {formatDate(
+                    dataset.created
+                  )}
                 </span>
 
               </div>
@@ -980,15 +1462,20 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {dataset.poc?.length > 0
-                    ? getOwnerName(dataset.poc[0])
+
+                  {Array.isArray(
+                    dataset.poc
+                  ) &&
+                  dataset.poc.length > 0
+                    ? getOwnerName(
+                        dataset.poc[0]
+                      )
                     : ownerName}
+
                 </span>
 
               </div>
 
-
-              {/* IDENTIFIER */}
 
               <div className="dataset-info-item">
 
@@ -1005,8 +1492,6 @@ function DatasetDetail() {
               </div>
 
 
-              {/* KEYWORDS */}
-
               <div className="dataset-info-item dataset-info-item-full">
 
                 <span className="dataset-info-label">
@@ -1015,40 +1500,37 @@ function DatasetDetail() {
 
                 <div className="dataset-keywords">
 
-                  {keywords.length > 0 ? (
+                  {keywords.length > 0
+                    ? keywords.map(
+                        (
+                          keyword,
+                          index
+                        ) => (
 
-                    keywords.map(
-                      (keyword, index) => (
+                          <span
+                            key={
+                              keyword.slug ||
+                              keyword.name ||
+                              index
+                            }
+                            className="dataset-keyword"
+                          >
+                            {keyword.name ||
+                              keyword}
+                          </span>
 
-                        <span
-                          key={
-                            keyword.slug ||
-                            keyword.name ||
-                            index
-                          }
-                          className="dataset-keyword"
-                        >
-                          {keyword.name}
-                        </span>
-
+                        )
                       )
-
-                    )
-
-                  ) : (
-
-                    <span>
-                      -
-                    </span>
-
-                  )}
+                    : (
+                      <span>
+                        -
+                      </span>
+                    )}
 
                 </div>
 
               </div>
 
-
-              {/* REGIONS */}
 
               <div className="dataset-info-item">
 
@@ -1058,40 +1540,37 @@ function DatasetDetail() {
 
                 <div className="dataset-keywords">
 
-                  {regions.length > 0 ? (
+                  {regions.length > 0
+                    ? regions.map(
+                        (
+                          region,
+                          index
+                        ) => (
 
-                    regions.map(
-                      (region, index) => (
+                          <span
+                            key={
+                              region.code ||
+                              region.name ||
+                              index
+                            }
+                            className="dataset-keyword"
+                          >
+                            {region.name ||
+                              region}
+                          </span>
 
-                        <span
-                          key={
-                            region.code ||
-                            region.name ||
-                            index
-                          }
-                          className="dataset-keyword"
-                        >
-                          {region.name}
-                        </span>
-
+                        )
                       )
-
-                    )
-
-                  ) : (
-
-                    <span>
-                      -
-                    </span>
-
-                  )}
+                    : (
+                      <span>
+                        -
+                      </span>
+                    )}
 
                 </div>
 
               </div>
 
-
-              {/* ATTRIBUTION */}
 
               <div className="dataset-info-item dataset-info-item-full">
 
@@ -1100,13 +1579,12 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {dataset.attribution || '-'}
+                  {dataset.attribution ||
+                    '-'}
                 </span>
 
               </div>
 
-
-              {/* LANGUAGE */}
 
               <div className="dataset-info-item">
 
@@ -1115,13 +1593,12 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {dataset.language || '-'}
+                  {dataset.language ||
+                    '-'}
                 </span>
 
               </div>
 
-
-              {/* CRS */}
 
               <div className="dataset-info-item">
 
@@ -1130,13 +1607,12 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
-                  {dataset.srid || '-'}
+                  {dataset.srid ||
+                    '-'}
                 </span>
 
               </div>
 
-
-              {/* SUPPLEMENTAL INFORMATION */}
 
               <div className="dataset-info-item dataset-info-item-full">
 
@@ -1145,15 +1621,15 @@ function DatasetDetail() {
                 </span>
 
                 <span className="dataset-info-value">
+
                   {stripHtml(
                     dataset.supplemental_information
                   ) || '-'}
+
                 </span>
 
               </div>
 
-
-              {/* PURPOSE */}
 
               {dataset.purpose && (
 
@@ -1164,17 +1640,17 @@ function DatasetDetail() {
                   </span>
 
                   <span className="dataset-info-value">
+
                     {stripHtml(
                       dataset.purpose
                     )}
+
                   </span>
 
                 </div>
 
               )}
 
-
-              {/* DATA QUALITY */}
 
               {dataset.data_quality_statement && (
 
@@ -1185,9 +1661,11 @@ function DatasetDetail() {
                   </span>
 
                   <span className="dataset-info-value">
+
                     {stripHtml(
                       dataset.data_quality_statement
                     )}
+
                   </span>
 
                 </div>
@@ -1195,24 +1673,46 @@ function DatasetDetail() {
               )}
 
 
-              {/* CONSTRAINTS */}
-
-              {dataset.constraints_other && (
-
+                            {dataset.constraints_other && (
                 <div className="dataset-info-item dataset-info-item-full">
-
                   <span className="dataset-info-label">
                     Constraints
                   </span>
-
                   <span className="dataset-info-value">
                     {stripHtml(
                       dataset.constraints_other
                     )}
                   </span>
-
                 </div>
+              )}
 
+                            {dataset.license && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">License</span>
+                  <span className="dataset-info-value">
+                    {typeof dataset.license === 'object'
+                      ? dataset.license.identifier || dataset.license.name || '-'
+                      : dataset.license}
+                  </span>
+                </div>
+              )}
+
+              {dataset.group && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">Group</span>
+                  <span className="dataset-info-value">
+                    {typeof dataset.group === 'object'
+                      ? dataset.group.name || dataset.group.identifier || '-'
+                      : dataset.group}
+                  </span>
+                </div>
+              )}
+
+              {dataset.date_type && (
+                <div className="dataset-info-item">
+                  <span className="dataset-info-label">Date Type</span>
+                  <span className="dataset-info-value">{dataset.date_type}</span>
+                </div>
               )}
 
             </div>
@@ -1294,6 +1794,33 @@ function DatasetDetail() {
 
             </div>
 
+            {/* SESI 7: gambar statis (domain rusak) diganti
+                <LocationBoundsMap /> — peta Leaflet sungguhan
+                dengan kotak Bounding Box + tanda (+) di titik
+                tengah. thumbnail_url asli dari API tetap
+                diprioritaskan dulu kalau tersedia & berhasil. */}
+
+            {showPrimaryLocationImage ? (
+
+              <div className="dataset-location-image">
+
+                <img
+                  src={primaryLocationImageUrl}
+                  alt={
+                    `Lokasi ${dataset.title}`
+                  }
+                  loading="lazy"
+                  onError={() => setLocationImageStage('fallback')}
+                />
+
+              </div>
+
+            ) : bbox ? (
+
+              <LocationBoundsMap bbox={bbox} center={center} />
+
+            ) : null}
+
 
             <div className="dataset-location-grid">
 
@@ -1333,14 +1860,17 @@ function DatasetDetail() {
                 </span>
 
                 <strong>
+
                   {regions.length > 0
                     ? regions
                         .map(
                           (region) =>
-                            region.name
+                            region.name ||
+                            region
                         )
                         .join(', ')
                     : '-'}
+
                 </strong>
 
               </div>
@@ -1366,9 +1896,24 @@ function DatasetDetail() {
 
                   </div>
 
-                  <span className="dataset-crs-badge">
-                    EPSG:4326
-                  </span>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+
+                    <span className="dataset-crs-badge">
+                      EPSG:4326
+                    </span>
+
+                    <CopyLinkButton
+                      text={bboxWKT}
+                      label="Salin WKT Bounding Box"
+                    />
+
+                  </div>
 
                 </div>
 
@@ -1428,6 +1973,7 @@ function DatasetDetail() {
 
                 </div>
 
+
               </div>
 
             )}
@@ -1443,9 +1989,24 @@ function DatasetDetail() {
                     MAP CENTER
                   </span>
 
-                  <h4>
-                    Center (WGS84)
-                  </h4>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+
+                    <h4>
+                      Center (WGS84)
+                    </h4>
+
+                    <CopyLinkButton
+                      text={pointWKT}
+                      label="Salin WKT Center"
+                    />
+
+                  </div>
 
                   <p>
                     Titik tengah dari cakupan
@@ -1514,8 +2075,8 @@ function DatasetDetail() {
                 </h3>
 
                 <p>
-                  Daftar atribut yang tersedia pada
-                  dataset geospasial ini.
+                  Daftar atribut yang tersedia
+                  pada dataset geospasial ini.
                 </p>
 
               </div>
@@ -1583,7 +2144,10 @@ function DatasetDetail() {
                     <tbody>
 
                       {attributes.map(
-                        (attribute, index) => (
+                        (
+                          attribute,
+                          index
+                        ) => (
 
                           <tr
                             key={
@@ -1642,8 +2206,11 @@ function DatasetDetail() {
                   </h4>
 
                   <p>
-                    Metadata atribut belum tersedia
-                    untuk dataset ini.
+
+                    {isOwnId
+                      ? 'Dataset ini diunggah tanpa daftar atribut. Tambahkan lewat form upload/edit jika perlu.'
+                      : 'Metadata atribut belum tersedia untuk dataset ini.'}
+
                   </p>
 
                   {attributesError && (
@@ -1689,9 +2256,11 @@ function DatasetDetail() {
             </div>
 
 
-            {/* DATA */}
+            {/* =================================================
+                DATA
+            ================================================= */}
 
-            {originalLinks.length > 0 && (
+            {dataLinks.length > 0 && (
 
               <div className="dataset-assets-group">
 
@@ -1701,52 +2270,65 @@ function DatasetDetail() {
 
                 <div className="dataset-assets-list">
 
-                  {originalLinks.map(
-                    (link, index) => (
+                  {dataLinks.map(
+                    (link, index) => {
 
-                      <a
-                        key={
-                          `${link.name || 'data'}-${index}`
-                        }
-                        href={
-                          link.extras?.content
-                            ?.download_url ||
-                          link.url
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="dataset-asset-card"
-                      >
-
-                        <span className="dataset-asset-icon">
-                          {getLinkIcon(link)}
-                        </span>
+                      const downloadUrl =
+                        link?.extras
+                          ?.content
+                          ?.download_url ||
+                        link?.url
 
 
-                        <div className="dataset-asset-content">
+                      if (!downloadUrl) {
+                        return null
+                      }
 
-                          <strong>
-                            {link.name ||
-                              'Data'}
-                          </strong>
 
-                          <span>
-                            {link.extension
-                              ?.toUpperCase() ||
-                              link.mime ||
-                              'Download'}
+                      return (
+
+                        <a
+                          key={
+                            `${link.name || 'data'}-${index}`
+                          }
+                          href={downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dataset-asset-card"
+                        >
+
+                          <span className="dataset-asset-icon">
+                            {getLinkIcon(link)}
                           </span>
 
-                        </div>
+
+                          <div className="dataset-asset-content">
+
+                            <strong>
+                              {link.name ||
+                                link.title ||
+                                'Data'}
+                            </strong>
+
+                            <span>
+                              {link.extension
+                                ?.toUpperCase() ||
+                                link.mime ||
+                                'Download'}
+                            </span>
+
+                          </div>
 
 
-                        <span className="dataset-asset-arrow">
-                          ↗
-                        </span>
+                          <span className="dataset-asset-arrow">
+                            ↗
+                          </span>
 
-                      </a>
+                        </a>
 
-                    )
+                      )
+
+                    }
                   )}
 
                 </div>
@@ -1756,7 +2338,9 @@ function DatasetDetail() {
             )}
 
 
-            {/* IMAGES */}
+            {/* =================================================
+                IMAGES
+            ================================================= */}
 
             {imageLinks.length > 0 && (
 
@@ -1769,45 +2353,47 @@ function DatasetDetail() {
                 <div className="dataset-assets-list">
 
                   {imageLinks.map(
-                    (link, index) => (
+                    (link, index) => {
 
-                      <a
-                        key={
-                          `${link.name || 'image'}-${index}`
-                        }
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="dataset-asset-card"
-                      >
+                      if (!link?.url) {
+                        return null
+                      }
 
-                        <span className="dataset-asset-icon">
-                          {getLinkIcon(link)}
-                        </span>
 
-                        <div className="dataset-asset-content">
-
-                          <strong>
-                            {link.name ||
-                              'Preview'}
-                          </strong>
-
-                          <span>
-                            {link.extension
-                              ?.toUpperCase() ||
-                              link.mime ||
-                              'Image'}
+                      return (
+                        <a
+                          key={`${link.name || 'image'}-${index}`}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dataset-asset-card"
+                        >
+                          <span className="dataset-asset-icon">
+                            {getLinkIcon(link)}
                           </span>
 
-                        </div>
+                          <div className="dataset-asset-content">
+                            <strong>
+                              {link.name ||
+                                link.title ||
+                                'Preview'}
+                            </strong>
 
-                        <span className="dataset-asset-arrow">
-                          ↗
-                        </span>
+                            <span>
+                              {link.extension
+                                ?.toUpperCase() ||
+                                link.mime ||
+                                'Image'}
+                            </span>
+                          </div>
 
-                      </a>
+                          <span className="dataset-asset-arrow">
+                            ↗
+                          </span>
+                        </a>
+                      )
 
-                    )
+                    }
                   )}
 
                 </div>
@@ -1817,7 +2403,9 @@ function DatasetDetail() {
             )}
 
 
-            {/* METADATA */}
+            {/* =================================================
+                METADATA
+            ================================================= */}
 
             {metadataLinks.length > 0 && (
 
@@ -1830,45 +2418,56 @@ function DatasetDetail() {
                 <div className="dataset-assets-list">
 
                   {metadataLinks.map(
-                    (link, index) => (
+                    (link, index) => {
 
-                      <a
-                        key={
-                          `${link.name || 'metadata'}-${index}`
-                        }
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="dataset-asset-card"
-                      >
+                      if (!link?.url) {
+                        return null
+                      }
 
-                        <span className="dataset-asset-icon">
-                          {getLinkIcon(link)}
-                        </span>
 
-                        <div className="dataset-asset-content">
+                      return (
+                        <a
+                          key={
+                            `${link.name || 'metadata'}-${index}`
+                          }
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dataset-asset-card"
+                        >
 
-                          <strong>
-                            {link.name ||
-                              'Metadata'}
-                          </strong>
-
-                          <span>
-                            {link.extension
-                              ?.toUpperCase() ||
-                              link.mime ||
-                              'Metadata'}
+                          <span className="dataset-asset-icon">
+                            {getLinkIcon(link)}
                           </span>
 
-                        </div>
 
-                        <span className="dataset-asset-arrow">
-                          ↗
-                        </span>
+                          <div className="dataset-asset-content">
 
-                      </a>
+                            <strong>
+                              {link.name ||
+                                link.title ||
+                                'Metadata'}
+                            </strong>
 
-                    )
+                            <span>
+                              {link.extension
+                                ?.toUpperCase() ||
+                                link.mime ||
+                                'Metadata'}
+                            </span>
+
+                          </div>
+
+
+                          <span className="dataset-asset-arrow">
+                            ↗
+                          </span>
+
+                        </a>
+
+                      )
+
+                    }
                   )}
 
                 </div>
@@ -1878,7 +2477,9 @@ function DatasetDetail() {
             )}
 
 
-            {/* OTHER */}
+            {/* =================================================
+                OTHER
+            ================================================= */}
 
             {infoLinks.length > 0 && (
 
@@ -1891,46 +2492,58 @@ function DatasetDetail() {
                 <div className="dataset-assets-list">
 
                   {infoLinks.map(
-                    (link, index) => (
+                    (link, index) => {
 
-                      <a
-                        key={
-                          `${link.name || 'resource'}-${index}`
-                        }
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="dataset-asset-card"
-                      >
+                      if (!link?.url) {
+                        return null
+                      }
 
-                        <span className="dataset-asset-icon">
-                          {getLinkIcon(link)}
-                        </span>
 
-                        <div className="dataset-asset-content">
+                      return (
 
-                          <strong>
-                            {link.name ||
-                              'Resource'}
-                          </strong>
+                        <a
+                          key={
+                            `${link.name || 'resource'}-${index}`
+                          }
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dataset-asset-card"
+                        >
 
-                          <span>
-                            {link.extension
-                              ?.toUpperCase() ||
-                              link.mime ||
-                              link.link_type ||
-                              'Resource'}
+                          <span className="dataset-asset-icon">
+                            {getLinkIcon(link)}
                           </span>
 
-                        </div>
 
-                        <span className="dataset-asset-arrow">
-                          ↗
-                        </span>
+                          <div className="dataset-asset-content">
 
-                      </a>
+                            <strong>
+                              {link.name ||
+                                link.title ||
+                                'Resource'}
+                            </strong>
 
-                    )
+                            <span>
+                              {link.extension
+                                ?.toUpperCase() ||
+                                link.mime ||
+                                link.link_type ||
+                                'Resource'}
+                            </span>
+
+                          </div>
+
+
+                          <span className="dataset-asset-arrow">
+                            ↗
+                          </span>
+
+                        </a>
+
+                      )
+
+                    }
                   )}
 
                 </div>
@@ -1938,6 +2551,35 @@ function DatasetDetail() {
               </div>
 
             )}
+
+
+            {/* =================================================
+                NO ASSETS
+            ================================================= */}
+
+            {dataLinks.length === 0 &&
+              imageLinks.length === 0 &&
+              metadataLinks.length === 0 &&
+              infoLinks.length === 0 && (
+
+                <div className="dataset-attributes-empty">
+
+                  <div className="dataset-empty-icon">
+                    ▧
+                  </div>
+
+                  <h4>
+                    Belum ada assets
+                  </h4>
+
+                  <p>
+                    Resource untuk dataset ini
+                    belum tersedia.
+                  </p>
+
+                </div>
+
+              )}
 
           </section>
 
@@ -1969,6 +2611,7 @@ function DatasetDetail() {
 
             </div>
 
+
             <a
               href={dataset.download_url}
               target="_blank"
@@ -1981,19 +2624,6 @@ function DatasetDetail() {
           </div>
 
         )}
-
-
-        {/* =================================================
-            BACK
-        ================================================= */}
-
-        <div className="dataset-back">
-
-          <Link to="/katalog">
-            ← Kembali ke Katalog
-          </Link>
-
-        </div>
 
 
       </section>

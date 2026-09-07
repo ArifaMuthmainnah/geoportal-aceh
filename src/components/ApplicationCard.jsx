@@ -1,32 +1,16 @@
-import { stripHtml } from '../utils/datasetUtils'
+import { Link } from 'react-router'
+import {
+  mapCategory,
+  getResourceTypeLabel,
+  stripHtml,
+} from '../utils/datasetUtils'
 
 
 function GeoappCard({ application }) {
 
-  // =====================================================
-  // DESCRIPTION
-  // =====================================================
+  const description = stripHtml(application.abstract || application.description || '')
 
-  const description = stripHtml(
-    application.abstract ||
-    application.description ||
-    ''
-  )
-
-
-  // =====================================================
-  // TITLE
-  // =====================================================
-
-  const title =
-    application.title ||
-    application.name ||
-    'Tanpa judul'
-
-
-  // =====================================================
-  // OWNER
-  // =====================================================
+  const title = application.title || application.name || 'Tanpa judul'
 
   const ownerName =
     application.owner?.first_name ||
@@ -34,228 +18,100 @@ function GeoappCard({ application }) {
     application.metadata_author?.[0]?.username ||
     'Tidak diketahui'
 
-
-  // =====================================================
-  // AVATAR
-  // =====================================================
-
   const ownerAvatar =
     application.owner?.avatar ||
     application.metadata_author?.[0]?.avatar ||
     null
 
-
-  // =====================================================
-  // THUMBNAIL
-  // =====================================================
-
   const thumbnail =
     application.thumbnail_url ||
-    application.links?.find(
-      (link) =>
-        link.link_type === 'image'
-    )?.url ||
+    application.links?.find((link) => link.link_type === 'image')?.url ||
     null
-
-
-  // =====================================================
-  // DATE
-  // =====================================================
 
   const formattedDate =
     application.date
-      ? new Date(
-          application.date
-        ).toLocaleDateString(
-          'id-ID',
-          {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          }
-        )
+      ? new Date(application.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
       : '-'
 
-
   // =====================================================
-  // CATEGORY
-  // =====================================================
-
-  const category =
-  application.resource_type === 'dashboard'
-    ? 'Dashboard'
-    : application.category?.identifier ||
-      'Aplikasi'
-
-
-  // =====================================================
-  // OPEN URL
+  // #8 (Sesi 4): kategori badge SEKARANG disamakan dengan
+  // Dataset — dihitung lewat mapCategory(), bukan dihardcode
+  // jadi literal "Dashboard"/"Aplikasi" lagi. Kalau kategori
+  // yang diupload user tidak ada di daftar kategori baku,
+  // mapCategory() akan menampilkannya apa adanya (tidak
+  // dipaksa jadi "Umum").
   // =====================================================
 
-  const applicationUrl =
-    application.detail_url ||
-    application.embed_url ||
-    '#'
+  const category = mapCategory(application.category?.identifier)
+
+  // Jenis resource (Dashboard/Aplikasi) ditampilkan terpisah,
+  // di baris meta bawah bersama tanggal — supaya listing yang
+  // menggabungkan Dashboard & Aplikasi tetap mudah dibedakan.
+  const typeLabel =
+    getResourceTypeLabel(application.resource_type === 'application' ? 'application' : 'dashboard')
+
+  // #9: selalu ke halaman detail INTERNAL kita, bukan langsung ke link luar
+  const internalDetailUrl = `/aplikasi/${application.pk || application.uuid || application.id}`
 
 
   return (
 
-    <article className="card katalog-card h-100">
+    <Link
+      to={internalDetailUrl}
+      className="text-decoration-none text-reset dataset-card-link"
+    >
+      <article className="card katalog-card h-100">
 
-      {/* =========================================
-          THUMBNAIL
-      ========================================= */}
+        <div className="katalog-card-image">
 
-      <div className="katalog-card-image">
+          {thumbnail ? (
+            <img
+              src={thumbnail}
+              alt={title}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+                e.currentTarget.parentElement.classList.add('has-image-error')
+              }}
+            />
+          ) : (
+            <div className="katalog-card-image-placeholder"><span>GIS</span></div>
+          )}
 
-        {thumbnail ? (
-
-          <img
-            src={thumbnail}
-            alt={title}
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display =
-                'none'
-
-              e.currentTarget.parentElement.classList.add(
-                'has-image-error'
-              )
-            }}
-          />
-
-        ) : (
-
-          <div className="katalog-card-image-placeholder">
-
-            <span>
-              GIS
-            </span>
-
-          </div>
-
-        )}
-
-        <div className="katalog-card-image-fallback">
-
-          <span>
-            GIS
-          </span>
-
-        </div>
-
-      </div>
-
-
-      {/* =========================================
-          CONTENT
-      ========================================= */}
-
-      <div className="card-body katalog-card-body">
-
-        {/* CATEGORY */}
-
-        <span className="katalog-card-category">
-
-          {category}
-
-        </span>
-
-
-        {/* TITLE */}
-
-        <h5
-          className="katalog-card-title"
-          title={title}
-        >
-          {title}
-        </h5>
-
-
-        {/* DESCRIPTION */}
-
-        <p className="katalog-card-description">
-
-          {description.slice(0, 150)}
-
-          {description.length > 150
-            ? '...'
-            : ''}
-
-        </p>
-
-
-        {/* =====================================
-            OWNER + DATE
-        ===================================== */}
-
-        <div className="katalog-card-meta">
-
-          {/* OWNER */}
-
-          <div
-            className="katalog-card-owner"
-            title={ownerName}
-          >
-
-            {ownerAvatar ? (
-
-              <img
-                src={ownerAvatar}
-                alt={ownerName}
-                className="katalog-card-owner-avatar"
-              />
-
-            ) : (
-
-              <div className="katalog-card-owner-avatar-placeholder">
-                👤
-              </div>
-
-            )}
-
-            <span className="katalog-card-owner-name">
-
-              {ownerName}
-
-            </span>
-
-          </div>
-
-
-          {/* DATE */}
-
-          <small className="katalog-card-date">
-
-            {formattedDate}
-
-          </small>
+          <div className="katalog-card-image-fallback"><span>GIS</span></div>
 
         </div>
 
 
-        {/* =====================================
-            ACTION
-        ===================================== */}
+        <div className="card-body katalog-card-body">
 
-        <a
-          href={applicationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="application-card-button"
-        >
+          <span className="katalog-card-category">{category}</span>
 
-          Buka Aplikasi
+          <h5 className="katalog-card-title" title={title}>{title}</h5>
 
-          <span>
-            →
-          </span>
+          <p className="katalog-card-description">
+            {description.slice(0, 150)}{description.length > 150 ? '...' : ''}
+          </p>
 
-        </a>
+          <div className="katalog-card-meta">
 
-      </div>
+            <div className="katalog-card-owner" title={ownerName}>
+              {ownerAvatar ? (
+                <img src={ownerAvatar} alt={ownerName} className="katalog-card-owner-avatar" />
+              ) : (
+                <div className="katalog-card-owner-avatar-placeholder">👤</div>
+              )}
+              <span className="katalog-card-owner-name">{ownerName}</span>
+            </div>
 
-    </article>
+            <small className="katalog-card-date">{typeLabel} · {formattedDate}</small>
+
+          </div>
+
+        </div>
+
+      </article>
+    </Link>
 
   )
 }

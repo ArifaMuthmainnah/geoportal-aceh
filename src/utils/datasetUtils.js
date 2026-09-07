@@ -46,15 +46,12 @@ export function mapCategory(identifier) {
     return 'Umum'
   }
 
-  // Pastikan identifier berupa string
   const key = String(identifier).trim()
 
-  // Cari mapping secara langsung
   if (CATEGORY_MAP[key]) {
     return CATEGORY_MAP[key]
   }
 
-  // Cari tanpa membedakan huruf besar/kecil
   const normalizedKey = key.toLowerCase()
 
   const matchedKey = Object.keys(CATEGORY_MAP).find(
@@ -65,10 +62,35 @@ export function mapCategory(identifier) {
     return CATEGORY_MAP[matchedKey]
   }
 
-  // Kalau API memberikan identifier
-  // yang belum ada di mapping,
-  // jangan tampilkan identifier Inggris mentah.
-  return 'Umum'
+  // Kategori kustom yang ditulis user sendiri:
+  // tampilkan apa adanya, JANGAN dijadikan 'Umum'.
+  return key
+}
+
+
+// =========================================
+// RESOURCE TYPE LABEL
+// =========================================
+//
+// #8/#9 (Sesi 4): dipakai supaya label jenis resource
+// (Dataset/Dashboard/Aplikasi/Peta/Dokumen/Informasi)
+// konsisten di semua halaman (JIGN, JIGNDetail, Aplikasi,
+// ApplicationCard, ApplicationDetail), tanpa hardcode
+// ulang string yang sama di banyak file berbeda.
+//
+// =========================================
+
+export const RESOURCE_TYPE_LABELS = {
+  dataset: 'Dataset',
+  dashboard: 'Dashboard',
+  application: 'Aplikasi',
+  map: 'Peta',
+  document: 'Dokumen',
+  informasi: 'Informasi',
+}
+
+export function getResourceTypeLabel(resourceType) {
+  return RESOURCE_TYPE_LABELS[resourceType] || 'Dataset'
 }
 
 
@@ -191,4 +213,56 @@ export function stripHtml(html) {
     )
 
   return doc.body.textContent || ''
+}
+
+
+// =========================================
+// INFORMASI — PENANDA "SUDAH DIBACA"
+// =========================================
+//
+// SESI 5: dipakai Navbar (titik notifikasi di dropdown
+// Informasi) dan halaman Berita/Agenda/Pemberitahuan
+// (menandai kategori sebagai "sudah dibaca" saat halaman
+// dikunjungi). Disimpan di localStorage per kategori,
+// bukan per user, supaya tetap ringan (tanpa endpoint baru
+// di backend).
+//
+// =========================================
+
+export const INFORMASI_SEEN_STORAGE_KEYS = {
+  berita: 'geoportal_informasi_seen_berita',
+  agenda: 'geoportal_informasi_seen_agenda',
+  pemberitahuan: 'geoportal_informasi_seen_pemberitahuan',
+}
+
+export function getInformasiSeenAt(subType) {
+  try {
+    const key = INFORMASI_SEEN_STORAGE_KEYS[subType]
+    if (!key) return 0
+    const raw = window.localStorage.getItem(key)
+    return raw ? Number(raw) : 0
+  } catch {
+    return 0
+  }
+}
+
+export function markInformasiSeenNow(subType) {
+  try {
+    const key = INFORMASI_SEEN_STORAGE_KEYS[subType]
+    if (!key) return
+    window.localStorage.setItem(key, String(Date.now()))
+  } catch {
+    // localStorage tidak tersedia (mode privat dll), abaikan saja
+  }
+}
+
+export function hasUnseenInformasi(subType, items) {
+  if (!Array.isArray(items) || items.length === 0) return false
+
+  const seenAt = getInformasiSeenAt(subType)
+
+  return items.some((item) => {
+    const created = item?.created_at ? new Date(item.created_at).getTime() : 0
+    return created > seenAt
+  })
 }
