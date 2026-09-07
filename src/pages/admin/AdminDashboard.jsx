@@ -8,6 +8,7 @@ import {
 import {
   Link,
   useNavigate,
+  useSearchParams,
 } from 'react-router'
 
 import {
@@ -18,7 +19,6 @@ import {
 
 import {
   getAdminGeoappsRaw,
-  updateGeoapp,
   hideGeoapp,
   restoreGeoapp,
 } from '../../api/geoappApi'
@@ -41,26 +41,6 @@ import {
 } from '../../context/AuthContext'
 
 import {
-  RESOURCE_TYPE_OPTIONS,
-  INFORMASI_SUBTYPE_OPTIONS,
-  CATEGORY_OPTIONS,
-  DATASET_BBOX_FIELDS,
-  supportsAttributeTable,
-  supportsBboxLocation,
-  supportsLinkedResources,
-  supportsEmbedUrl,
-  supportsExtraMetadataForm,
-  supportsAgendaSchedule,
-  buildExtraMetadata,
-  parseExtraMetadata,
-} from '../../utils/resourceFields'
-
-import {
-  downloadAttributeTemplate,
-  parseAttributeExcel,
-} from '../../utils/attributeExcel'
-
-import {
   IconSearch,
   IconFilter,
   IconEye,
@@ -69,6 +49,8 @@ import {
   IconCheckCircle,
   IconEyeOff,
 } from '../../components/ActionIcons'
+
+import CreateChoiceMenu from '../../components/CreateChoiceMenu'
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5000/api'
 const SERVER_BASE_URL = AUTH_API_URL.replace(/\/api\/?$/, '')
@@ -132,30 +114,24 @@ function normalizeLocalRow(item) {
   }
 }
 
-const EMPTY_METADATA_FORM = {
-  region: '', language: '', srid: '', attribution: '', purpose: '',
-  supplementalInformation: '', constraintsOther: '',
-  bbox: { minLon: '', minLat: '', maxLon: '', maxLat: '' },
-  attributes: [],
-  eventDate: '', eventTime: '', eventLocation: '',
-}
-
 function AdminDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout, isAdmin, refreshCurrentUser } = useAuth()
 
+  // ===================================================
+  // SESI 9 (Poin 10): dukung ?tab=users supaya link
+  // "Pengguna" dari sidebar halaman lain (mis. Data Saya)
+  // bisa langsung membuka tab Pengguna di sini, tanpa harus
+  // klik dua kali (buka Dashboard admin dulu, baru klik tab).
+  // ===================================================
+
+  const [searchParams] = useSearchParams()
+
   const [apiDatasets, setApiDatasets] = useState([])
   const [apiGeoapps, setApiGeoapps] = useState([])
   const [localDatasets, setLocalDatasets] = useState([])
   const [users, setUsers] = useState([])
-
-  const [files, setFiles] = useState([])
-  const [thumbnailFile, setThumbnailFile] = useState(null)
-  const [externalUrl, setExternalUrl] = useState('')
-  const [embedUrl, setEmbedUrl] = useState('')
-  const [subType, setSubType] = useState('pemberitahuan')
-  const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -200,18 +176,6 @@ function AdminDashboard() {
 
   const [togglingKey, setTogglingKey] = useState(null)
 
-  // ===================================================
-  // EDIT MODAL (#6: selengkap halaman upload untuk data lokal)
-  // ===================================================
-
-  const [editingRow, setEditingRow] = useState(null)
-  const [datasetForm, setDatasetForm] = useState({
-    title: '', abstract: '', category: '', customCategory: '', resourceType: 'dataset', externalUrl: '', subType: 'pemberitahuan',
-  })
-  const [metadataForm, setMetadataForm] = useState(EMPTY_METADATA_FORM)
-  const [attributeExcelError, setAttributeExcelError] = useState('')
-  const [savingDataset, setSavingDataset] = useState(false)
-
   const [userModalMode, setUserModalMode] = useState(null)
   const [editingUser, setEditingUser] = useState(null)
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', role: 'operator' })
@@ -243,6 +207,15 @@ function AdminDashboard() {
   }
 
   useEffect(() => { loadDashboard() }, [])
+
+  // SESI 9 (Poin 10): buka tab "Pengguna" otomatis kalau
+  // halaman ini diakses lewat link "?tab=users".
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'users') {
+      setActiveMenu('users')
+    }
+  }, [searchParams])
 
   const allRows = useMemo(() => {
     return [
@@ -339,201 +312,16 @@ function AdminDashboard() {
   }
 
   // ===================================================
-  // OPEN EDIT — isi form selengkap halaman upload (#6)
+  // SESI 8 (FIX Poin 6): Edit data SEKARANG membuka halaman
+  // penuh /admin/edit/:source/:id (EditDatasetAdmin.jsx),
+  // BUKAN modal/pop-up lagi — sama seperti pola halaman
+  // "Edit Data" di Data Saya (EditMyDataset.jsx). :source
+  // dipakai halaman tujuan untuk tahu cara mengambil &
+  // menyimpan datanya (data lokal vs data dari API lama).
   // ===================================================
 
-  function openEditRow(row) {
-
-    setEditingRow(row)
-    setAttributeExcelError('')
-
-    const isLocal = row._source === 'local'
-    const isKnownCategory = CATEGORY_OPTIONS.includes(row.category)
-
-    setDatasetForm({
-      title: row.title || '',
-      abstract: row.raw.abstract || row.raw.description || '',
-      category: isLocal ? (isKnownCategory ? row.category : (row.category ? '__custom__' : '')) : row.category,
-      customCategory: isLocal && !isKnownCategory ? (row.category || '') : '',
-      resourceType: row.resourceType,
-      externalUrl: row.raw.external_url || '',
-      subType: row.raw.sub_type || 'pemberitahuan',
-    })
-
-    if (isLocal) {
-
-      const metadata = parseExtraMetadata(row.raw.extra_metadata)
-
-      setMetadataForm({
-        region: metadata.region || '',
-        language: metadata.language || '',
-        srid: metadata.srid || '',
-        attribution: metadata.attribution || '',
-        purpose: metadata.purpose || '',
-        supplementalInformation: metadata.supplemental_information || '',
-        constraintsOther: metadata.constraints_other || '',
-        bbox: {
-          minLon: metadata.bbox?.minLon ?? '',
-          minLat: metadata.bbox?.minLat ?? '',
-          maxLon: metadata.bbox?.maxLon ?? '',
-          maxLat: metadata.bbox?.maxLat ?? '',
-        },
-        attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
-        eventDate: metadata.event_date || '',
-        eventTime: metadata.event_time || '',
-        eventLocation: metadata.event_location || '',
-      })
-
-    } else {
-
-      setMetadataForm(EMPTY_METADATA_FORM)
-
-    }
-
-  }
-
-  function closeEditRow() { setEditingRow(null) }
-
-  function addAttributeRow() {
-    setMetadataForm((current) => ({ ...current, attributes: [...current.attributes, { name: '', label: '', description: '' }] }))
-  }
-
-  function updateAttributeRow(index, field, value) {
-    setMetadataForm((current) => ({
-      ...current,
-      attributes: current.attributes.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
-    }))
-  }
-
-  function removeAttributeRow(index) {
-    setMetadataForm((current) => ({
-      ...current,
-      attributes: current.attributes.filter((_, i) => i !== index),
-    }))
-  }
-
-  async function handleAttributeExcelUpload(event) {
-    const file = event.target.files?.[0]
-    if (!file) return
-    setAttributeExcelError('')
-    try {
-      const parsedRows = await parseAttributeExcel(file)
-      if (parsedRows.length === 0) {
-        setAttributeExcelError('Tidak ada baris valid ditemukan. Pastikan kolom "name" terisi.')
-        return
-      }
-      setMetadataForm((current) => ({ ...current, attributes: [...current.attributes, ...parsedRows] }))
-      window.alert(`${parsedRows.length} atribut berhasil ditambahkan dari file Excel.`)
-    } catch (err) {
-      console.error('Gagal membaca file Excel:', err)
-      setAttributeExcelError('Gagal membaca file Excel. Pastikan format .xlsx/.xls sesuai template.')
-    } finally {
-      event.target.value = ''
-    }
-  }
-
-  async function handleSaveRow(event) {
-
-    event.preventDefault()
-    if (!editingRow) return
-
-    try {
-
-      setSavingDataset(true)
-
-      const finalCategory =
-        datasetForm.category === '__custom__' ? datasetForm.customCategory.trim() : datasetForm.category
-
-      if (editingRow._source === 'api-dataset') {
-
-        await updateDataset(editingRow.rawId, {
-          title: datasetForm.title, abstract: datasetForm.abstract, category: finalCategory,
-        })
-
-        setApiDatasets((current) => current.map((item) =>
-          item.pk === editingRow.rawId
-            ? { ...item, title: datasetForm.title, abstract: datasetForm.abstract, category: { ...item.category, identifier: finalCategory } }
-            : item
-        ))
-
-      } else if (editingRow._source === 'api-geoapp') {
-
-        await updateGeoapp(editingRow.rawId, {
-          title: datasetForm.title, abstract: datasetForm.abstract, category: finalCategory,
-        })
-
-        setApiGeoapps((current) => current.map((item) =>
-          item.pk === editingRow.rawId
-            ? { ...item, title: datasetForm.title, abstract: datasetForm.abstract, category: { ...item.category, identifier: finalCategory } }
-            : item
-        ))
-
-      } else {
-
-        const extraMetadata =
-          buildExtraMetadata({
-            resourceType: datasetForm.resourceType,
-            subType: datasetForm.subType,
-            region: metadataForm.region,
-            language: metadataForm.language,
-            srid: metadataForm.srid,
-            attribution: metadataForm.attribution,
-            purpose: metadataForm.purpose,
-            supplementalInformation: metadataForm.supplementalInformation,
-            constraintsOther: metadataForm.constraintsOther,
-            bbox: metadataForm.bbox,
-            attributes: metadataForm.attributes,
-            eventDate: metadataForm.eventDate,
-            eventTime: metadataForm.eventTime,
-            eventLocation: metadataForm.eventLocation,
-          })
-
-        const savePayload = {
-          title: datasetForm.title,
-          abstract: datasetForm.abstract,
-          category: finalCategory,
-          resource_type: datasetForm.resourceType,
-          external_url: datasetForm.externalUrl || null,
-          extra_metadata: extraMetadata,
-        }
-
-        // FIX: sebelumnya sub_type tidak pernah dikirim dari modal
-        // edit admin, jadi kalau resource type-nya "Informasi",
-        // jenis (Berita/Agenda/Pemberitahuan) tidak pernah bisa
-        // dikoreksi lewat sini.
-        if (datasetForm.resourceType === 'informasi') {
-          savePayload.sub_type = datasetForm.subType
-        }
-
-        await updateMyDataset(editingRow.rawId, savePayload)
-
-        setLocalDatasets((current) => current.map((item) =>
-          item.id === editingRow.rawId
-            ? {
-                ...item,
-                title: datasetForm.title,
-                abstract: datasetForm.abstract,
-                category: finalCategory,
-                resource_type: datasetForm.resourceType,
-                external_url: datasetForm.externalUrl || null,
-                extra_metadata: extraMetadata,
-                sub_type: datasetForm.resourceType === 'informasi' ? datasetForm.subType : item.sub_type,
-              }
-            : item
-        ))
-
-      }
-
-      window.alert('Data berhasil diperbarui.')
-      closeEditRow()
-
-    } catch (err) {
-      console.error('Update dataset error:', err)
-      window.alert('Gagal memperbarui data.')
-    } finally {
-      setSavingDataset(false)
-    }
-
+  function goToEditPage(row) {
+    navigate(`/admin/edit/${row._source}/${row.rawId}`)
   }
 
   function openCreateUser() {
@@ -612,10 +400,6 @@ function AdminDashboard() {
 
   if (!isAdmin) return null
 
-  const isLocalEditing = editingRow?._source === 'local'
-  const showAttributeTable = isLocalEditing && supportsAttributeTable(datasetForm.resourceType)
-  const showAgendaSchedule = isLocalEditing && supportsAgendaSchedule(datasetForm.resourceType, datasetForm.subType)
-
   return (
     <main className="admin-page">
 
@@ -623,7 +407,20 @@ function AdminDashboard() {
 
         <aside className="admin-sidebar">
           <div className="admin-sidebar-brand"><span>GEOPORTAL</span><strong>ACEH</strong></div>
-          <div className="admin-sidebar-user">
+
+          {/* =============================================
+              SESI 9 (Poin 10): nama/avatar admin sekarang
+              bisa DIKLIK dan langsung mengarah ke halaman
+              profil — menu "Profil" terpisah di bawah sudah
+              tidak diperlukan lagi.
+          ============================================= */}
+
+          <Link
+            to="/dashboard/profil"
+            className="admin-sidebar-user"
+            title="Lihat profil saya"
+            style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
             <div className="admin-user-avatar">
               {currentUser?.avatar_url ? (
                 <img
@@ -639,7 +436,17 @@ function AdminDashboard() {
               <strong>{currentUser?.username || 'Administrator'}</strong>
               <span>Administrator</span>
             </div>
-          </div>
+          </Link>
+
+          {/* =============================================
+              SIDEBAR MINIMAL — SESI 9 (Poin 10): cukup
+              Dashboard, Data Saya, Pengguna, Lihat Katalog,
+              WebGIS, Logout. "Ambil dari API" & "Profil"
+              DIHAPUS — Ambil dari API sudah ada di tombol +
+              (pojok kanan bawah), Profil pindah ke klik nama
+              di atas.
+          ============================================= */}
+
           <nav className="admin-sidebar-nav">
             <button type="button" className={activeMenu === 'dashboard' ? 'active' : ''} onClick={() => setActiveMenu('dashboard')}>
               <span>▦</span>Dashboard
@@ -863,7 +670,7 @@ function AdminDashboard() {
                                 type="button"
                                 className="icon-btn icon-btn-edit"
                                 data-tooltip="Edit"
-                                onClick={() => openEditRow(row)}
+                                onClick={() => goToEditPage(row)}
                               >
                                 <IconPencil />
                               </button>
@@ -964,223 +771,15 @@ function AdminDashboard() {
 
 
       {/* =============================================
-          FAB — #3: tombol bulat "+" tanpa teks, pojok
-          kanan bawah, langsung ke halaman upload.
+          SESI 9 (Poin 8): FAB "+" lama yang cuma link
+          langsung ke /dashboard/upload sekarang diganti
+          dengan menu seperempat lingkaran yang sama seperti
+          di halaman "Data Saya" — jadi admin juga bisa
+          langsung pilih Dataset / Peta / Dashboard / Upload
+          / Ambil dari API dari satu tombol yang sama.
       ============================================= */}
 
-      <Link
-        to="/dashboard/upload"
-        title="Upload Data"
-        className="admin-view-site"
-        style={{
-          position: 'fixed', bottom: '30px', right: '30px', width: '56px', height: '56px',
-          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '28px', lineHeight: 1, padding: 0,
-          boxShadow: '0 4px 14px rgba(0,0,0,0.25)', zIndex: 50,
-        }}
-      >
-        +
-      </Link>
-
-
-      {/* =============================================
-          MODAL EDIT — #6: lengkap untuk data lokal
-      ============================================= */}
-
-      {editingRow && (
-
-        <div className="admin-modal-overlay" onClick={closeEditRow}>
-          <div className="admin-modal" onClick={(event) => event.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-
-            <div className="admin-modal-header">
-              <h3>Edit Data</h3>
-              <button type="button" className="admin-modal-close" onClick={closeEditRow}>×</button>
-            </div>
-
-            <form onSubmit={handleSaveRow}>
-
-              <div className="admin-modal-body">
-
-                {isLocalEditing && (
-                  <div className="admin-form-group">
-                    <label>Jenis Resource</label>
-                    <select value={datasetForm.resourceType} onChange={(e) => setDatasetForm((c) => ({ ...c, resourceType: e.target.value }))}>
-                      {RESOURCE_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                      <option value="webgis">WebGIS (data lama)</option>
-                    </select>
-                  </div>
-                )}
-
-                {isLocalEditing && datasetForm.resourceType === 'informasi' && (
-                  <div className="admin-form-group">
-                    <label>Jenis Informasi</label>
-                    <select value={datasetForm.subType} onChange={(e) => setDatasetForm((c) => ({ ...c, subType: e.target.value }))}>
-                      {INFORMASI_SUBTYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* SESI 5 (lanjutan): jadwal khusus Agenda — Tanggal
-                    Acara/Waktu/Tempat, terpisah dari tanggal publish. */}
-                {showAgendaSchedule && (
-                  <>
-                    <div className="admin-form-group">
-                      <label>Tanggal Acara</label>
-                      <input type="date" value={metadataForm.eventDate} onChange={(e) => setMetadataForm((c) => ({ ...c, eventDate: e.target.value }))} />
-                    </div>
-                    <div className="admin-form-group">
-                      <label>Waktu</label>
-                      <input type="text" value={metadataForm.eventTime} onChange={(e) => setMetadataForm((c) => ({ ...c, eventTime: e.target.value }))} placeholder="mis: 10:00 s/d 15:00 WIB" />
-                    </div>
-                    <div className="admin-form-group">
-                      <label>Tempat</label>
-                      <input type="text" value={metadataForm.eventLocation} onChange={(e) => setMetadataForm((c) => ({ ...c, eventLocation: e.target.value }))} placeholder="mis: Aula Diskominsa Provinsi Aceh" />
-                    </div>
-                  </>
-                )}
-
-                {isLocalEditing && (
-                  <div className="admin-form-group">
-                    <label>Link / URL (opsional)</label>
-                    <input type="url" value={datasetForm.externalUrl} onChange={(e) => setDatasetForm((c) => ({ ...c, externalUrl: e.target.value }))} placeholder="https://..." />
-                  </div>
-                )}
-
-                <div className="admin-form-group">
-                  <label>Judul</label>
-                  <input type="text" value={datasetForm.title} onChange={(e) => setDatasetForm((c) => ({ ...c, title: e.target.value }))} required />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Deskripsi / Abstract</label>
-                  <textarea rows={4} value={datasetForm.abstract} onChange={(e) => setDatasetForm((c) => ({ ...c, abstract: e.target.value }))} />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Kategori</label>
-
-                  {isLocalEditing ? (
-                    <>
-                      <select value={datasetForm.category} onChange={(e) => setDatasetForm((c) => ({ ...c, category: e.target.value }))}>
-                        <option value="">Pilih kategori</option>
-                        {CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                        <option value="__custom__">Lainnya...</option>
-                      </select>
-                      {datasetForm.category === '__custom__' && (
-                        <>
-                          <input
-                            type="text"
-                            style={{ marginTop: '8px' }}
-                            value={datasetForm.customCategory}
-                            onChange={(e) => setDatasetForm((c) => ({ ...c, customCategory: e.target.value }))}
-                            placeholder="Ketik kategori baru"
-                          />
-                          <small style={{ display: 'block', marginTop: '4px' }}>
-                            Gunakan bahasa Indonesia untuk kategori baru ini.
-                          </small>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <input type="text" value={datasetForm.category} onChange={(e) => setDatasetForm((c) => ({ ...c, category: e.target.value }))} />
-                  )}
-                </div>
-
-                  {isLocalEditing && supportsExtraMetadataForm(datasetForm.resourceType) && (
-
-                  <>
-                    <div className="admin-form-group"><label>Wilayah / Region</label><input type="text" value={metadataForm.region} onChange={(e) => setMetadataForm((c) => ({ ...c, region: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Bahasa</label><input type="text" value={metadataForm.language} onChange={(e) => setMetadataForm((c) => ({ ...c, language: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Sistem Koordinat (CRS)</label><input type="text" value={metadataForm.srid} onChange={(e) => setMetadataForm((c) => ({ ...c, srid: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Atribusi</label><input type="text" value={metadataForm.attribution} onChange={(e) => setMetadataForm((c) => ({ ...c, attribution: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Tujuan</label><textarea rows={3} value={metadataForm.purpose} onChange={(e) => setMetadataForm((c) => ({ ...c, purpose: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Informasi Tambahan</label><textarea rows={3} value={metadataForm.supplementalInformation} onChange={(e) => setMetadataForm((c) => ({ ...c, supplementalInformation: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Batasan Penggunaan</label><textarea rows={3} value={metadataForm.constraintsOther} onChange={(e) => setMetadataForm((c) => ({ ...c, constraintsOther: e.target.value }))} /></div>
-
-                    <div className="admin-form-group">
-                      <label>Bounding Box (WGS84)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        {DATASET_BBOX_FIELDS.map((field) => {
-                          const shortKey =
-                            field.key.replace('bbox_min_lon', 'minLon').replace('bbox_min_lat', 'minLat').replace('bbox_max_lon', 'maxLon').replace('bbox_max_lat', 'maxLat')
-                          return (
-                            <input
-                              key={field.key} type="number" step="any" placeholder={field.label}
-                              value={metadataForm.bbox[shortKey] || ''}
-                              onChange={(e) => setMetadataForm((c) => ({ ...c, bbox: { ...c.bbox, [shortKey]: e.target.value } }))}
-                            />
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </>
-
-                )}
-
-                {showAttributeTable && (
-
-                  <div className="admin-form-group">
-
-                    <label>Attributes</label>
-
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                      <button type="button" className="admin-secondary-button" onClick={downloadAttributeTemplate}>⬇ Template Excel</button>
-                      <label className="admin-secondary-button" style={{ cursor: 'pointer', margin: 0 }}>
-                        ⬆ Upload Excel
-                        <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleAttributeExcelUpload} />
-                      </label>
-                      <button type="button" className="admin-secondary-button" onClick={addAttributeRow}>+ Baris Manual</button>
-                    </div>
-
-                    {attributeExcelError && <div className="admin-alert" style={{ marginBottom: '10px' }}>{attributeExcelError}</div>}
-
-                    {metadataForm.attributes.length === 0 ? (
-                      <div className="admin-empty"><p>Belum ada atribut ditambahkan.</p></div>
-                    ) : (
-                      <div className="admin-table-wrapper">
-                        <table className="admin-table">
-                          <thead><tr><th>Name</th><th>Label</th><th>Description</th><th></th></tr></thead>
-                          <tbody>
-                            {metadataForm.attributes.map((row, index) => (
-                              <tr key={index}>
-                                <td><input type="text" value={row.name} onChange={(e) => updateAttributeRow(index, 'name', e.target.value)} /></td>
-                                <td><input type="text" value={row.label} onChange={(e) => updateAttributeRow(index, 'label', e.target.value)} /></td>
-                                <td><input type="text" value={row.description} onChange={(e) => updateAttributeRow(index, 'description', e.target.value)} /></td>
-                                <td><button type="button" className="admin-action-delete" onClick={() => removeAttributeRow(index)}>Hapus</button></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                  </div>
-
-                )}
-
-                {!isLocalEditing && (
-                  <p style={{ fontSize: '13px', opacity: 0.75 }}>
-                    Perubahan ini hanya berlaku di tampilan web kita. Data asli di Geoportal Aceh tidak ikut berubah.
-                  </p>
-                )}
-
-              </div>
-
-              <div className="admin-modal-footer">
-                <button type="button" className="admin-secondary-button" onClick={closeEditRow}>Batal</button>
-                <button type="submit" className="admin-view-site" disabled={savingDataset}>{savingDataset ? 'Menyimpan...' : 'Simpan'}</button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-
-      )}
+      <CreateChoiceMenu />
 
 
       {userModalMode && (

@@ -241,7 +241,19 @@ function UserDashboard() {
 
           <div className="admin-sidebar-brand"><span>GEOPORTAL</span><strong>ACEH</strong></div>
 
-          <div className="admin-sidebar-user">
+          {/* =============================================
+              SESI 9 (Poin 10): nama/avatar operator sekarang
+              bisa DIKLIK dan langsung mengarah ke halaman
+              profil — menu "Profil" terpisah di bawah sudah
+              tidak diperlukan lagi.
+          ============================================= */}
+
+          <Link
+            to="/dashboard/profil"
+            className="admin-sidebar-user"
+            title="Lihat profil saya"
+            style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
             <div className="admin-user-avatar">
               {currentUser?.avatar_url ? (
                 <img
@@ -257,7 +269,16 @@ function UserDashboard() {
               <strong>{currentUser?.username || 'Operator'}</strong>
               <span>Operator</span>
             </div>
-          </div>
+          </Link>
+
+          {/* =============================================
+              SIDEBAR MINIMAL — SESI 9 (Poin 10): cukup
+              Dashboard, Data Saya, Lihat Katalog, WebGIS,
+              Logout. "Ambil dari API" & "Profil" DIHAPUS —
+              Ambil dari API sudah ada di tombol + pada
+              halaman Data Saya, Profil pindah ke klik nama
+              di atas.
+          ============================================= */}
 
           <nav className="admin-sidebar-nav">
 

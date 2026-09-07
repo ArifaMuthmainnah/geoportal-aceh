@@ -722,3 +722,50 @@ export async function authPostFile(
   return data
 
 }
+
+export async function authPatchFile(
+  endpoint,
+  formData
+) {
+
+  const token = getToken()
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response =
+    await fetch(
+      buildAuthUrl(endpoint),
+      {
+        method: 'PATCH',
+        headers,
+        body: formData,
+      }
+    )
+
+  const text = await response.text()
+
+  let data = {}
+
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    data = { message: text }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Gagal memperbarui data (${response.status})`
+    )
+  }
+
+  return data
+
+}

@@ -362,7 +362,7 @@ function PetaDetail() {
                     <div><span>Max Lat</span><strong>{bbox.maxLat.toFixed(6)}</strong></div>
                     <div><span>Max Lon</span><strong>{bbox.maxLon.toFixed(6)}</strong></div>
                   </div>
-                  <code className="dataset-wkt-code">{bboxWKT}</code>
+                  
                 </div>
 
                 {center && (
@@ -375,7 +375,7 @@ function PetaDetail() {
                       <div><span>Lat</span><strong>{center.lat.toFixed(6)}</strong></div>
                       <div><span>Lon</span><strong>{center.lon.toFixed(6)}</strong></div>
                     </div>
-                    <code className="dataset-wkt-code">{pointWKT}</code>
+                    
                   </div>
                 )}
               </>

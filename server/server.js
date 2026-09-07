@@ -21,6 +21,9 @@ const proxyRoutes =
 const agencyRoutes =
   require('./routes/agencyRoutes')
 
+const externalFetchRoutes =
+  require('./routes/externalFetchRoutes')
+
 
 const app = express()
 
@@ -89,6 +92,11 @@ app.use(
 app.use(
   '/api/agency-profiles',
   agencyRoutes
+)
+
+app.use(
+  '/api/external',
+  externalFetchRoutes
 )
 
 // =====================================================

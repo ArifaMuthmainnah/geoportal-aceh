@@ -229,7 +229,19 @@ function MyDatasets() {
             <strong>ACEH</strong>
           </div>
 
-          <div className="admin-sidebar-user">
+          {/* =============================================
+              SESI 9 (Poin 10): nama/avatar pengguna sekarang
+              bisa DIKLIK dan langsung mengarah ke halaman
+              profil — menu "Profil" terpisah di bawah sudah
+              tidak diperlukan lagi.
+          ============================================= */}
+
+          <Link
+            to="/dashboard/profil"
+            className="admin-sidebar-user"
+            title="Lihat profil saya"
+            style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
             <div className="admin-user-avatar">
               {currentUser?.avatar_url ? (
                 <img
@@ -245,10 +257,17 @@ function MyDatasets() {
               <strong>{currentUser?.username || 'Pengguna'}</strong>
               <span>{isAdmin ? 'Administrator' : 'Operator'}</span>
             </div>
-          </div>
+          </Link>
 
           {/* =============================================
-              SIDEBAR MINIMAL — sesuai permintaan
+              SIDEBAR MINIMAL — SESI 9 (Poin 10):
+              Admin  : Dashboard, Data Saya, Pengguna, Lihat
+                       Katalog, WebGIS, Logout.
+              Operator: Dashboard, Data Saya, Lihat Katalog,
+                        WebGIS, Logout.
+              "Ambil dari API" & "Profil" DIHAPUS dari sini —
+              Ambil dari API sudah ada di tombol + (pojok
+              kanan bawah), Profil pindah ke klik nama di atas.
           ============================================= */}
 
           <nav className="admin-sidebar-nav">
@@ -264,7 +283,10 @@ function MyDatasets() {
             </button>
 
             {isAdmin && (
-              <Link to="/admin" className="admin-sidebar-link" onClick={(e) => e.preventDefault()} style={{ display: 'none' }} />
+              <Link to="/admin?tab=users" className="admin-sidebar-link">
+                <span>♙</span>
+                Pengguna
+              </Link>
             )}
 
             <Link to="/katalog" className="admin-sidebar-link">
@@ -294,10 +316,6 @@ function MyDatasets() {
               <span className="section-eyebrow">{isAdmin ? 'ADMINISTRATOR' : 'OPERATOR'}</span>
               <h1>Data Saya</h1>
               <p>Kelola dataset, peta, dan dashboard yang telah Anda unggah.</p>
-            </div>
-
-            <div className="admin-header-actions">
-              <CreateChoiceMenu />
             </div>
 
           </header>
@@ -453,9 +471,9 @@ function MyDatasets() {
                     : 'Anda belum mengunggah dataset, peta, atau dashboard apa pun.'}
                 </p>
                 {!search && (
-                  <div style={{ marginTop: '16px' }}>
-                    <CreateChoiceMenu />
-                  </div>
+                  <p style={{ marginTop: '10px', fontSize: '13px', color: 'var(--admin-text-secondary)' }}>
+                    Gunakan tombol <strong>+</strong> di pojok kanan bawah layar untuk mulai menambahkan data.
+                  </p>
                 )}
               </div>
 
@@ -568,6 +586,15 @@ function MyDatasets() {
         </section>
 
       </div>
+
+      {/* =============================================
+          SESI 9 (Poin 8): tombol + bulat mengambang, satu
+          instance saja per halaman (posisinya fixed, jadi
+          selalu tampak di pojok kanan bawah tidak peduli
+          tabel kosong atau berisi).
+      ============================================= */}
+
+      <CreateChoiceMenu />
 
     </main>
 

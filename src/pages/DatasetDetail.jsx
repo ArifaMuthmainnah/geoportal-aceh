@@ -37,6 +37,7 @@ import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 
 import GeoFeatureExplorer from '../components/GeoFeatureExplorer'
+import LocationBoundsMap from '../components/LocationBoundsMap'
 
 // =====================================================
 // FORMAT DATE
@@ -246,48 +247,14 @@ function toPointWKT(center) {
 
 
 // =====================================================
-// GAMBAR LOKASI (mirip preview lokasi di web SIG lama),
-// dirender dari static map OpenStreetMap berdasarkan
-// titik tengah & bounding box dataset.
+// SESI 7: Gambar lokasi statis (static map OSM) SUDAH
+// DIHAPUS — domain "staticmap.openstreetmap.de" tidak
+// bisa di-resolve (ERR_NAME_NOT_RESOLVED) sehingga gambar
+// tab Location selalu gagal muncul. Diganti dengan
+// <LocationBoundsMap /> (peta Leaflet sungguhan, lihat
+// src/components/LocationBoundsMap.jsx) yang PASTI
+// berhasil dimuat karena memakai tile OpenStreetMap asli.
 // =====================================================
-
-function buildLocationImageUrl(bbox, center) {
-  if (!center) return null
-
-  const zoom = 6
-  const width = 640
-  const height = 320
-  const color = '3a6ea5'
-
-  // Kotak Bounding Box (garis tepi biru saja, tanpa isi),
-  // sama seperti tampilan tab Location di web SIG lama.
-  const bboxPath = bbox
-    ? `&path=color:0x${color}ff|weight:3|${bbox.minLat},${bbox.minLon}|${bbox.minLat},${bbox.maxLon}|${bbox.maxLat},${bbox.maxLon}|${bbox.maxLat},${bbox.minLon}|${bbox.minLat},${bbox.minLon}`
-    : ''
-
-  // Tanda "+" (crosshair) di titik tengah — digambar sebagai
-  // garis pendek yang berpotongan (BUKAN pin marker), persis
-  // seperti web SIG lama. Panjang lengan dihitung dari
-  // resolusi peta (meter/pixel) di zoom & latitude tersebut,
-  // supaya ukurannya konsisten (~9px) di posisi mana pun.
-  const latRad = (center.lat * Math.PI) / 180
-  const metersPerPixel = (156543.03392 * Math.cos(latRad)) / Math.pow(2, zoom)
-  const armMeters = 9 * metersPerPixel
-  const armLatDeg = armMeters / 111320
-  const armLonDeg = armMeters / (111320 * Math.max(Math.cos(latRad), 0.1))
-
-  const crosshairPath =
-    `&path=color:0x${color}ff|weight:3` +
-    `|${center.lat},${center.lon - armLonDeg}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat + armLatDeg},${center.lon}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat},${center.lon + armLonDeg}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat - armLatDeg},${center.lon}`
-
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lon}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik${bboxPath}${crosshairPath}`
-}
 
 
 // =====================================================
@@ -578,14 +545,13 @@ function DatasetDetail() {
 
 
   // ===================================================
-  // GAMBAR LOKASI (fallback berlapis)
+  // GAMBAR LOKASI (SESI 7)
   // ===================================================
   //
   // 'primary'  = coba thumbnail_url asli dari API dulu
-  // 'fallback' = thumbnail_url gagal, coba peta statis
-  //              hasil generate dari bounding box
-  // 'none'     = keduanya gagal, sembunyikan gambar
-  //              (jangan tampilkan ikon broken image)
+  // 'fallback' = thumbnail_url tidak ada / gagal dimuat ->
+  //              pakai <LocationBoundsMap /> (peta Leaflet
+  //              sungguhan, selalu berhasil dimuat)
   //
   // ===================================================
 
@@ -1041,11 +1007,15 @@ function DatasetDetail() {
     toPointWKT(center)
 
 
-  const locationImageUrl =
-    buildLocationImageUrl(
-      bbox,
-      center
-    )
+  const primaryLocationImageUrl =
+    dataset.thumbnail_url ||
+    dataset.thumbnail ||
+    dataset.thumbnailUrl ||
+    null
+
+  const showPrimaryLocationImage =
+    Boolean(primaryLocationImageUrl) &&
+    locationImageStage === 'primary'
 
 
   // ===================================================
@@ -1250,7 +1220,7 @@ function DatasetDetail() {
             MAP
         ================================================= */}
 
-                {dataset.embed_url ? (
+        {dataset.embed_url ? (
 
           <div className="dataset-map-wrapper">
 
@@ -1266,10 +1236,15 @@ function DatasetDetail() {
 
           </div>
 
-        ) : dataset._geojson ? (
+        ) : (dataset._geojson || bbox) ? (
 
+          // SESI 7: kalau tidak ada embed_url (data upload sendiri),
+          // tapi ADA geojson (shapefile ter-parsing) ATAU minimal
+          // ADA bbox (cakupan area), tetap tampilkan peta — supaya
+          // tab peta TIDAK PERNAH kosong lagi seperti sebelumnya.
           <GeoFeatureExplorer
             geojson={dataset._geojson}
+            bbox={bbox}
             title={dataset.title}
             attributes={dataset._attributes}
           />
@@ -1819,21 +1794,32 @@ function DatasetDetail() {
 
             </div>
 
-            {locationImageUrl && (
+            {/* SESI 7: gambar statis (domain rusak) diganti
+                <LocationBoundsMap /> — peta Leaflet sungguhan
+                dengan kotak Bounding Box + tanda (+) di titik
+                tengah. thumbnail_url asli dari API tetap
+                diprioritaskan dulu kalau tersedia & berhasil. */}
+
+            {showPrimaryLocationImage ? (
 
               <div className="dataset-location-image">
 
                 <img
-                  src={locationImageUrl}
+                  src={primaryLocationImageUrl}
                   alt={
                     `Lokasi ${dataset.title}`
                   }
                   loading="lazy"
+                  onError={() => setLocationImageStage('fallback')}
                 />
 
               </div>
 
-            )}
+            ) : bbox ? (
+
+              <LocationBoundsMap bbox={bbox} center={center} />
+
+            ) : null}
 
 
             <div className="dataset-location-grid">

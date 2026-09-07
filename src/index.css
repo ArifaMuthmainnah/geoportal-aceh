@@ -12643,6 +12643,56 @@ main {
   display: block;
 }
 
+/* -----------------------------------------
+   SESI 7: LocationBoundsMap — pengganti gambar
+   statis yang domainnya rusak (ERR_NAME_NOT_
+   RESOLVED). Peta Leaflet sungguhan + kotak
+   Bounding Box + tanda "+" (crosshair) di
+   titik tengah, dipakai di tab Location halaman
+   detail Peta, Dataset, & Dokumen.
+----------------------------------------- */
+
+.location-bounds-map {
+  position: relative;
+  z-index: 0;
+}
+
+.location-bounds-map .leaflet-container {
+  border-radius: 14px;
+  font-family: inherit;
+}
+
+.location-crosshair-icon span {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.location-crosshair-icon span::before,
+.location-crosshair-icon span::after {
+  content: '';
+  position: absolute;
+  background: #16325c;
+  border-radius: 2px;
+}
+
+.location-crosshair-icon span::before {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+}
+
+.location-crosshair-icon span::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  transform: translateX(-50%);
+}
+
 
 /* -----------------------------------------
    JUDUL SEKSI BBOX / CENTER + TOMBOL SALIN
@@ -13102,45 +13152,249 @@ main {
 }
 
 /* =========================================================
-   SESI 6 (revisi): PANEL INFO PETA HERO (GeoFeatureExplorer)
-   — meniru tampilan embed_url data API (pin + Lat/Long +
-   daftar atribut saat fitur diklik), pakai tema biru situs.
+   SESI 7 (revisi besar): PETA HERO (GeoFeatureExplorer)
+   — dibuat semirip mungkin dengan tampilan iframe embed_url
+   data API lama: toolbar (basemap/search/gear/menu), kontrol
+   zoom custom (+/−/3D/⋯), mini peta ikhtisar, dan panel info
+   di kanan yang SEKARANG TINGGINYA PENUH (full height),
+   bukan cuma kartu kecil melayang setengah tinggi lagi.
 ========================================================= */
 
 .geo-explorer {
+  display: flex;
+  align-items: stretch;
   position: relative;
 }
 
-.geo-explorer-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: min(340px, 90%);
-  background: #fff;
-  border-left: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
-  border-bottom-left-radius: 12px;
-  box-shadow: -2px 2px 10px rgba(15, 23, 42, 0.12);
-  z-index: 500;
-  max-height: calc(100% - 16px);
-  overflow-y: auto;
+.geo-explorer-map-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
 }
 
-.geo-explorer-panel-row {
+/* ---------- TOOLBAR ATAS (layers / search / gear / menu) ---------- */
+
+.geo-explorer-toolbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.geo-toolbar-icon {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #16325c;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.geo-toolbar-icon:hover {
+  background: #0b5cab;
+  color: #fff;
+}
+
+.geo-explorer-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 6px 4px 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
+.geo-explorer-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  font-size: 13.5px;
+  color: #172033;
+  background: transparent;
+}
+
+.geo-explorer-search .geo-toolbar-icon {
+  box-shadow: none;
+  width: 30px;
+  height: 30px;
+}
+
+.geo-explorer-search-error {
+  position: absolute;
+  top: 54px;
+  left: 12px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
+}
+
+.geo-explorer-menu {
+  position: absolute;
+  top: 54px;
+  right: 12px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.geo-explorer-menu button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #172033;
+  cursor: pointer;
+}
+
+.geo-explorer-menu button:hover {
+  background: #eef4fb;
+  color: #0b5cab;
+}
+
+.geo-explorer-menu button + button {
+  border-top: 1px solid #eef2f7;
+}
+
+/* ---------- MINI PETA IKHTISAR (kiri bawah) ---------- */
+
+.geo-explorer-minimap {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
+  z-index: 500;
+}
+
+/* ---------- KONTROL ZOOM CUSTOM (kanan bawah) ---------- */
+
+.geo-explorer-zoom {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  z-index: 600;
+  display: flex;
+  flex-direction: column;
+  background: #16325c;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.25);
+}
+
+.geo-zoom-btn {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.geo-zoom-btn:last-child {
+  border-bottom: 0;
+}
+
+.geo-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.geo-zoom-3d {
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* ---------- PANEL INFO (SEKARANG FULL HEIGHT) ---------- */
+
+.geo-explorer-sidebar {
+  flex: 0 0 min(360px, 40%);
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-left: 1px solid #e2e8f0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.geo-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #0b5cab;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.geo-sidebar-pin {
+  display: inline-flex;
+}
+
+.geo-sidebar-print {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.geo-sidebar-print:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.geo-sidebar-close {
+  background: transparent;
+  border: 0;
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.geo-sidebar-layer-row {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  font-size: 13px;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
-.geo-explorer-panel-title {
-  background: #0b5cab;
-  color: #fff;
-  font-weight: 600;
+.geo-sidebar-layer-icon {
+  color: #0b5cab;
+  display: inline-flex;
 }
 
-.geo-explorer-panel-title strong {
+.geo-sidebar-layer-row strong {
   flex: 1;
   font-size: 13px;
   overflow: hidden;
@@ -13148,30 +13402,72 @@ main {
   white-space: nowrap;
 }
 
-.geo-explorer-close {
-  background: transparent;
-  border: 0;
-  color: #fff;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0 2px;
+.geo-sidebar-chevron {
+  color: #94a3b8;
+  font-size: 12px;
 }
 
-.geo-explorer-panel-coords {
+.geo-sidebar-folder {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: #64748b;
+}
+
+.geo-sidebar-folder:hover {
+  background: #eef4fb;
+  color: #0b5cab;
+}
+
+.geo-sidebar-coords-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
   border-bottom: 1px solid #e5e7eb;
   color: #334155;
+  font-size: 12.5px;
+  flex-shrink: 0;
 }
 
-.geo-explorer-pin {
-  font-size: 14px;
+.geo-sidebar-coords-row span:nth-child(2) {
+  flex: 1;
 }
 
-.geo-explorer-panel-body {
-  padding: 6px 14px 14px;
+.geo-sidebar-pin-small {
+  display: inline-flex;
+  color: #0b5cab;
+}
+
+.geo-sidebar-info-btn,
+.geo-sidebar-globe-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: #64748b;
+}
+
+.geo-sidebar-info-btn:hover,
+.geo-sidebar-globe-btn:hover {
+  background: #eef4fb;
+  color: #0b5cab;
+}
+
+.geo-sidebar-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+
+.geo-sidebar-placeholder {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .geo-explorer-attr-row {
@@ -13181,7 +13477,7 @@ main {
   gap: 10px;
   font-size: 13px;
   border-bottom: 1px dashed #eef2f7;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
 }
 
 .geo-explorer-attr-row span {
@@ -13203,8 +13499,55 @@ main {
   border-radius: 50%;
   border: 1px solid #e2e8f0;
   background: #fff;
+  color: #16325c;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.15);
   font-size: 16px;
   cursor: pointer;
   z-index: 500;
+}
+
+@media (max-width: 760px) {
+
+  .geo-explorer {
+    flex-direction: column;
+  }
+
+  .geo-explorer-map-area {
+    height: 62%;
+  }
+
+  .geo-explorer-sidebar {
+    flex: 1 1 38%;
+    width: 100%;
+    border-left: 0;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .geo-explorer-minimap {
+    width: 70px;
+    height: 70px;
+  }
+
+  .geo-explorer-search input {
+    font-size: 13px;
+  }
+
+}
+
+/* =========================================================
+   SESI 6: PENANDA TITIK YANG BISA DIGESER (edit geometri)
+========================================================= */
+
+.vertex-edit-marker {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #0b5cab;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #0b5cab;
+  cursor: grab;
+}
+
+.vertex-edit-marker:active {
+  cursor: grabbing;
 }
