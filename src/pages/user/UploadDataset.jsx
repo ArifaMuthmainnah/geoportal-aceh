@@ -5,7 +5,6 @@ import { uploadMyDataset } from '../../api/myDatasetApi'
 import { useAuth } from '../../context/AuthContext'
 
 import {
-  RESOURCE_TYPE_OPTIONS,
   INFORMASI_SUBTYPE_OPTIONS,
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
@@ -32,6 +31,26 @@ import {
 import GeoJsonPreviewMap from '../../components/GeoJsonPreviewMap'
 
 
+// =====================================================
+// SESI 10 (Poin 6): "Jenis Resource" di halaman Upload Data
+// TIDAK LAGI memisahkan Dashboard & Aplikasi jadi 2 baris
+// dropdown — sekarang digabung jadi SATU opsi "Aplikasi/
+// Dashboard" (value 'dashboard' dipakai sebagai penanda
+// grup). Pilihan sebenarnya (Dashboard atau Aplikasi)
+// dipilih lewat toggle kecil yang muncul di bawah dropdown
+// ini — persis seperti pola yang sudah dipakai di halaman
+// "Create Dashboard/Aplikasi".
+// =====================================================
+
+const UPLOAD_TYPE_OPTIONS = [
+  { value: 'dataset', label: 'Dataset' },
+  { value: 'dashboard', label: 'Aplikasi/Dashboard' },
+  { value: 'map', label: 'Peta' },
+  { value: 'document', label: 'Dokumen' },
+  { value: 'informasi', label: 'Informasi' },
+]
+
+
 function UploadDataset() {
 
   const navigate = useNavigate()
@@ -40,6 +59,21 @@ function UploadDataset() {
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [resourceType, setResourceType] = useState('dataset')
+
+  // =====================================================
+  // SESI 10 (Poin 6): dropdown "Jenis Resource" sekarang
+  // menggabungkan Dashboard & Aplikasi jadi SATU opsi
+  // "Aplikasi/Dashboard" (value tetap 'dashboard' sebagai
+  // penanda grup). Sub-pilihannya (Dashboard atau Aplikasi
+  // yang sebenarnya) disimpan terpisah di sini, lewat toggle
+  // kecil yang muncul begitu grup ini dipilih. Isi form yang
+  // lain TETAP SAMA PERSIS untuk keduanya — cuma resource_type
+  // yang tersimpan yang berbeda (lihat effectiveResourceType
+  // di bawah).
+  // =====================================================
+
+  const [dashboardKind, setDashboardKind] = useState('dashboard')
+
   const [category, setCategory] = useState('')
   const [customCategory, setCustomCategory] = useState('')
   const [keywords, setKeywords] = useState('')
@@ -79,6 +113,14 @@ function UploadDataset() {
 
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
+
+  // SESI 10 (Poin 6): "resourceType" cuma menyimpan pilihan
+  // GRUP di dropdown ('dataset' | 'dashboard' | 'map' |
+  // 'document' | 'informasi' — 'dashboard' dipakai sebagai
+  // penanda grup "Aplikasi/Dashboard"). Jenis resource yang
+  // SEBENARNYA disimpan ke server dihitung di sini.
+  const effectiveResourceType =
+    resourceType === 'dashboard' ? dashboardKind : resourceType
 
 
   function handleLogout() {
@@ -257,11 +299,11 @@ function UploadDataset() {
     // pengganti file (lihat catatan di bawah tombol Embed URL).
     // Jadi validasi wajib-pilih-salah-satu ini mencakup ketiganya:
     // file (shapefile/assets), Link/URL, ATAU Embed URL.
-    const hasEmbed = supportsEmbedUrl(resourceType) && embedUrl.trim().length > 0
+    const hasEmbed = supportsEmbedUrl(effectiveResourceType) && embedUrl.trim().length > 0
 
     if (!hasFiles && !hasLink && !hasEmbed) {
       setErrorMessage(
-        supportsEmbedUrl(resourceType)
+        supportsEmbedUrl(effectiveResourceType)
           ? 'Isi minimal salah satu: unggah file, isi Link/URL, atau isi Embed URL.'
           : 'Isi minimal salah satu: unggah file atau isi Link/URL.'
       )
@@ -278,7 +320,7 @@ function UploadDataset() {
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType, subType, region, language, srid, attribution, purpose,
+          resourceType: effectiveResourceType, subType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           linkedResources: linkedResourcesText.split('\n'),
@@ -291,8 +333,8 @@ function UploadDataset() {
         thumbnailFile,
         title,
         abstract,
-        resourceType,
-        subType: resourceType === 'informasi' ? subType : undefined,
+        resourceType: effectiveResourceType,
+        subType: effectiveResourceType === 'informasi' ? subType : undefined,
         category: finalCategory,
         keywords,
         externalUrl,
@@ -312,9 +354,9 @@ function UploadDataset() {
   }
 
 
-  const showAttributeTable = supportsAttributeTable(resourceType)
-  const showAgendaSchedule = supportsAgendaSchedule(resourceType, subType)
-  const showShapefileUpload = supportsShapefileUpload(resourceType)
+  const showAttributeTable = supportsAttributeTable(effectiveResourceType)
+  const showAgendaSchedule = supportsAgendaSchedule(effectiveResourceType, subType)
+  const showShapefileUpload = supportsShapefileUpload(effectiveResourceType)
 
   // SESI 8 (FIX Poin 4 & 5): Embed URL sekarang HANYA untuk
   // dataset & peta (lihat resourceFields.js) — fungsinya adalah
@@ -323,7 +365,7 @@ function UploadDataset() {
   // link tampilan peta/data interaktif dari sumber lain, link itu
   // bisa ditempel di sini dan halaman detail akan menampilkannya
   // sebagai iframe (menggantikan peta interaktif dari file).
-  const showEmbedUrl = supportsEmbedUrl(resourceType)
+  const showEmbedUrl = supportsEmbedUrl(effectiveResourceType)
 
 
   return (
@@ -443,11 +485,59 @@ function UploadDataset() {
                   <div className="admin-form-group">
                     <label>Jenis Resource</label>
                     <select value={resourceType} onChange={(e) => setResourceType(e.target.value)}>
-                      {RESOURCE_TYPE_OPTIONS.map((option) => (
+                      {UPLOAD_TYPE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
+
+                  {/* SESI 10 (Poin 6): toggle Dashboard/Aplikasi — cuma
+                      menentukan resource_type yang tersimpan, field form
+                      di bawah TETAP SAMA untuk keduanya. */}
+                  {resourceType === 'dashboard' && (
+                    <div className="admin-form-group">
+                      <label>Sub-jenis</label>
+                      <div style={{ display: 'inline-flex', border: '1px solid #d7e0e9', borderRadius: '10px', overflow: 'hidden' }}>
+
+                        <button
+                          type="button"
+                          onClick={() => setDashboardKind('dashboard')}
+                          style={{
+                            padding: '10px 18px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            background: dashboardKind === 'dashboard' ? '#0b5cab' : '#ffffff',
+                            color: dashboardKind === 'dashboard' ? '#ffffff' : '#617384',
+                          }}
+                        >
+                          ▥ Dashboard
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDashboardKind('application')}
+                          style={{
+                            padding: '10px 18px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            background: dashboardKind === 'application' ? '#0b5cab' : '#ffffff',
+                            color: dashboardKind === 'application' ? '#ffffff' : '#617384',
+                          }}
+                        >
+                          ⌗ Aplikasi
+                        </button>
+
+                      </div>
+                      <small style={{ display: 'block', marginTop: '8px' }}>
+                        Isi form di bawah ini sama saja untuk Dashboard maupun Aplikasi — yang beda cuma
+                        kategori jenis resource-nya saja.
+                      </small>
+                    </div>
+                  )}
 
                   {resourceType === 'informasi' && (
                     <div className="admin-form-group">
@@ -686,13 +776,13 @@ function UploadDataset() {
               </section>
 
 
-              {supportsExtraMetadataForm(resourceType) && (
+              {supportsExtraMetadataForm(effectiveResourceType) && (
 
                 <section className="admin-panel">
 
                   <div className="admin-panel-header">
                     <div>
-                      <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'} (Opsional)</h2>
+                      <h2>Metadata {effectiveResourceType === 'map' ? 'Peta' : effectiveResourceType === 'document' ? 'Dokumen' : 'Dataset'} (Opsional)</h2>
                       <p>
                         Diisi agar tab Info &amp; Location di halaman detail bisa lengkap.
                         {showShapefileUpload && ' Sebagian sudah otomatis terisi dari file shapefile di atas — tinggal lengkapi sisanya.'}
@@ -738,7 +828,7 @@ function UploadDataset() {
                       <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} />
                     </div>
 
-                    {supportsBboxLocation(resourceType) && (
+                    {supportsBboxLocation(effectiveResourceType) && (
                     <div className="admin-form-group">
                       <label>Bounding Box / WGS84 (Opsional)</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -766,7 +856,7 @@ function UploadDataset() {
                     </div>
                     )}
 
-                    {supportsLinkedResources(resourceType) && (
+                    {supportsLinkedResources(effectiveResourceType) && (
                       <div className="admin-form-group">
                         <label>Linked Resources (Opsional)</label>
                         <textarea

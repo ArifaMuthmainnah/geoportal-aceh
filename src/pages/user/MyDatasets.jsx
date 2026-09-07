@@ -51,7 +51,7 @@ function MyDatasets() {
 
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterType, setFilterType] = useState({
-    dataset: true, dashboard: true, map: true, document: true, informasi: true,
+    dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true,
   })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
 
@@ -163,6 +163,7 @@ function MyDatasets() {
     const type = String(resourceType || 'dataset').trim().toLowerCase()
 
     if (type === 'dashboard') return 'Dashboard'
+    if (type === 'application') return 'Aplikasi'
     if (type === 'webgis') return 'WebGIS'
     if (type === 'map') return 'Peta'
     if (type === 'document') return 'Dokumen'
@@ -404,6 +405,7 @@ function MyDatasets() {
                           {[
                             { key: 'dataset', label: 'Dataset' },
                             { key: 'dashboard', label: 'Dashboard' },
+                            { key: 'application', label: 'Aplikasi' },
                             { key: 'map', label: 'Peta' },
                             { key: 'document', label: 'Dokumen' },
                             { key: 'informasi', label: 'Informasi' },
@@ -497,7 +499,7 @@ function MyDatasets() {
                       const resourceType = getResourceTypeLabel(dataset.resource_type)
 
                       const detailPath =
-                        dataset.resource_type === 'dashboard'
+                        dataset.resource_type === 'dashboard' || dataset.resource_type === 'application'
                           ? `/aplikasi/own-${dataset.id}`
                           : dataset.resource_type === 'map'
                             ? `/peta/own-${dataset.id}`
