@@ -18,15 +18,24 @@ function buildAvatarUrl(path) {
 function getResourceTypeLabel(resourceType) {
   const type = String(resourceType || 'dataset').toLowerCase()
   if (type === 'dashboard') return 'Dashboard'
+  if (type === 'application') return 'Aplikasi'
   if (type === 'map') return 'Peta'
   if (type === 'document') return 'Dokumen'
   if (type === 'informasi') return 'Informasi'
   return 'Dataset'
 }
 
+// =====================================================
+// SESI 10 (Poin 2): "application" sebelumnya tidak dicek
+// di sini, jadi Aplikasi yang sudah dipublish selalu jatuh
+// ke fallback `/katalog/:id` (halaman detail Dataset) —
+// padahal seharusnya ke `/aplikasi/:id` sama seperti
+// Dashboard. Sekarang dicek juga.
+// =====================================================
+
 function buildDetailPath(row) {
   const idPart = row.source === 'local' ? `own-${row.rawId}` : row.rawId
-  if (row.type === 'dashboard') return `/aplikasi/${idPart}`
+  if (row.type === 'dashboard' || row.type === 'application') return `/aplikasi/${idPart}`
   if (row.type === 'map') return `/peta/${idPart}`
   if (row.type === 'document') return `/dokumen/${idPart}`
   return `/katalog/${idPart}`
@@ -52,7 +61,7 @@ function UserDashboard() {
   // ===================================================
 
   const [filterOpen, setFilterOpen] = useState(false)
-  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, map: true, document: true, informasi: true })
+  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
@@ -202,7 +211,7 @@ function UserDashboard() {
 
   const activeFilterCount = useMemo(() => {
     let count = 0
-    if (!filterType.dataset || !filterType.dashboard || !filterType.map || !filterType.document || !filterType.informasi) count++
+    if (!filterType.dataset || !filterType.dashboard || !filterType.application || !filterType.map || !filterType.document || !filterType.informasi) count++
     if (!filterStatus.published || !filterStatus.unpublished) count++
     if (filterCategory !== 'Semua') count++
     if (filterInstansi !== 'Semua') count++
@@ -408,6 +417,7 @@ function UserDashboard() {
                           {[
                             { key: 'dataset', label: 'Dataset' },
                             { key: 'dashboard', label: 'Dashboard' },
+                            { key: 'application', label: 'Aplikasi' },
                             { key: 'map', label: 'Peta' },
                             { key: 'document', label: 'Dokumen' },
                             { key: 'informasi', label: 'Informasi' },

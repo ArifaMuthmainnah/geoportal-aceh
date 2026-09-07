@@ -104,6 +104,7 @@ function normalizeLocalRow(item) {
     published: Boolean(item.is_published),
     typeLabel:
       item.resource_type === 'dashboard' ? 'Dashboard'
+      : item.resource_type === 'application' ? 'Aplikasi'
       : item.resource_type === 'webgis' ? 'WebGIS'
       : item.resource_type === 'map' ? 'Peta'
       : item.resource_type === 'document' ? 'Dokumen'
@@ -139,7 +140,7 @@ function AdminDashboard() {
   const [activeMenu, setActiveMenu] = useState('dashboard')
 
   const [filterOpen, setFilterOpen] = useState(false)
-  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, map: true, document: true, informasi: true })
+  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
@@ -249,7 +250,7 @@ function AdminDashboard() {
 
     const activeFilterCount = useMemo(() => {
       let count = 0
-      if (!filterType.dataset || !filterType.dashboard || !filterType.map || !filterType.document || !filterType.informasi) count++
+      if (!filterType.dataset || !filterType.dashboard || !filterType.application || !filterType.map || !filterType.document || !filterType.informasi) count++
       if (!filterStatus.published || !filterStatus.unpublished) count++
       if (filterCategory !== 'Semua') count++
       if (filterInstansi !== 'Semua') count++
@@ -571,6 +572,7 @@ function AdminDashboard() {
                             {[
                               { key: 'dataset', label: 'Dataset' },
                               { key: 'dashboard', label: 'Dashboard' },
+                              { key: 'application', label: 'Aplikasi' },
                               { key: 'map', label: 'Peta' },
                               { key: 'document', label: 'Dokumen' },
                               { key: 'informasi', label: 'Informasi' },
@@ -656,7 +658,7 @@ function AdminDashboard() {
                             <div className="admin-actions">
                               <Link
                                 to={
-                                  row.resourceType === 'dashboard'
+                                  row.resourceType === 'dashboard' || row.resourceType === 'application'
                                     ? `/aplikasi/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                     : `/katalog/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                 }

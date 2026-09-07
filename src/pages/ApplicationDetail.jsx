@@ -245,8 +245,19 @@ function ApplicationDetail() {
   const embedUrl = application.embed_url || null
   const detailUrl = application.detail_url || null
 
+  // =====================================================
+  // SESI 10 (Poin 3): gambar sampul/thumbnail dipakai sebagai
+  // "tampilan depan" statis khusus untuk Aplikasi (lihat catatan
+  // di bagian PREVIEW APLIKASI di bawah).
+  // =====================================================
+
+  const thumbnailUrl =
+    application.thumbnail_url ||
+    application.thumbnail ||
+    null
+
   const sourceLabel =
-    isOwnId ? 'Diunggah oleh pengguna' : 'Sumber: Geoportal Aceh'
+    isOwnId ? 'Diunggah oleh pengguna' : 'Geoportal Aceh'
 
   // #9: tombol buka penuh langsung mengarah ke link aplikasi
   // yang diupload user (detailUrl), label disesuaikan jenisnya.
@@ -275,7 +286,9 @@ function ApplicationDetail() {
       <section className="application-detail-hero">
         <div className="container">
 
-          <BackToTopButton to="/aplikasi" label="Kembali ke Aplikasi" />
+          <div className="application-detail-top">
+            <BackToTopButton to="/aplikasi" label="Kembali ke Aplikasi" />
+          </div>
 
           <div className="application-detail-header">
 
@@ -356,7 +369,84 @@ function ApplicationDetail() {
           </div>
 
 
-          {embedUrl ? (
+          {/* =====================================================
+              SESI 10 (Poin 3): PREVIEW APLIKASI
+              =====================================================
+              Banyak situs Aplikasi eksternal (mis. data.acehprov.go.id)
+              mengirim header X-Frame-Options/CSP yang MENOLAK dirinya
+              ditampilkan lewat <iframe> — browser akan selalu
+              menampilkan "refused to connect", apa pun yang kita
+              lakukan di sisi kode. Ini bukan bug yang bisa diperbaiki
+              dengan iframe biasa.
+
+              Makanya khusus Aplikasi, kita TIDAK lagi mencoba
+              menampilkan iframe langsung dari embedUrl. Sebagai
+              gantinya: tampilkan gambar sampul (thumbnail) yang
+              diunggah operator sebagai "tampilan depan" statis,
+              dibungkus kotak yang terlihat seperti area
+              visualisasi/iframe, lengkap dengan tombol "Buka Tampilan
+              Penuh" — begitu ditekan, langsung membuka link aplikasi
+              aslinya di TAB BARU (bukan iframe).
+
+              Dashboard TIDAK diubah — tetap pakai iframe seperti
+              sebelumnya karena sudah berjalan dengan baik. */}
+
+          {isApplicationType ? (
+
+            detailUrl ? (
+
+              <div className="application-preview-frame">
+                <a
+                  href={detailUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="application-preview-link"
+                  aria-label={openButtonLabel}
+                >
+
+                  {thumbnailUrl ? (
+
+                    <img
+                      src={thumbnailUrl}
+                      alt={title}
+                      className="application-preview-image"
+                    />
+
+                  ) : (
+
+                    <div className="application-preview-placeholder">
+                      <span className="application-preview-icon">⌗</span>
+                      <strong>{title}</strong>
+                      <span>Tampilan depan belum diunggah untuk aplikasi ini.</span>
+                    </div>
+
+                  )}
+
+                  <span className="application-preview-overlay">
+                    <span className="application-preview-fullscreen-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                      </svg>
+                      Buka Tampilan Penuh
+                    </span>
+                  </span>
+
+                </a>
+              </div>
+
+            ) : (
+
+              <div className="application-dashboard-empty">
+                <h3>{emptyStateTitle}</h3>
+                <p>{emptyStateMessage}</p>
+              </div>
+
+            )
+
+          ) : embedUrl ? (
 
             <div className="application-dashboard-frame">
               <iframe
