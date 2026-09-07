@@ -265,6 +265,8 @@ function CreateDashboard() {
             )}
             <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
             <Link to="/dashboard/create-map" className="admin-sidebar-link"><span>⌖</span>Create Map</Link>
+            <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
+<Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
             <button type="button" className="active"><span>▥</span>Dashboard / Aplikasi</button>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>

@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext'
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 import OwnerBadge from '../components/OwnerBadge'
+import LocationBoundsMap from '../components/LocationBoundsMap'
 
 // =====================================================
 // FORMAT DATE (tanggal + jam)
@@ -83,44 +84,14 @@ function toPointWKT(center) {
 }
 
 // =========================================
-// GAMBAR LOKASI (mirip preview lokasi di web
-// SIG lama), dirender dari static map OpenStreetMap
-// berdasarkan titik tengah & bounding box.
+// SESI 7: Gambar lokasi statis (static map OSM) SUDAH
+// DIHAPUS — domain "staticmap.openstreetmap.de" tidak
+// bisa di-resolve (ERR_NAME_NOT_RESOLVED) sehingga gambar
+// tab Location selalu gagal muncul. Diganti dengan
+// <LocationBoundsMap /> (peta Leaflet sungguhan, lihat
+// src/components/LocationBoundsMap.jsx) yang PASTI
+// berhasil dimuat karena memakai tile OpenStreetMap asli.
 // =========================================
-
-function buildLocationImageUrl(bbox, center) {
-  if (!center) return null
-
-  const zoom = 6
-  const width = 640
-  const height = 320
-  const color = '3a6ea5'
-
-  // Kotak Bounding Box (garis tepi biru saja, tanpa isi)
-  const bboxPath = bbox
-    ? `&path=color:0x${color}ff|weight:3|${bbox.minLat},${bbox.minLon}|${bbox.minLat},${bbox.maxLon}|${bbox.maxLat},${bbox.maxLon}|${bbox.maxLat},${bbox.minLon}|${bbox.minLat},${bbox.minLon}`
-    : ''
-
-  // Tanda "+" (crosshair) di titik tengah — digambar sebagai
-  // garis pendek (BUKAN pin marker), sama seperti web SIG lama.
-  const latRad = (center.lat * Math.PI) / 180
-  const metersPerPixel = (156543.03392 * Math.cos(latRad)) / Math.pow(2, zoom)
-  const armMeters = 9 * metersPerPixel
-  const armLatDeg = armMeters / 111320
-  const armLonDeg = armMeters / (111320 * Math.max(Math.cos(latRad), 0.1))
-
-  const crosshairPath =
-    `&path=color:0x${color}ff|weight:3` +
-    `|${center.lat},${center.lon - armLonDeg}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat + armLatDeg},${center.lon}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat},${center.lon + armLonDeg}` +
-    `|${center.lat},${center.lon}` +
-    `|${center.lat - armLatDeg},${center.lon}`
-
-  return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lon}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik${bboxPath}${crosshairPath}`
-}
 
 // =========================================
 // CARI FILE DOKUMEN UNTUK IFRAME & DOWNLOAD
@@ -193,9 +164,9 @@ function DokumenDetail() {
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('info')
 
-  // Fallback berlapis untuk gambar lokasi: 'primary' (coba
-  // thumbnail_url asli dulu) -> 'fallback' (peta statis dari
-  // bbox) -> 'none' (keduanya gagal, sembunyikan gambar).
+  // SESI 7: 'primary' = coba thumbnail_url asli dulu.
+  // 'fallback' = tidak ada / gagal dimuat -> pakai
+  // <LocationBoundsMap /> (peta Leaflet, selalu berhasil).
   const [locationImageStage, setLocationImageStage] = useState('primary')
 
   useEffect(() => {
@@ -290,18 +261,12 @@ function DokumenDetail() {
   const bboxWKT = toBboxWKT(bbox)
   const pointWKT = toPointWKT(center)
 
-  // GAMBAR LOKASI: prioritaskan thumbnail_url ASLI dari
-  // GeoNode (screenshot render dokumen/peta sesungguhnya),
-  // static map OSM dari bbox cuma fallback kalau
-  // thumbnail_url tidak tersedia ATAU gagal dimuat di browser.
+  // GAMBAR LOKASI (SESI 7): prioritaskan thumbnail_url ASLI
+  // dari GeoNode (screenshot render dokumen/peta sesungguhnya).
+  // Kalau tidak tersedia ATAU gagal dimuat di browser, pakai
+  // <LocationBoundsMap /> (peta Leaflet, selalu berhasil).
   const primaryLocationImageUrl = doc.thumbnail_url || doc.thumbnail || doc.thumbnailUrl || null
-  const fallbackLocationImageUrl = buildLocationImageUrl(bbox, center)
-  const locationImageUrl =
-    locationImageStage === 'primary'
-      ? (primaryLocationImageUrl || fallbackLocationImageUrl)
-      : locationImageStage === 'fallback'
-        ? fallbackLocationImageUrl
-        : null
+  const showPrimaryLocationImage = Boolean(primaryLocationImageUrl) && locationImageStage === 'primary'
 
   const fullMetadataUrl = findMetadataUrl(doc, links)
 
@@ -579,26 +544,17 @@ function DokumenDetail() {
 
               <>
 
-                {locationImageUrl && (
+                {showPrimaryLocationImage ? (
                   <div className="dataset-location-image">
                     <img
-                      src={locationImageUrl}
+                      src={primaryLocationImageUrl}
                       alt={`Lokasi ${doc.title}`}
                       loading="lazy"
-                      onError={() => {
-                        setLocationImageStage((currentStage) => {
-                          if (
-                            currentStage === 'primary' &&
-                            fallbackLocationImageUrl &&
-                            fallbackLocationImageUrl !== primaryLocationImageUrl
-                          ) {
-                            return 'fallback'
-                          }
-                          return 'none'
-                        })
-                      }}
+                      onError={() => setLocationImageStage('fallback')}
                     />
                   </div>
+                ) : (
+                  <LocationBoundsMap bbox={bbox} center={center} />
                 )}
 
                 <div className="dataset-location-grid">

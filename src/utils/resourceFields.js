@@ -61,12 +61,16 @@ export const LICENSE_OPTIONS = [
 // RESOURCE TYPE YANG PUNYA FITUR TERTENTU
 // =====================================================
 
-// SESI 6 (revisi): Attributes sekarang juga berlaku untuk
-// "map" (Peta) — supaya panel info peta hero (klik fitur)
-// bisa menampilkan Label yang rapi, bukan cuma nama kolom
-// mentah dari .dbf, sama seperti Dataset.
+// SESI 8 (FIX Poin 4): dikembalikan HANYA untuk "dataset".
+// Halaman detail Peta (PetaDetail.jsx) memang tidak punya tab
+// Attributes (tab-nya cuma Info/Location/Linked Resources), jadi
+// section "Attributes" di form Upload & Edit tidak relevan untuk
+// Peta dan cuma bikin bingung. Attributes hasil parsing .dbf saat
+// upload shapefile untuk Peta TETAP otomatis tersimpan (dipakai
+// GeoFeatureExplorer di panel klik-fitur), cuma tabel edit manual
+// Name/Label/Description-nya yang disembunyikan untuk jenis Peta.
 export function supportsAttributeTable(resourceType) {
-  return resourceType === 'dataset' || resourceType === 'map'
+  return resourceType === 'dataset'
 }
 
 export function supportsBboxLocation(resourceType) {
@@ -77,8 +81,16 @@ export function supportsLinkedResources(resourceType) {
   return resourceType === 'map'
 }
 
+// SESI 8 (FIX Poin 5): "dashboard" dihapus dari daftar ini.
+// Dashboard sudah punya field "Link / URL" sendiri, dan
+// ownDataAdapter.js SUDAH otomatis memakai Link/URL itu sebagai
+// sumber iframe (embed_url = metadata.embed_url || external_url)
+// kalau Embed URL manual tidak diisi. Jadi field Embed URL
+// terpisah untuk Dashboard cuma duplikat/membingungkan — sekarang
+// HANYA dataset & map (peta) yang menampilkan Embed URL manual,
+// dipakai sebagai alternatif kalau tidak ada file shapefile.
 export function supportsEmbedUrl(resourceType) {
-  return resourceType === 'dataset' || resourceType === 'map' || resourceType === 'dashboard'
+  return resourceType === 'dataset' || resourceType === 'map'
 }
 
 export function supportsExtraMetadataForm(resourceType) {

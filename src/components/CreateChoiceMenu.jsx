@@ -1,90 +1,221 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
+
+// ===================================================
+// SESI 9 (Poin 8): Tombol "+" bulat mengambang di pojok
+// kanan bawah. Saat ditekan, pilihan-pilihannya TIDAK lagi
+// berbentuk kotak dropdown biasa, tapi "melingkari" tombol +
+// itu sendiri membentuk SEPEREMPAT LINGKARAN — persis seperti
+// menu pilih mode (Rank / Classic / dst) di game mobile yang
+// muncul menempel di pojok kanan bawah layar.
+//
+// Opsi tetap sama seperti sebelumnya (Dataset, Peta,
+// Dashboard/Aplikasi, Upload File, Ambil dari API) — cuma
+// tampilannya yang diubah total.
+// ===================================================
+
+const OPTIONS = [
+  { label: 'Dataset', fullLabel: 'Tambah Dataset', icon: '◈', path: '/dashboard/create-dataset' },
+  { label: 'Peta', fullLabel: 'Tambah Peta', icon: '⌖', path: '/dashboard/create-map' },
+  { label: 'Dashboard', fullLabel: 'Tambah Dashboard / Aplikasi', icon: '▥', path: '/dashboard/create-dashboard' },
+  { label: 'Upload', fullLabel: 'Upload File', icon: '⬆', path: '/dashboard/upload' },
+  { label: 'API', fullLabel: 'Ambil dari API', icon: '⇩', path: '/dashboard/ambil-api' },
+]
+
+// Jarak (radius) tiap tombol pilihan dari pusat tombol utama.
+const RADIUS = 148
+
+// Sudut mulai (menempel ke arah KIRI tombol utama) sampai
+// sudut akhir (menempel ke arah ATAS tombol utama). Dengan
+// begitu seluruh opsi tersebar di kuadran kiri-atas tombol —
+// membentuk SEPEREMPAT LINGKARAN, bukan lingkaran penuh,
+// supaya tidak ada opsi yang "kepotong" keluar layar di
+// pojok kanan bawah.
+const START_ANGLE = 180
+const END_ANGLE = 90
 
 function CreateChoiceMenu() {
 
   const navigate = useNavigate()
-  const buttonRef = useRef(null)
+  const wrapRef = useRef(null)
   const [open, setOpen] = useState(false)
-  const [pos, setPos] = useState({ top: 0, left: 0 })
 
-  const options = [
-    { label: 'Dataset', icon: '◈', path: '/dashboard/create-dataset' },
-    { label: 'Peta', icon: '⌖', path: '/dashboard/create-map' },
-    { label: 'Dashboard / Aplikasi', icon: '▥', path: '/dashboard/create-dashboard' },
-  ]
+  useEffect(() => {
 
-  function toggleOpen() {
+    if (!open) return
 
-    if (!open && buttonRef.current) {
-
-      const rect = buttonRef.current.getBoundingClientRect()
-      const menuWidth = 220
-      const left = Math.min(rect.left, window.innerWidth - menuWidth - 16)
-
-      setPos({ top: rect.bottom + 8, left: Math.max(8, left) })
-
+    function handleOutside(event) {
+      if (wrapRef.current && !wrapRef.current.contains(event.target)) {
+        setOpen(false)
+      }
     }
 
-    setOpen((current) => !current)
+    function handleEscape(event) {
+      if (event.key === 'Escape') setOpen(false)
+    }
 
-  }
+    document.addEventListener('mousedown', handleOutside)
+    document.addEventListener('touchstart', handleOutside)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      document.removeEventListener('touchstart', handleOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+
+  }, [open])
 
   function handleSelect(path) {
     setOpen(false)
     navigate(path)
   }
 
+  const count = OPTIONS.length
+  const step = count > 1 ? (END_ANGLE - START_ANGLE) / (count - 1) : 0
+  const arcSize = RADIUS + 45
+
   return (
 
-    <div style={{ position: 'relative', display: 'inline-block' }}>
+    <div
+      ref={wrapRef}
+      style={{
+        position: 'fixed',
+        bottom: '30px',
+        right: '30px',
+        width: '56px',
+        height: '56px',
+        zIndex: 1000,
+      }}
+    >
 
-      <button
-        ref={buttonRef}
-        type="button"
-        className="admin-view-site"
-        onClick={toggleOpen}
-      >
-        + Buat
-      </button>
-
+      {/* Overlay transparan — klik di luar area menutup menu */}
       {open && (
-
-        <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-          />
-
-          <div
-            style={{
-              position: 'fixed', top: pos.top, left: pos.left, zIndex: 1000,
-              background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.15)', width: '220px', overflow: 'hidden',
-            }}
-          >
-            {options.map((option) => (
-              <button
-                key={option.path}
-                type="button"
-                onClick={() => handleSelect(option.path)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
-                  padding: '12px 16px', border: 'none', background: 'transparent',
-                  cursor: 'pointer', textAlign: 'left', fontSize: '14px',
-                  borderBottom: '1px solid #f1f1f1',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <span>{option.icon}</span>
-                <span>{option.label}</span>
-              </button>
-            ))}
-          </div>
-        </>
-
+        <div
+          onClick={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 998, background: 'rgba(15,39,71,0.10)' }}
+        />
       )}
+
+      {/* Latar "irisan" seperempat lingkaran — dekorasi supaya
+          benar-benar terlihat seperti menu mode di game mobile */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          width: `${arcSize}px`,
+          height: `${arcSize}px`,
+          top: `${28 - arcSize}px`,
+          left: `${28 - arcSize}px`,
+          borderRadius: '100% 0 0 0',
+          background: 'linear-gradient(135deg, rgba(37,99,235,0.20), rgba(15,39,71,0.05))',
+          border: '1px solid rgba(37,99,235,0.18)',
+          borderRight: 'none',
+          borderBottom: 'none',
+          zIndex: 999,
+          transformOrigin: 'bottom right',
+          transform: open ? 'scale(1)' : 'scale(0.4)',
+          opacity: open ? 1 : 0,
+          pointerEvents: 'none',
+          transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease',
+        }}
+      />
+
+      {/* Tombol-tombol pilihan, tersebar di seperempat lingkaran */}
+      <div role="menu" aria-label="Pilihan tambah data">
+        {OPTIONS.map((option, index) => {
+
+          const angleDeg = START_ANGLE + step * index
+          const angleRad = (angleDeg * Math.PI) / 180
+
+          const offsetX = Math.cos(angleRad) * RADIUS
+          const offsetY = -Math.sin(angleRad) * RADIUS
+
+          return (
+
+            <button
+              key={option.path}
+              type="button"
+              role="menuitem"
+              title={option.fullLabel}
+              aria-label={option.fullLabel}
+              onClick={() => handleSelect(option.path)}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                width: '52px',
+                height: '52px',
+                borderRadius: '50%',
+                border: '2px solid #ffffff',
+                background: 'var(--admin-primary, #0f2747)',
+                color: '#ffffff',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '1px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 16px rgba(15,39,71,0.35)',
+                zIndex: 1000,
+                transitionProperty: 'transform, opacity, background',
+                transitionDuration: '0.3s, 0.2s, 0.2s',
+                transitionTimingFunction: 'cubic-bezier(0.34, 1.56, 0.64, 1), ease, ease',
+                transitionDelay: open ? `${index * 0.04}s` : '0s',
+                transform: open
+                  ? `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px)`
+                  : 'translate(-50%, -50%) scale(0.2)',
+                opacity: open ? 1 : 0,
+                pointerEvents: open ? 'auto' : 'none',
+              }}
+              onMouseEnter={(event) => { event.currentTarget.style.background = 'var(--admin-accent, #2563eb)' }}
+              onMouseLeave={(event) => { event.currentTarget.style.background = 'var(--admin-primary, #0f2747)' }}
+            >
+              <span style={{ fontSize: '18px', lineHeight: 1 }}>{option.icon}</span>
+              <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '0.2px', lineHeight: 1 }}>
+                {option.label}
+              </span>
+            </button>
+
+          )
+
+        })}
+      </div>
+
+      {/* Tombol utama "+" */}
+      <button
+        type="button"
+        title="Buat / Tambah Data"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={open ? 'Tutup menu tambah data' : 'Buka menu tambah data'}
+        onClick={() => setOpen((current) => !current)}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          border: 'none',
+          background: 'var(--admin-primary, #0f2747)',
+          color: '#ffffff',
+          fontSize: '26px',
+          lineHeight: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 1001,
+          boxShadow: open
+            ? '0 4px 20px rgba(37,99,235,0.55)'
+            : '0 4px 14px rgba(0,0,0,0.25)',
+          transition: 'transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease',
+          transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
+        }}
+      >
+        +
+      </button>
 
     </div>
 

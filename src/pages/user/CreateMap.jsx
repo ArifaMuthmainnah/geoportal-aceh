@@ -11,7 +11,6 @@ import { useAuth } from '../../context/AuthContext'
 import { buildExtraMetadata } from '../../utils/resourceFields'
 
 import BoundingBoxPicker from '../../components/BoundingBoxPicker'
-import { parseExtraMetadata } from '../../utils/resourceFields'
 
 function CreateMap() {
 
@@ -215,9 +214,11 @@ function CreateMap() {
             {currentUser?.role !== 'admin' && (
               <Link to="/dashboard/datasets" className="admin-sidebar-link"><span>◈</span>Data Saya</Link>
             )}
-            <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
+                        <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
             <button type="button" className="active"><span>⌖</span>Create Map</button>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
+            <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
+            <Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
           </nav>
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>

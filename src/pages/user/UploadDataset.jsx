@@ -252,8 +252,19 @@ function UploadDataset() {
     const hasFiles = combinedFiles.length > 0
     const hasLink = externalUrl.trim().length > 0
 
-    if (!hasFiles && !hasLink) {
-      setErrorMessage('Isi minimal salah satu: unggah file atau isi link.')
+    // SESI 8 (FIX Poin 7): Embed URL sekarang juga dihitung sebagai
+    // "sudah punya sumber data/tampilan", karena fungsinya memang
+    // pengganti file (lihat catatan di bawah tombol Embed URL).
+    // Jadi validasi wajib-pilih-salah-satu ini mencakup ketiganya:
+    // file (shapefile/assets), Link/URL, ATAU Embed URL.
+    const hasEmbed = supportsEmbedUrl(resourceType) && embedUrl.trim().length > 0
+
+    if (!hasFiles && !hasLink && !hasEmbed) {
+      setErrorMessage(
+        supportsEmbedUrl(resourceType)
+          ? 'Isi minimal salah satu: unggah file, isi Link/URL, atau isi Embed URL.'
+          : 'Isi minimal salah satu: unggah file atau isi Link/URL.'
+      )
       return
     }
 
@@ -304,6 +315,15 @@ function UploadDataset() {
   const showAttributeTable = supportsAttributeTable(resourceType)
   const showAgendaSchedule = supportsAgendaSchedule(resourceType, subType)
   const showShapefileUpload = supportsShapefileUpload(resourceType)
+
+  // SESI 8 (FIX Poin 4 & 5): Embed URL sekarang HANYA untuk
+  // dataset & peta (lihat resourceFields.js) — fungsinya adalah
+  // ALTERNATIF berbasis-link dari file shapefile: kalau tidak ada
+  // file .shp untuk ditarik jadi peta interaktif, tapi sudah ada
+  // link tampilan peta/data interaktif dari sumber lain, link itu
+  // bisa ditempel di sini dan halaman detail akan menampilkannya
+  // sebagai iframe (menggantikan peta interaktif dari file).
+  const showEmbedUrl = supportsEmbedUrl(resourceType)
 
 
   return (
@@ -384,7 +404,10 @@ function UploadDataset() {
             <div>
               <span className="section-eyebrow">{currentUser?.role === 'admin' ? 'ADMINISTRATOR' : 'OPERATOR'}</span>
               <h1>Upload Data</h1>
-              <p>Unggah dataset, dashboard, atau WebGIS. Kamu boleh isi file, link, atau keduanya sekaligus.</p>
+              <p>
+                Unggah dataset, dashboard, atau WebGIS. Kolom bertanda <strong>(Wajib)</strong> harus
+                diisi, sisanya boleh dikosongkan.
+              </p>
             </div>
           </header>
 
@@ -442,13 +465,13 @@ function UploadDataset() {
                   {showAgendaSchedule && (
                     <>
                       <div className="admin-form-group">
-                        <label>Tanggal Acara</label>
+                        <label>Tanggal Acara (Opsional)</label>
                         <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
                         <small>Tanggal pelaksanaan kegiatan (boleh beda dari tanggal upload ini).</small>
                       </div>
 
                       <div className="admin-form-group">
-                        <label>Waktu</label>
+                        <label>Waktu (Opsional)</label>
                         <input
                           type="text"
                           value={eventTime}
@@ -458,7 +481,7 @@ function UploadDataset() {
                       </div>
 
                       <div className="admin-form-group">
-                        <label>Tempat</label>
+                        <label>Tempat (Opsional)</label>
                         <input
                           type="text"
                           value={eventLocation}
@@ -471,24 +494,41 @@ function UploadDataset() {
 
                   {/* #1: gambar sampul, muncul di card semua jenis resource */}
                   <div className="admin-form-group">
-                    <label>Gambar Sampul / Thumbnail (opsional)</label>
+                    <label>Gambar Sampul / Thumbnail (Opsional)</label>
                     <input type="file" accept="image/*" onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)} />
                     <small>Gambar ini yang akan tampil di bagian atas card, seperti data dari API lama.</small>
                   </div>
 
                   {/* =========================================================
-                      SESI 6: DUA KOTAK UPLOAD TERPISAH untuk Dataset & Peta —
-                      supaya jelas mana yang dipakai untuk mengisi tab
-                      Info/Location/Attributes (Shapefile) dan mana yang
-                      HANYA jadi file unduhan biasa di tab Assets.
+                      SESI 8 (FIX Poin 4): GRUP "DATA UTAMA / SPASIAL" — HANYA
+                      untuk Dataset & Peta. Isinya file Shapefile (upload FILE)
+                      dan tepat di bawahnya Embed URL (upload LINK) — sengaja
+                      digabung berdekatan karena keduanya cara mengisi hal yang
+                      SAMA (tampilan peta/data utama di halaman detail), cuma
+                      medianya beda: satu lewat file, satu lewat link. Cukup
+                      isi salah satu; TIDAK perlu isi dua-duanya.
                   ========================================================= */}
 
-                  {showShapefileUpload ? (
+                  {showShapefileUpload && (
 
-                    <>
+                    <div
+                      style={{
+                        border: '1px dashed #cbd5e1', borderRadius: '10px',
+                        padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
+                      }}
+                    >
 
-                      <div className="admin-form-group">
-                        <label>File Shapefile — .shp, .shx, .dbf, .prj (opsional, untuk data spasial)</label>
+                      <div>
+                        <strong style={{ fontSize: '14px' }}>📍 Data Utama / Spasial (Opsional)</strong>
+                        <p style={{ fontSize: '12.5px', opacity: 0.75, margin: '4px 0 0' }}>
+                          Isi SALAH SATU: unggah file Shapefile (kalau ada file mentahnya), ATAU isi Embed URL
+                          (kalau sudah ada link tampilan peta/data interaktif dari sumber lain). Kalau dua-duanya
+                          diisi, Embed URL yang akan diprioritaskan tampil di halaman detail.
+                        </p>
+                      </div>
+
+                      <div className="admin-form-group" style={{ margin: 0 }}>
+                        <label>File Shapefile — .shp, .shx, .dbf, .prj</label>
                         <input
                           type="file"
                           multiple
@@ -501,9 +541,8 @@ function UploadDataset() {
                         <small style={{ display: 'block', marginTop: '4px' }}>
                           Unggah 4 file ini SEKALIGUS (pilih semua lewat satu dialog file). Sistem otomatis
                           menarik Sistem Koordinat, Bounding Box, Tipe Geometri, dan nama kolom Attributes
-                          dari sini, PLUS menampilkan peta pratinjau geometrinya di bawah — muncul di tab{' '}
-                          <strong>Info</strong>, <strong>Location</strong>, dan <strong>Attributes</strong> pada
-                          halaman detail. File-file ini juga tetap bisa diunduh lewat tab <strong>Assets</strong>.
+                          dari sini, PLUS menampilkan peta pratinjau geometrinya di bawah. File-file ini juga
+                          tetap bisa diunduh lewat tab <strong>Assets</strong> pada halaman detail.
                         </small>
 
                         {shapefileNotice && (
@@ -532,28 +571,48 @@ function UploadDataset() {
                         )}
                       </div>
 
-                      <div className="admin-form-group">
-                        <label>File Assets Tambahan (opsional)</label>
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(e) => setAssetFiles(Array.from(e.target.files || []))}
-                        />
-                        {assetFiles.length > 0 && (
-                          <small>{assetFiles.length} file dipilih: {assetFiles.map((f) => f.name).join(', ')}</small>
-                        )}
-                        <small style={{ display: 'block', marginTop: '4px' }}>
-                          Untuk file pendukung lain (PDF laporan, gambar, dokumen resmi, dll) yang HANYA
-                          perlu bisa diunduh di tab <strong>Assets</strong> — tidak diparsing sebagai metadata.
-                        </small>
-                      </div>
+                      {showEmbedUrl && (
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label>Embed URL — alternatif dari file Shapefile</label>
+                          <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                          <small>
+                            Kalau diisi, halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini
+                            SEBAGAI GANTI peta interaktif hasil parsing file Shapefile di atas.
+                          </small>
+                        </div>
+                      )}
 
-                    </>
+                    </div>
 
-                  ) : (
+                  )}
 
-                    <div className="admin-form-group">
-                      <label>File (opsional, bisa pilih lebih dari satu)</label>
+                  {/* =========================================================
+                      SESI 8 (FIX Poin 4 & 7): GRUP "FILE & LINK PENDUKUNG" —
+                      berlaku untuk SEMUA jenis resource. File pendukung (upload
+                      FILE) dan Link/URL (upload LINK) digabung dalam satu grup
+                      karena fungsinya SAMA (sumber/lampiran data pendukung),
+                      cuma medianya beda. WAJIB isi salah satu (boleh dua-duanya),
+                      makanya TIDAK ditulis "(opsional)" di judul grup ini.
+                  ========================================================= */}
+
+                  <div
+                    style={{
+                      border: '1px dashed #cbd5e1', borderRadius: '10px',
+                      padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
+                    }}
+                  >
+
+                    <div>
+                      <strong style={{ fontSize: '14px' }}>📎 File &amp; Link Pendukung (Wajib pilih salah satu)</strong>
+                      <p style={{ fontSize: '12.5px', opacity: 0.75, margin: '4px 0 0' }}>
+                        Isi minimal SALAH SATU dari dua kolom di bawah ini — boleh isi file saja, link saja,
+                        atau keduanya sekaligus.
+                        {showShapefileUpload && ' (Kalau kamu sudah isi Data Utama/Spasial di atas, grup ini boleh dikosongkan.)'}
+                      </p>
+                    </div>
+
+                    <div className="admin-form-group" style={{ margin: 0 }}>
+                      <label>{showShapefileUpload ? 'File Assets Tambahan' : 'File'}</label>
                       <input
                         type="file"
                         multiple
@@ -562,36 +621,33 @@ function UploadDataset() {
                       {assetFiles.length > 0 && (
                         <small>{assetFiles.length} file dipilih: {assetFiles.map((f) => f.name).join(', ')}</small>
                       )}
+                      {showShapefileUpload && (
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Untuk file pendukung lain (PDF laporan, gambar, dokumen resmi, dll) yang HANYA
+                          perlu bisa diunduh di tab <strong>Assets</strong> — tidak diparsing sebagai metadata.
+                        </small>
+                      )}
                     </div>
 
-                  )}
+                    <div className="admin-form-group" style={{ margin: 0 }}>
+                      <label>Link / URL</label>
+                      <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
+                    </div>
 
-                  <div className="admin-form-group">
-                    <label>Link / URL (opsional)</label>
-                    <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
-                    <small>Isi minimal salah satu: file atau link. Boleh isi keduanya.</small>
                   </div>
 
-                  {supportsEmbedUrl(resourceType) && (
-                    <div className="admin-form-group">
-                      <label>Embed URL (opsional)</label>
-                      <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
-                      <small>Halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini.</small>
-                    </div>
-                  )}
-
                   <div className="admin-form-group">
-                    <label>Judul</label>
+                    <label>Judul (Wajib)</label>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Deskripsi / Abstract (opsional)</label>
+                    <label>Deskripsi / Abstract (Opsional)</label>
                     <textarea rows={4} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Kategori (opsional)</label>
+                    <label>Kategori (Opsional)</label>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="">Pilih kategori</option>
                       {CATEGORY_OPTIONS.map((cat) => (
@@ -616,7 +672,7 @@ function UploadDataset() {
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Keyword (opsional)</label>
+                    <label>Keyword (Opsional)</label>
                     <input
                       type="text"
                       value={keywords}
@@ -636,9 +692,9 @@ function UploadDataset() {
 
                   <div className="admin-panel-header">
                     <div>
-                      <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'}</h2>
+                      <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'} (Opsional)</h2>
                       <p>
-                        Diisi agar tab Info & Location di halaman detail bisa lengkap.
+                        Diisi agar tab Info &amp; Location di halaman detail bisa lengkap.
                         {showShapefileUpload && ' Sebagian sudah otomatis terisi dari file shapefile di atas — tinggal lengkapi sisanya.'}
                       </p>
                     </div>
@@ -647,44 +703,44 @@ function UploadDataset() {
                   <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     <div className="admin-form-group">
-                      <label>Wilayah / Region (opsional)</label>
+                      <label>Wilayah / Region (Opsional)</label>
                       <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="mis: Kabupaten Aceh Besar" />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Bahasa</label>
+                      <label>Bahasa (Opsional)</label>
                       <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Sistem Koordinat (CRS)</label>
+                      <label>Sistem Koordinat / CRS (Opsional)</label>
                       <input type="text" value={srid} onChange={(e) => setSrid(e.target.value)} placeholder="EPSG:4326" />
                       {showShapefileUpload && <small>Otomatis terisi dari file .prj bila diunggah di atas.</small>}
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Atribusi (opsional)</label>
+                      <label>Atribusi (Opsional)</label>
                       <input type="text" value={attribution} onChange={(e) => setAttribution(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Tujuan (opsional)</label>
+                      <label>Tujuan (Opsional)</label>
                       <textarea rows={3} value={purpose} onChange={(e) => setPurpose(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Informasi Tambahan (opsional)</label>
+                      <label>Informasi Tambahan (Opsional)</label>
                       <textarea rows={3} value={supplementalInformation} onChange={(e) => setSupplementalInformation(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Batasan Penggunaan (opsional)</label>
+                      <label>Batasan Penggunaan (Opsional)</label>
                       <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} />
                     </div>
 
                     {supportsBboxLocation(resourceType) && (
                     <div className="admin-form-group">
-                      <label>Bounding Box (WGS84) — opsional</label>
+                      <label>Bounding Box / WGS84 (Opsional)</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         {DATASET_BBOX_FIELDS.map((field) => {
                           const shortKey =
@@ -712,7 +768,7 @@ function UploadDataset() {
 
                     {supportsLinkedResources(resourceType) && (
                       <div className="admin-form-group">
-                        <label>Linked Resources (opsional)</label>
+                        <label>Linked Resources (Opsional)</label>
                         <textarea
                           rows={4}
                           value={linkedResourcesText}

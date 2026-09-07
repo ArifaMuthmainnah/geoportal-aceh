@@ -135,6 +135,25 @@ export async function updateUser(id, userData) {
 
 
 // =====================================================
+// SESI 6: UPDATE PROFIL SENDIRI (operator maupun admin)
+// =====================================================
+
+export async function updateMyProfile({ username, email, password, currentPassword, avatarFile }) {
+
+  const formData = new FormData()
+
+  if (username !== undefined) formData.append('username', username)
+  if (email !== undefined) formData.append('email', email || '')
+  if (password) formData.append('password', password)
+  if (currentPassword) formData.append('current_password', currentPassword)
+  if (avatarFile) formData.append('avatar', avatarFile)
+
+  return authRequestFormData('/users/me', 'PATCH', formData)
+
+}
+
+
+// =====================================================
 // DELETE USER
 // =====================================================
 

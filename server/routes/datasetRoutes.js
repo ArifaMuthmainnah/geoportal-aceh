@@ -69,6 +69,17 @@ function deleteDatasetFiles(dataset) {
   if (dataset.file_path) deleteFileByName(dataset.file_path)
 }
 
+function deleteOldNonThumbnailFiles(dataset) {
+  if (dataset.files_json) {
+    try {
+      const oldFiles = JSON.parse(dataset.files_json)
+      if (Array.isArray(oldFiles)) oldFiles.forEach((f) => deleteFileByName(f.file_path))
+      return
+    } catch {}
+  }
+  if (dataset.file_path) deleteFileByName(dataset.file_path)
+}
+
 // =====================================================
 // DATASET PUBLIK
 // =====================================================
@@ -97,16 +108,6 @@ router.get('/published', async (req, res) => {
 
 })
 
-
-// =====================================================
-// RESOURCE PUBLIK BERDASARKAN TYPE
-// =====================================================
-//
-// FIX (#3): daftar allowedTypes sekarang memakai konstanta
-// bersama ALLOWED_RESOURCE_TYPES, sehingga map/document/
-// informasi tidak lagi ditolak dengan 400.
-//
-// =====================================================
 
 router.get('/public/:resourceType', async (req, res) => {
 
@@ -180,10 +181,6 @@ router.use(authenticateToken)
 
 // =====================================================
 // SESI 6: VISIBILITAS BERSAMA (ADMIN + OPERATOR)
-// Endpoint ini TIDAK memakai requireAdmin — dipakai supaya
-// operator bisa melihat SEMUA data (semua owner, semua status
-// publish) di Dashboard operator, mode lihat saja. Edit & hapus
-// tetap dibatasi lewat endpoint PATCH/DELETE di bawah.
 // =====================================================
 
 router.get('/all-visible', async (req, res) => {
@@ -231,9 +228,6 @@ router.get('/view/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
     }
 
-    // Read-only: siapa pun yang sudah login boleh melihat data ini,
-    // walau belum dipublikasikan atau bukan miliknya. Tidak ada
-    // hak edit/hapus lewat endpoint ini.
     return res.json({ success: true, dataset })
 
   } catch (error) {
@@ -521,7 +515,20 @@ router.get('/admin/:resourceType', requireAdmin, async (req, res) => {
 })
 
 
-router.patch('/:id', async (req, res) => {
+// =====================================================
+// SESI 6: PATCH SEKARANG MENDUKUNG GANTI FILE
+// Route ini pakai `uploadWithThumbnail` (multer). Kalau
+// request datang sebagai JSON biasa (Content-Type:
+// application/json — dipakai toggle publish, edit modal
+// admin, dll), multer otomatis membiarkannya (tidak
+// memodifikasi req.body) karena bukan multipart/form-data,
+// jadi perilaku LAMA tetap sama persis. Kalau request
+// datang sebagai multipart/form-data (dari EditMyDataset.jsx
+// saat user ganti file), req.files terisi dan file lama
+// diganti otomatis.
+// =====================================================
+
+router.patch('/:id', uploadWithThumbnail, async (req, res) => {
 
   try {
 
@@ -534,6 +541,8 @@ router.patch('/:id', async (req, res) => {
     const dataset = await db.prepare(`SELECT * FROM datasets WHERE id = $1`).get(id)
 
     if (!dataset) {
+      deleteUploadedFiles(req.files?.base_file)
+      if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
       return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
     }
 
@@ -541,10 +550,14 @@ router.patch('/:id', async (req, res) => {
     const isAdmin = req.user.role === 'admin'
 
     if (!isOwner && !isAdmin) {
+      deleteUploadedFiles(req.files?.base_file)
+      if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
       return res.status(403).json({ success: false, message: 'Tidak punya izin mengubah data ini.' })
     }
 
     if (isOwner && !isAdmin && dataset.is_published) {
+      deleteUploadedFiles(req.files?.base_file)
+      if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
       return res.status(403).json({
         success: false,
         message: 'Data sudah dipublikasikan, tidak dapat diedit lagi. Hubungi admin untuk perubahan.'
@@ -553,7 +566,8 @@ router.patch('/:id', async (req, res) => {
 
     const {
       title, abstract, resource_type, category, keywords,
-      is_published, external_url, extra_metadata, remove_link, sub_type
+      is_published, external_url, extra_metadata, remove_link, sub_type,
+      remove_files
     } = req.body
 
     const nextTitle = title !== undefined ? String(title).trim() : dataset.title
@@ -566,7 +580,39 @@ router.patch('/:id', async (req, res) => {
     const nextExternalUrl =
       remove_link ? null : (external_url !== undefined ? external_url : dataset.external_url)
 
-    const hasFiles = Boolean(dataset.file_path || dataset.files_json)
+    // ---- GANTI FILE (kalau ada file baru dikirim) ----
+    const newFiles = req.files?.base_file || []
+    let nextFilePath = dataset.file_path
+    let nextFileName = dataset.file_name
+    let nextFilesJson = dataset.files_json
+
+    if (newFiles.length > 0) {
+
+      deleteOldNonThumbnailFiles(dataset)
+
+      nextFilesJson = JSON.stringify(newFiles.map((f) => ({ file_path: f.filename, file_name: f.originalname })))
+      nextFilePath = newFiles[0].filename
+      nextFileName = newFiles[0].originalname
+
+    } else if (remove_files === 'true') {
+
+      deleteOldNonThumbnailFiles(dataset)
+      nextFilePath = null
+      nextFileName = null
+      nextFilesJson = null
+
+    }
+
+    // ---- GANTI THUMBNAIL (opsional) ----
+    const newThumbnail = req.files?.thumbnail?.[0] || null
+    let nextThumbnailPath = dataset.thumbnail_path
+
+    if (newThumbnail) {
+      if (dataset.thumbnail_path) deleteFileByName(dataset.thumbnail_path)
+      nextThumbnailPath = newThumbnail.filename
+    }
+
+    const hasFiles = Boolean(nextFilePath || nextFilesJson)
     const hasLink = Boolean(nextExternalUrl && String(nextExternalUrl).trim())
 
     const nextContentType =
@@ -579,22 +625,26 @@ router.patch('/:id', async (req, res) => {
     }
 
     if (!ALLOWED_RESOURCE_TYPES.includes(nextResourceType)) {
+      deleteUploadedFiles(newFiles)
+      if (newThumbnail) deleteFileByName(newThumbnail.filename)
       return res.status(400).json({ success: false, message: 'Resource type tidak valid.' })
     }
 
     const nextPublished =
-      isAdmin && is_published !== undefined ? (is_published ? 1 : 0) : dataset.is_published
+      isAdmin && is_published !== undefined
+        ? (is_published === true || is_published === 'true' ? 1 : 0)
+        : dataset.is_published
 
     await db.prepare(`
       UPDATE datasets
       SET title=$1, abstract=$2, resource_type=$3, category=$4, keywords=$5,
           is_published=$6, content_type=$7, external_url=$8, extra_metadata=$9,
-          sub_type=$10
-      WHERE id=$11
+          sub_type=$10, file_path=$11, file_name=$12, files_json=$13, thumbnail_path=$14
+      WHERE id=$15
     `).run(
       nextTitle, nextAbstract, nextResourceType, nextCategory, nextKeywords,
       nextPublished, nextContentType, nextExternalUrl, nextExtraMetadata,
-      nextSubType, id
+      nextSubType, nextFilePath, nextFileName, nextFilesJson, nextThumbnailPath, id
     )
 
     return res.json({ success: true, message: 'Data berhasil diperbarui.' })
@@ -602,6 +652,9 @@ router.patch('/:id', async (req, res) => {
   } catch (error) {
 
     console.error('UPDATE RESOURCE ERROR:', error)
+
+    deleteUploadedFiles(req.files?.base_file)
+    if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
 
     return res.status(500).json({ success: false, message: 'Gagal memperbarui data.' })
 
