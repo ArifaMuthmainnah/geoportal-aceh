@@ -1,77 +1,142 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 
-import { getLatestDatasets } from '../api/datasetApi'
-import { getAllOwners } from '../api/jignApi'
-import { getMaps } from '../api/mapApi'
-import { getDocuments } from '../api/documentApi'
-import { getGeoapps, getAllGeoapps } from '../api/geoappApi'
+import {
+  Link,
+} from 'react-router'
+
+import {
+  getLatestDatasets,
+  getDatasetTotalCount,
+} from '../api/datasetApi'
+
+import {
+  getAllOwners,
+} from '../api/jignApi'
+
+import {
+  getMaps,
+} from '../api/mapApi'
+
+import {
+  getDocuments,
+} from '../api/documentApi'
+
+import {
+  getGeoapps,
+  getAllGeoapps,
+  getGeoappTotalCount,
+} from '../api/geoappApi'
+
+import {
+  getPublishedByType,
+} from '../api/myDatasetApi'
+
+import {
+  getPublicOwners,
+} from '../api/userApi'
 
 import {
   getOwnerName,
   getOwnerAvatar,
 } from '../utils/datasetUtils'
 
+import {
+  mergeResourceLists,
+  sortByDateDesc,
+  mergeOwnerLists,
+} from '../utils/ownDataAdapter'
+
+import {
+  MapContainer,
+  TileLayer,
+} from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+
 import DatasetCard from '../components/DatasetCard'
 import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
-
-
-// =========================================
-// HOME
-// =========================================
+import HomeMapsSection from '../components/HomeMapsSection'
+import HomeDocumentsSection from '../components/HomeDocumentsSection'
 
 function Home() {
 
-  // =========================================
+  // ===================================================
   // DATASET
-  // =========================================
+  // ===================================================
 
-  const [datasets, setDatasets] = useState([])
-  const [datasetTotal, setDatasetTotal] = useState(0)
+  const [datasets, setDatasets] =
+    useState([])
+
+  const [datasetTotal, setDatasetTotal] =
+    useState(0)
 
 
-  // =========================================
-  // APPLICATIONS / GEOAPPS
-  // =========================================
+  // ===================================================
+  // APPLICATION
+  // ===================================================
 
-  const [applications, setApplications] = useState([])
-  const [applicationLoading, setApplicationLoading] =
+  const [applications, setApplications] =
+    useState([])
+
+  const [
+    applicationLoading,
+    setApplicationLoading,
+  ] = useState(true)
+
+
+  // ===================================================
+  // STATISTICS
+  // ===================================================
+
+  const [mapTotal, setMapTotal] =
+    useState(0)
+
+  const [documentTotal, setDocumentTotal] =
+    useState(0)
+
+  const [geoappTotal, setGeoappTotal] =
+    useState(0)
+
+
+  // ===================================================
+  // OWNERS
+  // ===================================================
+
+  const [owners, setOwners] =
+    useState([])
+
+  const [ownerTotal, setOwnerTotal] =
+    useState(0)
+
+
+  // ===================================================
+  // STATE
+  // ===================================================
+
+  const [loading, setLoading] =
     useState(true)
 
-
-  // =========================================
-  // STATISTICS
-  // =========================================
-
-  const [mapTotal, setMapTotal] = useState(0)
-  const [documentTotal, setDocumentTotal] = useState(0)
-  const [geoappTotal, setGeoappTotal] = useState(0)
-
-
-  // =========================================
-  // OWNERS / INSTANSI
-  // =========================================
-
-  const [owners, setOwners] = useState([])
-  const [ownerTotal, setOwnerTotal] = useState(0)
-
-
-  // =========================================
-  // STATE
-  // =========================================
-
-  const [loading, setLoading] = useState(true)
-  const [datasetError, setDatasetError] = useState('')
-  const [applicationError, setApplicationError] =
+  const [datasetError, setDatasetError] =
     useState('')
 
+  const [
+    applicationError,
+    setApplicationError,
+  ] = useState('')
 
-  // =========================================
+
+  // ===================================================
   // LOAD HOME DATA
-  // =========================================
+  // ===================================================
 
   useEffect(() => {
+
+    let mounted = true
+
 
     async function loadHomeData() {
 
@@ -79,158 +144,199 @@ function Home() {
       setDatasetError('')
 
 
-      // =======================================
-      // DATASET
-      // =======================================
+      // ===============================================
+      // DATASET (API LAMA + UPLOAD SENDIRI)
+      // ===============================================
+
+      let oldDatasetList = []
+      let ownDatasetList = []
+
+            let oldDatasetTotal = 0
 
       try {
 
-        const datasetResponse =
+        const response =
           await getLatestDatasets()
 
-        console.log(
-          'Dataset Home:',
-          datasetResponse
-        )
-
-
-        const datasetList =
-          Array.isArray(datasetResponse)
-            ? datasetResponse
-            : datasetResponse?.datasets ||
-              datasetResponse?.results ||
-              datasetResponse?.data ||
+        oldDatasetList =
+          Array.isArray(response)
+            ? response
+            : response?.datasets ||
+              response?.results ||
+              response?.data ||
               []
 
-
-        // Home hanya menampilkan 3 dataset
-        setDatasets(
-          datasetList.slice(0, 3)
-        )
-
-
-        // Total dataset dari API
-        const totalDatasets =
-          Number(
-            datasetResponse?.total ??
-            datasetResponse?.count ??
-            datasetList.length
-          )
-
-
-        setDatasetTotal(
-          totalDatasets
-        )
+        oldDatasetTotal =
+          await getDatasetTotalCount()
 
       } catch (err) {
 
         console.error(
-          'Gagal mengambil dataset:',
+          'Gagal mengambil dataset API lama:',
           err
         )
 
-        setDatasets([])
-        setDatasetTotal(0)
+        if (mounted) {
+          setDatasetError(
+            'Sebagian dataset belum dapat dimuat.'
+          )
+        }
 
-        setDatasetError(
-          'Dataset belum dapat dimuat.'
+      }
+
+      try {
+
+        ownDatasetList =
+          await getPublishedByType('dataset')
+
+      } catch (err) {
+
+        console.error(
+          'Gagal mengambil dataset sendiri:',
+          err
+        )
+
+      }
+
+      if (mounted) {
+
+        const mergedDatasets =
+          sortByDateDesc(
+            mergeResourceLists(
+              oldDatasetList,
+              ownDatasetList
+            )
+          )
+
+        setDatasets(
+          mergedDatasets.slice(0, 3)
+        )
+
+        setDatasetTotal(
+          oldDatasetTotal +
+          ownDatasetList.length
         )
 
       }
 
 
-      // =======================================
-      // MAPS
-      // =======================================
-
+      // ===============================================
+      // MAPS (API LAMA) + PETA UPLOAD SENDIRI (#1)
+      // ===============================================
+      
+      let ownMapTotal = 0
       try {
-
-        const mapResponse =
-          await getMaps('?page_size=1')
-
-        console.log(
-          'Maps Home:',
-          mapResponse
-        )
-
-
-        setMapTotal(
-          Number(
-            mapResponse?.total ??
-            mapResponse?.count ??
-            0
-          )
-        )
-
+        ownMapTotal =
+          (await getPublishedByType('map')).length
       } catch (err) {
-
+        console.error(
+          'Gagal mengambil peta sendiri:',
+          err
+        )
+      }
+      try {
+        const response =
+          await getMaps(
+            '?page_size=1'
+          )
+        if (mounted) {
+          const oldMapTotal =
+            Number(
+              response?.total ??
+              response?.count ??
+              0
+            )
+          setMapTotal(
+            oldMapTotal + ownMapTotal
+          )
+        }
+      } catch (err) {
         console.error(
           'Gagal mengambil maps:',
           err
         )
-
-        setMapTotal(0)
-
+        if (mounted) {
+          setMapTotal(ownMapTotal)
+        }
       }
 
 
-      // =======================================
-      // DOCUMENTS
-      // =======================================
+      // ===============================================
+      // DOCUMENTS (API LAMA)
+      // ===============================================
 
+            // ===============================================
+      // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
+      // ===============================================
+      let ownDocumentTotal = 0
       try {
-
-        const documentResponse =
-          await getDocuments('?page_size=1')
-
-        console.log(
-          'Documents Home:',
-          documentResponse
-        )
-
-
-        setDocumentTotal(
-          Number(
-            documentResponse?.total ??
-            documentResponse?.count ??
-            0
-          )
-        )
-
+        ownDocumentTotal =
+          (await getPublishedByType('document')).length
       } catch (err) {
-
+        console.error(
+          'Gagal mengambil dokumen sendiri:',
+          err
+        )
+      }
+      try {
+        const response =
+          await getDocuments(
+            '?page_size=1'
+          )
+        if (mounted) {
+          const oldDocumentTotal =
+            Number(
+              response?.total ??
+              response?.count ??
+              0
+            )
+          setDocumentTotal(
+            oldDocumentTotal + ownDocumentTotal
+          )
+        }
+      } catch (err) {
         console.error(
           'Gagal mengambil documents:',
           err
         )
-
-        setDocumentTotal(0)
-
+        if (mounted) {
+          setDocumentTotal(ownDocumentTotal)
+        }
       }
 
 
-      // =======================================
-      // GEOAPPS / DASHBOARD
-      // =======================================
+      // ===============================================
+      // GEOAPPS / DASHBOARD (API LAMA + SENDIRI)
+      // ===============================================
+
+      let ownDashboardTotal = 0
 
       try {
 
-        const geoappResponse =
-          await getGeoapps('?page_size=1')
+        ownDashboardTotal =
+          (await getPublishedByType('dashboard')).length
 
-        console.log(
-          'Geoapps Home:',
-          geoappResponse
+      } catch (err) {
+
+        console.error(
+          'Gagal mengambil dashboard sendiri:',
+          err
         )
 
+      }
 
-        setGeoappTotal(
-          Number(
-            geoappResponse?.total ??
-            geoappResponse?.count ??
-            0
+            try {
+
+        const oldGeoappTotal =
+          await getGeoappTotalCount()
+
+        if (mounted) {
+
+          setGeoappTotal(
+            oldGeoappTotal + ownDashboardTotal
           )
-        )
+
+        }
 
       } catch (err) {
 
@@ -239,64 +345,32 @@ function Home() {
           err
         )
 
-        setGeoappTotal(0)
+        if (mounted) {
+          setGeoappTotal(ownDashboardTotal)
+        }
 
       }
 
 
-      // =======================================
-      // OWNERS / INSTANSI
-      // =======================================
+      // ===============================================
+      // OWNERS (API LAMA + PENGGUNA SENDIRI)
+      // ===============================================
+
+      let oldOwnerList = []
+      let ownUserList = []
 
       try {
 
-        /*
-         * Ambil seluruh owner.
-         *
-         * getAllOwners() menangani
-         * pagination dari API.
-         */
-
-        const ownerList =
+        const response =
           await getAllOwners()
 
-        console.log(
-          'Owners Home:',
-          ownerList
-        )
-
-
-        const validOwners =
-          Array.isArray(ownerList)
-            ? ownerList
-            : []
-
-
-        /*
-         * Urutkan berdasarkan jumlah dataset
-         * terbanyak.
-         */
-
-        const sortedOwners =
-          [...validOwners].sort(
-            (a, b) =>
-              Number(b.count || 0) -
-              Number(a.count || 0)
-          )
-
-
-        setOwners(
-          sortedOwners
-        )
-
-
-        /*
-         * Jumlah instansi / owner.
-         */
-
-        setOwnerTotal(
-          sortedOwners.length
-        )
+        oldOwnerList =
+          Array.isArray(response)
+            ? response
+            : response?.owners ||
+              response?.results ||
+              response?.data ||
+              []
 
       } catch (err) {
 
@@ -305,27 +379,68 @@ function Home() {
           err
         )
 
-        setOwners([])
-        setOwnerTotal(0)
+      }
+
+      try {
+
+        ownUserList =
+          await getPublicOwners()
+
+      } catch (err) {
+
+        console.error(
+          'Gagal mengambil pengguna sendiri:',
+          err
+        )
+
+      }
+
+      if (mounted) {
+
+        const mergedOwners =
+          mergeOwnerLists(
+            oldOwnerList,
+            ownUserList
+          )
+
+        const sortedOwners =
+          [...mergedOwners].sort(
+            (a, b) =>
+              Number(b?.count || 0) -
+              Number(a?.count || 0)
+          )
+
+        setOwners(sortedOwners)
+        setOwnerTotal(sortedOwners.length)
 
       }
 
 
-      setLoading(false)
+      if (mounted) {
+        setLoading(false)
+      }
 
     }
 
 
     loadHomeData()
 
+
+    return () => {
+      mounted = false
+    }
+
   }, [])
 
 
-  // =========================================
-  // LOAD APPLICATIONS / GEOAPPS
-  // =========================================
+  // ===================================================
+  // LOAD APPLICATIONS (API LAMA + DASHBOARD SENDIRI)
+  // ===================================================
 
   useEffect(() => {
+
+    let mounted = true
+
 
     async function loadApplications() {
 
@@ -335,69 +450,78 @@ function Home() {
         setApplicationError('')
 
 
-        const response =
-          await getAllGeoapps()
-
-        console.log(
-          'Applications Home:',
-          response
-        )
+        let oldGeoappList = []
+        let ownDashboardList = []
 
 
-        const geoappList =
-          Array.isArray(response)
-            ? response
-            : response?.geoapps ||
-              response?.results ||
-              response?.data ||
-              []
+        try {
+
+          const response =
+            await getAllGeoapps()
+
+          oldGeoappList =
+            Array.isArray(response)
+              ? response
+              : response?.geoapps ||
+                response?.results ||
+                response?.data ||
+                []
+
+        } catch (err) {
+
+          console.error(
+            'Gagal mengambil aplikasi API lama:',
+            err
+          )
+
+        }
 
 
-        /*
-         * Hanya aplikasi yang sudah dipublikasikan
-         * yang ditampilkan kepada pengunjung.
-         */
+        try {
+
+          ownDashboardList =
+            await getPublishedByType('dashboard')
+
+        } catch (err) {
+
+          console.error(
+            'Gagal mengambil dashboard sendiri:',
+            err
+          )
+
+        }
+
+
+        const mergedApplications =
+          mergeResourceLists(
+            oldGeoappList,
+            ownDashboardList
+          )
+
 
         const publishedApplications =
-          geoappList.filter(
+          mergedApplications.filter(
             (application) =>
-              application.is_published === true
+              application?.is_published === true
           )
 
-
-        /*
-         * Ambil 3 aplikasi terbaru.
-         *
-         * Jika API mengembalikan data sudah dalam
-         * urutan terbaru, slice(0, 3) cukup.
-         *
-         * Jika terdapat field date, kita urutkan
-         * berdasarkan tanggal terlebih dahulu.
-         */
 
         const sortedApplications =
-          [...publishedApplications].sort(
-            (a, b) => {
-
-              const dateA =
-                a.date
-                  ? new Date(a.date).getTime()
-                  : 0
-
-              const dateB =
-                b.date
-                  ? new Date(b.date).getTime()
-                  : 0
-
-              return dateB - dateA
-
-            }
+          sortByDateDesc(
+            publishedApplications
           )
 
 
-        setApplications(
-          sortedApplications.slice(0, 3)
-        )
+        if (mounted) {
+
+          setApplications(
+            sortedApplications.slice(
+              0,
+              3
+            )
+          )
+
+        }
 
       } catch (err) {
 
@@ -406,15 +530,22 @@ function Home() {
           err
         )
 
-        setApplications([])
 
-        setApplicationError(
-          'Aplikasi belum dapat dimuat.'
-        )
+        if (mounted) {
+
+          setApplications([])
+
+          setApplicationError(
+            'Aplikasi belum dapat dimuat.'
+          )
+
+        }
 
       } finally {
 
-        setApplicationLoading(false)
+        if (mounted) {
+          setApplicationLoading(false)
+        }
 
       }
 
@@ -423,12 +554,17 @@ function Home() {
 
     loadApplications()
 
+
+    return () => {
+      mounted = false
+    }
+
   }, [])
 
 
-  // =========================================
+  // ===================================================
   // STATISTICS
-  // =========================================
+  // ===================================================
 
   const statistics = [
 
@@ -465,190 +601,195 @@ function Home() {
   ]
 
 
-  // =========================================
+  // ===================================================
   // OWNER MAP
-  // =========================================
+  // ===================================================
 
-  /*
-   * Membuat Map berdasarkan PK owner.
-   *
-   * Digunakan untuk mencocokkan owner dataset
-   * dengan data owner dari API.
-   */
+  const ownerMap = useMemo(
+    () =>
+      new Map(
+        owners.map(
+          (owner) => [
+            owner.pk ||
+            owner.id ||
+            owner.uuid,
 
-  const ownerMap =
-    new Map(
-      owners.map((owner) => [
-        owner.pk,
-        owner,
-      ])
-    )
+            owner,
+          ]
+        )
+      ),
+
+    [owners]
+  )
 
 
-  // =========================================
+  // ===================================================
   // RENDER
-  // =========================================
+  // ===================================================
 
   return (
 
     <div className="home-page">
 
 
-      {/* =====================================
-          HERO
-          ===================================== */}
+      {/* =================================================
+          HERO + STATISTIK
+          (dibungkus 1 wrapper biru penuh, Sesi 11)
+      ================================================= */}
 
-      <section className="home-hero">
+      <div className="home-hero-wrapper">
 
-        <div className="container">
+        <section className="home-hero">
 
-          <div className="home-hero-grid">
+          <div className="container">
 
-            <div className="home-hero-content">
+            <div className="home-hero-grid">
 
-              <span className="home-eyebrow">
-                GEOPORTAL ACEH
-              </span>
+              <div className="home-hero-content">
 
-
-              <h1>
-                Portal Informasi
-                <br />
-
-                <span>
-                  Geospasial Aceh
+                <span className="home-eyebrow">
+                  GEOPORTAL ACEH
                 </span>
 
-              </h1>
+
+                <h1>
+
+                  Portal Informasi
+
+                  <br />
+
+                  <span>
+                    Geospasial Aceh
+                  </span>
+
+                </h1>
 
 
-              <p>
-                Menyediakan informasi dan data
-                geospasial untuk mendukung pembangunan
-                dan pengambilan keputusan berbasis data
-                di Aceh.
-              </p>
+                <p>
+                  Menyediakan informasi dan data
+                  geospasial untuk mendukung pembangunan
+                  dan pengambilan keputusan berbasis data
+                  di Aceh.
+                </p>
 
 
-              <div className="home-hero-actions">
+                <div className="home-hero-actions">
 
-                <a
-                  href="/webgis"
-                  className="home-primary-button"
-                >
-                  Jelajahi WebGIS
-                  <span>→</span>
-                </a>
-
-
-                <a
-                  href="/katalog"
-                  className="home-secondary-button"
-                >
-                  Lihat Katalog
-                </a>
-
-              </div>
-
-            </div>
+                  <Link
+                    to="/webgis"
+                    className="home-primary-button"
+                  >
+                    Jelajahi WebGIS
+                    <span>→</span>
+                  </Link>
 
 
-            {/* HERO VISUAL */}
+                  <Link
+                    to="/katalog"
+                    className="home-secondary-button"
+                  >
+                    Lihat Katalog
+                  </Link>
 
-            <div className="home-hero-visual">
-
-              <div className="home-logo-placeholder">
-
-                <span>
-                  ACEH
-                </span>
-
-                <small>
-                  Logo Geoportal
-                </small>
+                </div>
 
               </div>
 
 
-              <div className="home-map-decoration">
-                GIS
+              <div className="home-hero-visual">
+
+                <div className="home-logo-placeholder">
+
+                  <span>
+                    ACEH
+                  </span>
+
+                  <small>
+                    Logo Geoportal
+                  </small>
+
+                </div>
+
+
+                <div className="home-map-decoration">
+                  GIS
+                </div>
+
               </div>
 
             </div>
 
           </div>
 
-        </div>
-
-      </section>
+        </section>
 
 
+        {/* =================================================
+            STATISTICS
+        ================================================= */}
 
-      {/* =====================================
-          STATISTICS
-          ===================================== */}
+        <section className="home-statistics">
 
-      <section className="home-statistics">
+          <div className="container">
 
-        <div className="container">
+            <div className="statistics-card">
 
-          <div className="statistics-card">
+              {statistics.map(
+                (stat) => (
 
-            {statistics.map((stat) => (
+                  <div
+                    className="stat-item"
+                    key={stat.label}
+                  >
 
-              <div
-                className="stat-item"
-                key={stat.label}
-              >
-
-                <div className="stat-icon">
-                  {stat.icon}
-                </div>
-
-
-                <div className="stat-number">
-
-                  <strong>
-
-                    {loading ? (
-
-                      '...'
-
-                    ) : (
-
-                      <AnimatedCounter
-                        value={stat.value}
-                      />
-
-                    )}
-
-                  </strong>
-
-                </div>
+                    <div className="stat-icon">
+                      {stat.icon}
+                    </div>
 
 
-                <span>
-                  {stat.label}
-                </span>
+                    <div className="stat-number">
+
+                      <strong>
+
+                        {loading
+                          ? '...'
+                          : (
+                            <AnimatedCounter
+                              value={
+                                stat.value
+                              }
+                            />
+                          )}
+
+                      </strong>
+
+                    </div>
 
 
-                <div className="stat-line" />
+                    <span>
+                      {stat.label}
+                    </span>
 
-              </div>
 
-            ))}
+                    <div className="stat-line" />
+
+                  </div>
+
+                )
+              )}
+
+            </div>
 
           </div>
 
-        </div>
+        </section>
 
-      </section>
+      </div>
 
 
-
-      {/* =====================================
+      {/* =================================================
           DATASET TERBARU
-          ===================================== */}
+      ================================================= */}
 
       <section className="home-section">
 
@@ -662,11 +803,9 @@ function Home() {
                 DATA GEOSPASIAL
               </span>
 
-
               <h2>
                 Dataset Terbaru
               </h2>
-
 
               <p>
                 Temukan berbagai dataset geospasial
@@ -687,99 +826,100 @@ function Home() {
           </div>
 
 
-
-          {/* ===================================
-              LOADING DATASET
-              =================================== */}
+          {/* =============================================
+              LOADING
+          ============================================= */}
 
           {loading && (
 
             <div className="home-card-grid">
 
-              {[1, 2, 3].map((item) => (
+              {[1, 2, 3].map(
+                (item) => (
 
-                <article
-                  className="dataset-home-card dataset-skeleton"
-                  key={item}
-                >
+                  <article
+                    className="dataset-home-card dataset-skeleton"
+                    key={item}
+                  >
 
-                  <div className="dataset-home-image" />
+                    <div className="dataset-home-image" />
 
-                  <div className="dataset-home-body">
+                    <div className="dataset-home-body">
 
-                    <div className="skeleton-line short" />
+                      <div className="skeleton-line short" />
 
-                    <div className="skeleton-line title" />
+                      <div className="skeleton-line title" />
 
-                    <div className="skeleton-line" />
+                      <div className="skeleton-line" />
 
-                    <div className="skeleton-line medium" />
+                      <div className="skeleton-line medium" />
 
-                  </div>
+                    </div>
 
-                </article>
+                  </article>
 
-              ))}
+                )
+              )}
 
             </div>
 
           )}
 
 
-
-          {/* ===================================
-              DATASET CARDS
-              =================================== */}
+          {/* =============================================
+              DATA
+          ============================================= */}
 
           {!loading &&
             datasets.length > 0 && (
 
               <div className="home-card-grid">
 
-                {datasets.map((dataset) => {
+                {datasets.map(
+                  (dataset) => {
 
-                  /*
-                   * Cari owner berdasarkan PK.
-                   */
-
-                  const ownerId =
-                    dataset.owner?.pk ??
-                    dataset.owner?.id ??
-                    dataset.owner_pk ??
-                    dataset.owner_id
+                    const ownerId =
+                      dataset?.owner?.pk ??
+                      dataset?.owner?.id ??
+                      dataset?.owner_pk ??
+                      dataset?.owner_id
 
 
-                  const owner =
-                    dataset.owner?.first_name !== undefined
-                      ? dataset.owner
-                      : ownerMap.get(ownerId)
+                    const owner =
+                      dataset?.owner
+                        ?.first_name !==
+                        undefined
+                        ? dataset.owner
+                        : ownerMap.get(
+                            ownerId
+                          )
 
 
-                  return (
+                    return (
 
-                    <DatasetCard
-                      key={
-                        dataset.pk ||
-                        dataset.uuid ||
-                        dataset.id
-                      }
-                      dataset={dataset}
-                      owner={owner}
-                    />
+                      <DatasetCard
+                        key={
+                          dataset.pk ||
+                          dataset.uuid ||
+                          dataset.id
+                        }
+                        dataset={dataset}
+                        owner={owner}
+                      />
 
-                  )
+                    )
 
-                })}
+                  }
+                )}
 
               </div>
 
             )}
 
 
-
-          {/* ===================================
-              ERROR / EMPTY DATASET
-              =================================== */}
+          {/* =============================================
+              EMPTY
+          ============================================= */}
 
           {!loading &&
             datasets.length === 0 && (
@@ -790,12 +930,10 @@ function Home() {
                   ▦
                 </div>
 
-
                 <h3>
                   {datasetError ||
                     'Belum ada dataset'}
                 </h3>
-
 
                 <p>
                   Dataset yang telah dipublikasikan
@@ -811,10 +949,9 @@ function Home() {
       </section>
 
 
-
-      {/* =====================================
+      {/* =================================================
           WEBGIS
-          ===================================== */}
+      ================================================= */}
 
       <section className="home-webgis">
 
@@ -828,12 +965,10 @@ function Home() {
                 WEBGIS ACEH
               </span>
 
-
               <h2>
                 Jelajahi Aceh
                 melalui Peta Interaktif
               </h2>
-
 
               <p>
                 Akses informasi geospasial melalui
@@ -841,30 +976,38 @@ function Home() {
                 layer yang tersedia.
               </p>
 
-
-              <a
-                href="/webgis"
+              <Link
+                to="/webgis"
                 className="home-primary-button"
               >
                 Buka WebGIS
                 <span>→</span>
-              </a>
+              </Link>
 
             </div>
 
 
             <div className="webgis-preview">
 
-              <div className="map-grid">
+              <MapContainer
+                center={[4.65, 96.7]}
+                zoom={7}
+                className="webgis-preview-map"
+                zoomControl={false}
+                attributionControl={false}
+                dragging={false}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                touchZoom={false}
+                boxZoom={false}
+                keyboard={false}
+              >
 
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-              </div>
+              </MapContainer>
 
 
               <div className="map-pin">
@@ -882,13 +1025,19 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
 
 
+      {/* =================================================
+          PETA
+      ================================================= */}
 
-      {/* =====================================
-          APLIKASI GEOSPASIAL
-          ===================================== */}
+      <HomeMapsSection />
+
+
+      {/* =================================================
+          APPLICATION
+      ================================================= */}
 
       <section className="home-section home-applications-section">
 
@@ -902,11 +1051,9 @@ function Home() {
                 LAYANAN DIGITAL
               </span>
 
-
               <h2>
                 Aplikasi Geospasial
               </h2>
-
 
               <p>
                 Akses berbagai aplikasi dan dashboard
@@ -927,64 +1074,64 @@ function Home() {
           </div>
 
 
-
-          {/* ===================================
-              LOADING APPLICATION
-              =================================== */}
+          {/* =============================================
+              LOADING
+          ============================================= */}
 
           {applicationLoading && (
 
             <div className="row g-4">
 
-              {[1, 2, 3].map((item) => (
+              {[1, 2, 3].map(
+                (item) => (
 
-                <div
-                  className="col-md-6 col-lg-4"
-                  key={item}
-                >
+                  <div
+                    className="col-md-6 col-lg-4"
+                    key={item}
+                  >
 
-                  <article className="card katalog-card h-100">
+                    <article className="card katalog-card h-100">
 
-                    <div className="katalog-card-image">
+                      <div className="katalog-card-image">
 
-                      <div className="katalog-card-image-placeholder">
+                        <div className="katalog-card-image-placeholder">
 
-                        <span>
-                          GIS
-                        </span>
+                          <span>
+                            GIS
+                          </span>
+
+                        </div>
 
                       </div>
 
-                    </div>
 
+                      <div className="card-body katalog-card-body">
 
-                    <div className="card-body katalog-card-body">
+                        <div className="skeleton-line short" />
 
-                      <div className="skeleton-line short" />
+                        <div className="skeleton-line title" />
 
-                      <div className="skeleton-line title" />
+                        <div className="skeleton-line" />
 
-                      <div className="skeleton-line" />
+                        <div className="skeleton-line medium" />
 
-                      <div className="skeleton-line medium" />
+                      </div>
 
-                    </div>
+                    </article>
 
-                  </article>
+                  </div>
 
-                </div>
-
-              ))}
+                )
+              )}
 
             </div>
 
           )}
 
 
-
-          {/* ===================================
-              ERROR APPLICATION
-              =================================== */}
+          {/* =============================================
+              ERROR
+          ============================================= */}
 
           {!applicationLoading &&
             applicationError && (
@@ -1000,10 +1147,9 @@ function Home() {
             )}
 
 
-
-          {/* ===================================
-              APPLICATION CARDS
-              =================================== */}
+          {/* =============================================
+              APPLICATION
+          ============================================= */}
 
           {!applicationLoading &&
             !applicationError &&
@@ -1039,10 +1185,9 @@ function Home() {
             )}
 
 
-
-          {/* ===================================
-              EMPTY APPLICATION
-              =================================== */}
+          {/* =============================================
+              EMPTY
+          ============================================= */}
 
           {!applicationLoading &&
             !applicationError &&
@@ -1066,14 +1211,19 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
 
 
+      {/* =================================================
+          DOKUMEN
+      ================================================= */}
 
-      {/* =====================================
-          KONTRIBUSI INSTANSI
-          ===================================== */}
+      <HomeDocumentsSection />
 
+
+      {/* =================================================
+          AGENCY
+      ================================================= */}
       <section className="home-agency-section">
 
         <div className="container">
@@ -1086,11 +1236,9 @@ function Home() {
                 KONTRIBUSI DATA
               </span>
 
-
               <h2>
                 Ketersediaan Data Per Instansi
               </h2>
-
 
               <p>
                 Daftar instansi penyedia dan jumlah
@@ -1102,11 +1250,6 @@ function Home() {
           </div>
 
 
-
-          {/* ===================================
-              LOADING OWNER
-              =================================== */}
-
           {loading ? (
 
             <div className="agency-loading">
@@ -1117,82 +1260,82 @@ function Home() {
 
             <div className="agency-grid">
 
-              {owners.map((owner) => {
+              {owners.map(
+                (owner) => {
 
-                const ownerName =
-                  getOwnerName(owner)
-
-
-                const ownerAvatar =
-                  getOwnerAvatar(owner)
+                  const ownerName =
+                    getOwnerName(owner)
 
 
-                const datasetCount =
-                  Number(
-                    owner.count || 0
-                  )
+                  const ownerAvatar =
+                    getOwnerAvatar(owner)
 
 
-                return (
+                  const datasetCount =
+                    Number(
+                      owner?.count || 0
+                    )
 
-                  <article
-                    className="agency-card"
-                    key={
-                      owner.pk ||
-                      owner.username ||
-                      ownerName
-                    }
-                  >
 
-                    {/* AVATAR INSTANSI */}
+                  return (
 
-                    <div className="agency-card-icon">
+                    <article
+                      className="agency-card"
+                      key={
+                        owner.pk ||
+                        owner.username ||
+                        ownerName
+                      }
+                    >
 
-                      {ownerAvatar ? (
+                      <div className="agency-card-icon">
 
-                        <img
-                          src={ownerAvatar}
-                          alt={ownerName}
-                        />
+                        {ownerAvatar ? (
 
-                      ) : (
+                          <img
+                            src={ownerAvatar}
+                            alt={ownerName}
+                          />
+
+                        ) : (
+
+                          <span>
+                            👤
+                          </span>
+
+                        )}
+
+                      </div>
+
+
+                      <div className="agency-card-content">
+
+                        <h3
+                          title={ownerName}
+                        >
+                          {ownerName}
+                        </h3>
+
+
+                        <strong>
+                          <AnimatedCounter
+                            value={datasetCount}
+                          />
+                        </strong>
+
 
                         <span>
-                          👤
+                          Dataset
                         </span>
 
-                      )}
+                      </div>
 
-                    </div>
+                    </article>
 
+                  )
 
-                    {/* INFORMASI INSTANSI */}
-
-                    <div className="agency-card-content">
-
-                      <h3
-                        title={ownerName}
-                      >
-                        {ownerName}
-                      </h3>
-
-
-                      <strong>
-                        {datasetCount}
-                      </strong>
-
-
-                      <span>
-                        Dataset
-                      </span>
-
-                    </div>
-
-                  </article>
-
-                )
-
-              })}
+                }
+              )}
 
             </div>
 
@@ -1204,11 +1347,9 @@ function Home() {
                 ⌂
               </div>
 
-
               <h3>
                 Belum ada data instansi
               </h3>
-
 
               <p>
                 Data kontribusi dataset per instansi
@@ -1224,10 +1365,9 @@ function Home() {
       </section>
 
 
-
-      {/* =====================================
+      {/* =================================================
           INFORMATION
-          ===================================== */}
+      ================================================= */}
 
       <section className="home-information">
 
@@ -1241,11 +1381,9 @@ function Home() {
                 INFORMASI
               </span>
 
-
               <h2>
                 Informasi Geospasial Aceh
               </h2>
-
 
               <p>
                 Dapatkan informasi terbaru mengenai
@@ -1270,11 +1408,9 @@ function Home() {
 
       </section>
 
-
     </div>
 
   )
-
 }
 
 
