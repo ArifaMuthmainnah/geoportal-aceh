@@ -50,6 +50,12 @@ import {
   mergeOwnerLists,
 } from '../utils/ownDataAdapter'
 
+import {
+  MapContainer,
+  TileLayer,
+} from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+
 import DatasetCard from '../components/DatasetCard'
 import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
@@ -145,7 +151,7 @@ function Home() {
       let oldDatasetList = []
       let ownDatasetList = []
 
-            let oldDatasetTotal = 0
+      let oldDatasetTotal = 0
 
       try {
 
@@ -217,7 +223,7 @@ function Home() {
       // ===============================================
       // MAPS (API LAMA) + PETA UPLOAD SENDIRI (#1)
       // ===============================================
-      
+
       let ownMapTotal = 0
       try {
         ownMapTotal =
@@ -256,12 +262,9 @@ function Home() {
 
 
       // ===============================================
-      // DOCUMENTS (API LAMA)
-      // ===============================================
-
-            // ===============================================
       // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
       // ===============================================
+
       let ownDocumentTotal = 0
       try {
         ownDocumentTotal =
@@ -319,7 +322,7 @@ function Home() {
 
       }
 
-            try {
+      try {
 
         const oldGeoappTotal =
           await getGeoappTotalCount()
@@ -627,153 +630,158 @@ function Home() {
 
 
       {/* =================================================
-          HERO
+          HERO + STATISTIK
+          (dibungkus 1 wrapper biru penuh, Sesi 11)
       ================================================= */}
 
-      <section className="home-hero">
+      <div className="home-hero-wrapper">
 
-        <div className="container">
+        <section className="home-hero">
 
-          <div className="home-hero-grid">
+          <div className="container">
 
-            <div className="home-hero-content">
+            <div className="home-hero-grid">
 
-              <span className="home-eyebrow">
-                GEOPORTAL ACEH
-              </span>
+              <div className="home-hero-content">
 
-
-              <h1>
-
-                Portal Informasi
-
-                <br />
-
-                <span>
-                  Geospasial Aceh
+                <span className="home-eyebrow">
+                  GEOPORTAL ACEH
                 </span>
 
-              </h1>
 
+                <h1>
 
-              <p>
-                Menyediakan informasi dan data
-                geospasial untuk mendukung pembangunan
-                dan pengambilan keputusan berbasis data
-                di Aceh.
-              </p>
+                  Portal Informasi
 
-
-              <div className="home-hero-actions">
-
-                <Link
-                  to="/webgis"
-                  className="home-primary-button"
-                >
-                  Jelajahi WebGIS
-                  <span>→</span>
-                </Link>
-
-
-                <Link
-                  to="/katalog"
-                  className="home-secondary-button"
-                >
-                  Lihat Katalog
-                </Link>
-
-              </div>
-
-            </div>
-
-
-            <div className="home-hero-visual">
-
-              <div className="home-logo-placeholder">
-
-                <span>
-                  ACEH
-                </span>
-
-                <small>
-                  Logo Geoportal
-                </small>
-
-              </div>
-
-
-              <div className="home-map-decoration">
-                GIS
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      {/* =================================================
-          STATISTICS
-      ================================================= */}
-
-      <section className="home-statistics">
-
-        <div className="container">
-
-          <div className="statistics-card">
-
-            {statistics.map(
-              (stat) => (
-
-                <div
-                  className="stat-item"
-                  key={stat.label}
-                >
-
-                  <div className="stat-icon">
-                    {stat.icon}
-                  </div>
-
-
-                  <div className="stat-number">
-
-                    <strong>
-
-                      {loading
-                        ? '...'
-                        : (
-                          <AnimatedCounter
-                            value={
-                              stat.value
-                            }
-                          />
-                        )}
-
-                    </strong>
-
-                  </div>
-
+                  <br />
 
                   <span>
-                    {stat.label}
+                    Geospasial Aceh
                   </span>
 
+                </h1>
 
-                  <div className="stat-line" />
+
+                <p>
+                  Menyediakan informasi dan data
+                  geospasial untuk mendukung pembangunan
+                  dan pengambilan keputusan berbasis data
+                  di Aceh.
+                </p>
+
+
+                <div className="home-hero-actions">
+
+                  <Link
+                    to="/webgis"
+                    className="home-primary-button"
+                  >
+                    Jelajahi WebGIS
+                    <span>→</span>
+                  </Link>
+
+
+                  <Link
+                    to="/katalog"
+                    className="home-secondary-button"
+                  >
+                    Lihat Katalog
+                  </Link>
 
                 </div>
 
-              )
-            )}
+              </div>
+
+
+              <div className="home-hero-visual">
+
+                <div className="home-logo-placeholder">
+
+                  <span>
+                    ACEH
+                  </span>
+
+                  <small>
+                    Logo Geoportal
+                  </small>
+
+                </div>
+
+
+                <div className="home-map-decoration">
+                  GIS
+                </div>
+
+              </div>
+
+            </div>
 
           </div>
 
-        </div>
+        </section>
 
-      </section>
+
+        {/* =================================================
+            STATISTICS
+        ================================================= */}
+
+        <section className="home-statistics">
+
+          <div className="container">
+
+            <div className="statistics-card">
+
+              {statistics.map(
+                (stat) => (
+
+                  <div
+                    className="stat-item"
+                    key={stat.label}
+                  >
+
+                    <div className="stat-icon">
+                      {stat.icon}
+                    </div>
+
+
+                    <div className="stat-number">
+
+                      <strong>
+
+                        {loading
+                          ? '...'
+                          : (
+                            <AnimatedCounter
+                              value={
+                                stat.value
+                              }
+                            />
+                          )}
+
+                      </strong>
+
+                    </div>
+
+
+                    <span>
+                      {stat.label}
+                    </span>
+
+
+                    <div className="stat-line" />
+
+                  </div>
+
+                )
+              )}
+
+            </div>
+
+          </div>
+
+        </section>
+
+      </div>
 
 
       {/* =================================================
@@ -978,16 +986,25 @@ function Home() {
 
             <div className="webgis-preview">
 
-              <div className="map-grid">
+              <MapContainer
+                center={[4.65, 96.7]}
+                zoom={7}
+                className="webgis-preview-map"
+                zoomControl={false}
+                attributionControl={false}
+                dragging={false}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                touchZoom={false}
+                boxZoom={false}
+                keyboard={false}
+              >
 
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
-                <span />
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
 
-              </div>
+              </MapContainer>
 
 
               <div className="map-pin">
@@ -1005,7 +1022,7 @@ function Home() {
 
         </div>
 
-            </section>
+      </section>
 
 
       {/* =================================================
@@ -1191,7 +1208,7 @@ function Home() {
 
         </div>
 
-            </section>
+      </section>
 
 
       {/* =================================================
@@ -1298,7 +1315,9 @@ function Home() {
 
 
                         <strong>
-                          {datasetCount}
+                          <AnimatedCounter
+                            value={datasetCount}
+                          />
                         </strong>
 
 

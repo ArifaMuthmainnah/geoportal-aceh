@@ -38,7 +38,6 @@ function Navbar() {
 
   const {
     currentUser,
-    logout,
   } = useAuth()
 
 
@@ -52,6 +51,52 @@ function Navbar() {
     }
 
   }
+
+  // =====================================================
+  // SESI 5: CEK APAKAH ADA BERITA/AGENDA/PEMBERITAHUAN
+  // YANG BELUM DIBACA (titik notifikasi di dropdown)
+  // =====================================================
+
+  useEffect(() => {
+
+    let active = true
+
+    async function checkUnreadInformasi() {
+
+      try {
+
+        const allInformasi = await getPublishedByType('informasi')
+
+        if (!active) return
+
+        setUnread({
+          berita: hasUnseenInformasi(
+            'berita',
+            allInformasi.filter((item) => item.sub_type === 'berita')
+          ),
+          agenda: hasUnseenInformasi(
+            'agenda',
+            allInformasi.filter((item) => item.sub_type === 'agenda')
+          ),
+          pemberitahuan: hasUnseenInformasi(
+            'pemberitahuan',
+            allInformasi.filter((item) => item.sub_type === 'pemberitahuan')
+          ),
+        })
+
+      } catch (err) {
+
+        console.error('Gagal memeriksa informasi terbaru:', err)
+
+      }
+
+    }
+
+    checkUnreadInformasi()
+
+    return () => { active = false }
+
+  }, [])
 
 
   // =====================================================
@@ -149,15 +194,6 @@ function Navbar() {
                 </span>
 
               </NavLink>
-
-
-              <button
-                type="button"
-                className="navbar-logout-button"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
 
             </div>
 
