@@ -12108,7 +12108,6 @@ main {
   }
 
 }
-
 /* 
 ==========================================================================
    ADD LAYER MODAL - STYLE PERBAIKAN TAB & SIMPUL
@@ -13552,7 +13551,6 @@ main {
   cursor: grabbing;
 }
 
-
 /* ==========================================================================
    SESI 10 — TOMBOL KEMBALI (jarak dari box kategori) & PREVIEW APLIKASI
 ========================================================================== */
@@ -13608,6 +13606,184 @@ main {
 .application-preview-placeholder {
   position: absolute;
   inset: 0;
+
+/* =========================================================
+   SESI 11 — HOME, FOOTER, HERO, WEBGIS PREVIEW, CARD HOVER
+   Blok ini ditambahkan di paling akhir file. Semua style
+   lama di atas TIDAK ada yang dihapus/diubah — aturan di
+   bawah ini hanya menambah properti baru, dan untuk
+   properti yang sama (mis. background), aturan di sini
+   otomatis menang karena letaknya paling akhir (cascade).
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   1) SECTION "APLIKASI GEOSPASIAL" — warna ivory/abu muda
+   --------------------------------------------------------- */
+
+.home-applications-section {
+  background: #faf8f3;
+}
+
+
+/* ---------------------------------------------------------
+   2) FOOTER — judul & deskripsi diperbesar + deskripsi
+      diposisikan ke tengah secara vertikal
+   --------------------------------------------------------- */
+
+.footer-brand h2 {
+  font-size: 1.65rem;
+}
+
+.footer-description {
+  display: flex;
+  align-items: center;
+}
+
+.footer-description p {
+  font-size: 1rem;
+  line-height: 1.9;
+}
+
+
+/* HERO + STATISTIK */
+.home-hero-wrapper {
+  position: relative;
+  padding-bottom: 90px;
+  overflow: hidden;
+}
+
+/* Background biru cuma setengah */
+.home-hero-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 73%; /* Atur ini */
+  background: linear-gradient(
+    135deg,
+    #07386d 0%,
+    #0b5cab 55%,
+    #1677c8 100%
+  );
+  z-index: 0;
+}
+
+/* Hero dan statistik di atas background */
+.home-hero,
+.home-stats {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 767px) {
+  .home-hero-wrapper {
+    padding-bottom: 55px;
+  }
+
+  .home-hero-wrapper::before {
+    height: 65%;
+  }
+}
+
+
+/* ---------------------------------------------------------
+   4) WEBGIS PREVIEW — peta Aceh asli (OpenStreetMap),
+      menggantikan kotak arsir lama
+   --------------------------------------------------------- */
+
+.webgis-preview-map {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  z-index: 0;
+
+  pointer-events: none;
+}
+
+.webgis-preview-map .leaflet-control-container {
+  display: none;
+}
+
+
+/* ---------------------------------------------------------
+   5) EFEK HOVER "BIRU PUDAR" UNTUK SEMUA CARD
+      (Katalog, Aplikasi, Instansi/JIGN, Informasi, Admin,
+      Peta, Layer, Login) — efek transform/shadow/border
+      lama TETAP jalan seperti biasa, ini hanya menambah
+      warna latar saat cursor tepat di atas card.
+   --------------------------------------------------------- */
+
+.katalog-card:hover,
+.home-application-card:hover,
+.agency-card:hover,
+.application-card:hover,
+.information-card:hover,
+.jign-stat-card:hover,
+.jign-service-card:hover,
+.jign-node-card:hover,
+.jign-owner-card:hover,
+.dataset-asset-card:hover,
+.admin-stat-card:hover,
+.layer-card-item:hover,
+.peta-card:hover,
+.login-feature-card:hover {
+  background-color: #eaf3fb;
+}
+
+
+
+/* ---------------------------------------------------------
+   1) TOPBAR — login/user area digeser mepet ke pojok kanan
+      (tombol logout sudah dihapus dari Navbar.jsx, jadi
+      style .navbar-logout-button tidak dipakai lagi)
+   --------------------------------------------------------- */
+
+.navbar-topbar .container.navbar-topbar-inner,
+.navbar-topbar-inner {
+  max-width: none;
+  margin: 0;
+  justify-content: flex-end;
+  padding-left: 24px;
+  padding-right: 24px;
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+
+  .navbar-topbar-inner {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+}
+
+
+/* ---------------------------------------------------------
+   2) SECTION "APLIKASI GEOSPASIAL" — jarak warna ke tulisan
+      "LAYANAN DIGITAL" dipepetkan jadi sekitar 0.5–1cm
+   --------------------------------------------------------- */
+
+.home-applications-section {
+  background: #faf8f3;
+  padding-top: 30px;
+}
+
+
+/* ---------------------------------------------------------
+   3) FOOTER — judul & deskripsi diperbesar lagi + deskripsi
+      benar-benar di tengah (horizontal & vertikal)
+   --------------------------------------------------------- */
+
+.footer-brand h2 {
+  font-size: 2.1rem;
+}
+
+.footer-description {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -13696,6 +13872,118 @@ main {
   .application-preview-fullscreen-btn {
     padding: 10px 16px;
     font-size: 0.78rem;
+  }
+
+}
+
+  text-align: center;
+}
+
+.footer-description p {
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+
+/* ---------------------------------------------------------
+   4) SEMUA CARD — HOVER SAJA (tanpa motion saat diklik),
+      warna biru sesuai warna utama site (#0b5cab) + efek
+      membesar (scale)
+   --------------------------------------------------------- */
+
+.katalog-card,
+.home-application-card,
+.agency-card,
+.application-card,
+.information-card,
+.jign-stat-card,
+.jign-service-card,
+.jign-node-card,
+.jign-owner-card,
+.dataset-asset-card,
+.admin-stat-card,
+.layer-card-item,
+.peta-card,
+.login-feature-card,
+.dataset-home-card {
+  transition:
+    background-color 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.katalog-card:hover,
+.home-application-card:hover,
+.agency-card:hover,
+.application-card:hover,
+.information-card:hover,
+.jign-stat-card:hover,
+.jign-service-card:hover,
+.jign-node-card:hover,
+.jign-owner-card:hover,
+.dataset-asset-card:hover,
+.admin-stat-card:hover,
+.layer-card-item:hover,
+.peta-card:hover,
+.login-feature-card:hover,
+.dataset-home-card:hover {
+  background-color: rgba(11, 92, 171, 0.14);
+}
+
+.katalog-card:hover { transform: translateY(-4px) scale(1.03); }
+.home-application-card:hover { transform: translateY(-5px) scale(1.03); }
+.agency-card:hover { transform: translateY(-4px) scale(1.03); }
+.application-card:hover { transform: translateY(-6px) scale(1.03); }
+.information-card:hover { transform: translateY(-4px) scale(1.03); }
+.jign-stat-card:hover { transform: translateY(-7px) scale(1.03); }
+.jign-service-card:hover { transform: translateY(-8px) scale(1.03); }
+.jign-node-card:hover { transform: translateY(-5px) scale(1.03); }
+.jign-owner-card:hover { transform: translateY(-3px) scale(1.03); }
+.dataset-asset-card:hover { transform: translateY(-1px) scale(1.03); }
+.admin-stat-card:hover { transform: translateY(-2px) scale(1.03); }
+.layer-card-item:hover { transform: translateY(-5px) scale(1.03); }
+.peta-card:hover { transform: translateY(-5px) scale(1.03); }
+.login-feature-card:hover { transform: translateY(-4px) scale(1.03); }
+.dataset-home-card:hover { transform: translateY(-9px) scale(1.03); }
+
+.jign-category-card:hover {
+  transform: translateY(-6px) scale(1.03);
+}
+
+
+/* =========================================================
+   PERBAIKAN GRID STATISTIK HOME — "11 Dashboard" & "29
+   Instansi" digeser ke kanan supaya pas di celah antar
+   kolom baris pertama (147|6 dan 6|17). Hanya berlaku di
+   layar >= 768px, di mobile tetap turun jadi 1 kolom
+   seperti sebelumnya (aturan lama tidak diubah).
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+  .statistics-card {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .stat-item:nth-child(1) {
+    grid-column: 1 / 3;
+  }
+
+  .stat-item:nth-child(2) {
+    grid-column: 3 / 5;
+  }
+
+  .stat-item:nth-child(3) {
+    grid-column: 5 / 7;
+  }
+
+  .stat-item:nth-child(4) {
+    grid-column: 2 / 4;
+  }
+
+  .stat-item:nth-child(5) {
+    grid-column: 4 / 6;
   }
 
 }
