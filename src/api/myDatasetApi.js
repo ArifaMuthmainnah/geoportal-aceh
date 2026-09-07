@@ -75,11 +75,14 @@ export function updateMyDatasetWithFiles(id, {
   files,
   thumbnailFile,
   removeFiles,
-  // SESI 8 (Poin 6): dua field ini HANYA berlaku kalau yang
-  // mengedit adalah admin (backend mengabaikannya untuk operator
-  // biasa) — dipakai halaman Edit Data admin (EditDatasetAdmin.jsx)
-  // supaya jenis resource & status publish bisa diubah sekalian
-  // saat mengganti file, tanpa perlu request terpisah.
+  // SESI 10 (FIX): resourceType sekarang juga boleh diubah oleh
+  // PEMILIK data (operator), bukan admin saja — backend hanya
+  // mengizinkannya selama data belum dipublikasikan (lihat
+  // EditMyDataset.jsx). isPublished tetap HANYA berlaku untuk
+  // admin (backend mengabaikannya untuk operator biasa) — dipakai
+  // halaman Edit Data admin (EditDatasetAdmin.jsx) supaya status
+  // publish bisa diubah sekalian saat mengganti file, tanpa perlu
+  // request terpisah.
   resourceType,
   isPublished,
 }) {

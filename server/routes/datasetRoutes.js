@@ -12,9 +12,27 @@ const {
 
 const router = express.Router()
 
+// =====================================================
+// SESI 10 (FIX): 'application' sebelumnya TIDAK ADA di
+// daftar ini. Akibatnya:
+// 1. Endpoint /public/:resourceType, /mine/:resourceType,
+//    dan /admin/:resourceType menolak (400 "Resource type
+//    tidak valid") setiap kali frontend minta data dengan
+//    resourceType='application' (mis. halaman Aplikasi.jsx).
+// 2. Saat upload BARU dengan resource_type='application',
+//    baris ~350 di bawah otomatis JATUH KE FALLBACK 'dataset'
+//    (lihat normalizedResourceType) — jadi data Aplikasi yang
+//    diupload sebelum fix ini SEBENARNYA tersimpan di database
+//    sebagai resource_type='dataset', bukan 'application'.
+//    Data lama yang sudah kadung tersimpan salah itu perlu
+//    diedit ulang (ganti Jenis Resource ke Aplikasi lewat
+//    halaman Edit) atau diupload ulang setelah fix ini aktif.
+// =====================================================
+
 const ALLOWED_RESOURCE_TYPES = [
   'dataset',
   'dashboard',
+  'application',
   'webgis',
   'map',
   'document',
@@ -620,7 +638,15 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
 
     let nextResourceType = dataset.resource_type || 'dataset'
 
-    if (isAdmin && resource_type !== undefined) {
+    // SESI 10 (FIX): dulu HANYA admin yang boleh mengubah
+    // Jenis Resource lewat sini (`isAdmin && ...`). Sekarang
+    // pemilik data (operator) juga boleh — aman, karena baris
+    // di atas (isOwner && !isAdmin && dataset.is_published)
+    // sudah memblokir operator mengedit APA PUN begitu datanya
+    // published, jadi operator hanya bisa ganti Jenis Resource
+    // selama datanya belum dipublikasikan. Admin tetap boleh
+    // kapan saja seperti sebelumnya.
+    if ((isAdmin || isOwner) && resource_type !== undefined) {
       nextResourceType = String(resource_type).trim().toLowerCase()
     }
 
