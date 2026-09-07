@@ -319,6 +319,7 @@ function EditMyDataset() {
           title, abstract, category: finalCategory, keywords,
           externalUrl: externalUrl || null, extraMetadata,
           subType: resourceType === 'informasi' ? subType : undefined,
+          resourceType,
           files: [...newSpatialFiles, ...newAssetFiles],
         })
 
@@ -331,6 +332,7 @@ function EditMyDataset() {
           keywords,
           external_url: externalUrl || null,
           extra_metadata: extraMetadata,
+          resource_type: resourceType,
         }
 
         if (resourceType === 'informasi') {
@@ -448,12 +450,16 @@ function EditMyDataset() {
 
                 <div className="admin-form-group">
                   <label>Jenis Resource</label>
-                  <select value={resourceType} disabled>
+                  <select value={resourceType} onChange={(e) => setResourceType(e.target.value)} disabled={isPublished}>
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
-                  <small>Jenis resource hanya bisa diubah oleh admin.</small>
+                  <small>
+                    {isPublished
+                      ? 'Data sudah dipublikasikan, Jenis Resource tidak bisa diubah lagi. Hubungi admin bila perlu diubah.'
+                      : 'Jenis Resource bisa diubah selama data belum dipublikasikan.'}
+                  </small>
                 </div>
 
                 {resourceType === 'informasi' && (
