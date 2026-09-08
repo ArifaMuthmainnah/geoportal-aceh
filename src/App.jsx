@@ -69,6 +69,9 @@ import Agenda
 import Pemberitahuan
   from './pages/Pemberitahuan'
 
+import PemberitahuanDetail
+  from './pages/PemberitahuanDetail'
+
 import EditMyDataset from './pages/user/EditMyDataset'
 import CreateDataset from './pages/user/CreateDataset'
 import CreateMap from './pages/user/CreateMap'
@@ -582,6 +585,18 @@ function App() {
               <PublicPage>
 
                 <Pemberitahuan />
+
+              </PublicPage>
+            }
+          />
+
+          <Route
+            path="/informasi/pemberitahuan/:id"
+            element={
+
+              <PublicPage>
+
+                <PemberitahuanDetail />
 
               </PublicPage>
             }
