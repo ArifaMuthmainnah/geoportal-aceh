@@ -5,7 +5,6 @@ import { uploadMyDataset } from '../../api/myDatasetApi'
 import { useAuth } from '../../context/AuthContext'
 
 import {
-  RESOURCE_TYPE_OPTIONS,
   INFORMASI_SUBTYPE_OPTIONS,
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
@@ -14,6 +13,8 @@ import {
   supportsLinkedResources,
   supportsEmbedUrl,
   supportsExtraMetadataForm,
+  supportsAgendaSchedule,
+  supportsShapefileUpload,
   buildExtraMetadata,
 } from '../../utils/resourceFields'
 
@@ -23,9 +24,31 @@ import {
 } from '../../utils/attributeExcel'
 
 import {
-  extractDbfFieldNames,
-  findDbfFile,
+  extractShapefileMetadata,
+  hasAnyShapefilePart,
 } from '../../utils/shapefileFields'
+
+import GeoJsonPreviewMap from '../../components/GeoJsonPreviewMap'
+
+
+// =====================================================
+// SESI 10 (Poin 6): "Jenis Resource" di halaman Upload Data
+// TIDAK LAGI memisahkan Dashboard & Aplikasi jadi 2 baris
+// dropdown — sekarang digabung jadi SATU opsi "Aplikasi/
+// Dashboard" (value 'dashboard' dipakai sebagai penanda
+// grup). Pilihan sebenarnya (Dashboard atau Aplikasi)
+// dipilih lewat toggle kecil yang muncul di bawah dropdown
+// ini — persis seperti pola yang sudah dipakai di halaman
+// "Create Dashboard/Aplikasi".
+// =====================================================
+
+const UPLOAD_TYPE_OPTIONS = [
+  { value: 'dataset', label: 'Dataset' },
+  { value: 'dashboard', label: 'Aplikasi/Dashboard' },
+  { value: 'map', label: 'Peta' },
+  { value: 'document', label: 'Dokumen' },
+  { value: 'informasi', label: 'Informasi' },
+]
 
 
 function UploadDataset() {
@@ -36,15 +59,43 @@ function UploadDataset() {
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [resourceType, setResourceType] = useState('dataset')
+
+  // =====================================================
+  // SESI 10 (Poin 6): dropdown "Jenis Resource" sekarang
+  // menggabungkan Dashboard & Aplikasi jadi SATU opsi
+  // "Aplikasi/Dashboard" (value tetap 'dashboard' sebagai
+  // penanda grup). Sub-pilihannya (Dashboard atau Aplikasi
+  // yang sebenarnya) disimpan terpisah di sini, lewat toggle
+  // kecil yang muncul begitu grup ini dipilih. Isi form yang
+  // lain TETAP SAMA PERSIS untuk keduanya — cuma resource_type
+  // yang tersimpan yang berbeda (lihat effectiveResourceType
+  // di bawah).
+  // =====================================================
+
+  const [dashboardKind, setDashboardKind] = useState('dashboard')
+
   const [category, setCategory] = useState('')
   const [customCategory, setCustomCategory] = useState('')
   const [keywords, setKeywords] = useState('')
 
-  const [files, setFiles] = useState([])
+  // SESI 6: file dipisah jadi 2 kelompok yang jelas —
+  // - spatialFiles : shp/shx/dbf/prj -> dipakai untuk narik
+  //   otomatis metadata + peta di tab Info/Location/Attributes.
+  // - assetFiles   : file lain (PDF, gambar pendukung, dst) ->
+  //   HANYA muncul di tab Assets untuk diunduh, tidak diparsing.
+  const [spatialFiles, setSpatialFiles] = useState([])
+  const [assetFiles, setAssetFiles] = useState([])
+  const [geometryType, setGeometryType] = useState('')
+  const [geojson, setGeojson] = useState(null)
+  const [shapefileNotice, setShapefileNotice] = useState('')
+
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [externalUrl, setExternalUrl] = useState('')
   const [embedUrl, setEmbedUrl] = useState('')
   const [subType, setSubType] = useState('pemberitahuan')
+  const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
   const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
@@ -62,6 +113,14 @@ function UploadDataset() {
 
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
+
+  // SESI 10 (Poin 6): "resourceType" cuma menyimpan pilihan
+  // GRUP di dropdown ('dataset' | 'dashboard' | 'map' |
+  // 'document' | 'informasi' — 'dashboard' dipakai sebagai
+  // penanda grup "Aplikasi/Dashboard"). Jenis resource yang
+  // SEBENARNYA disimpan ke server dihitung di sini.
+  const effectiveResourceType =
+    resourceType === 'dashboard' ? dashboardKind : resourceType
 
 
   function handleLogout() {
@@ -135,6 +194,93 @@ function UploadDataset() {
   }
 
 
+  // ===================================================
+  // SESI 6: UPLOAD FILE SHAPEFILE (.shp/.shx/.dbf/.prj)
+  // — tanpa refresh halaman, langsung parsing di browser
+  // lalu isi otomatis: Sistem Koordinat, Bounding Box,
+  // Tipe Geometri, daftar Attributes (nama kolom), DAN
+  // peta pratinjau interaktif dari geometri aslinya.
+  // Yang belum bisa dibaca dari file (Label/Description
+  // atribut, Wilayah, dll) tetap harus diisi manual.
+  // ===================================================
+
+  async function handleSpatialFilesChange(event) {
+
+    const selectedFiles = Array.from(event.target.files || [])
+    setSpatialFiles(selectedFiles)
+    setShapefileNotice('')
+    setGeojson(null)
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    if (!hasAnyShapefilePart(selectedFiles)) {
+      setShapefileNotice('File terpilih tidak dikenali sebagai bagian shapefile (.shp/.shx/.dbf/.prj). Data tetap akan diunggah, tapi metadata tidak bisa ditarik otomatis.')
+      return
+    }
+
+    try {
+
+      const meta = await extractShapefileMetadata(selectedFiles)
+
+      if (meta.bbox) {
+        setBbox({
+          minLon: String(meta.bbox.minLon),
+          minLat: String(meta.bbox.minLat),
+          maxLon: String(meta.bbox.maxLon),
+          maxLat: String(meta.bbox.maxLat),
+        })
+      }
+
+      if (meta.srid) {
+        setSrid(meta.srid)
+      }
+
+      if (meta.geometryType) {
+        setGeometryType(meta.geometryType)
+      }
+
+      if (meta.geojson) {
+        setGeojson(meta.geojson)
+      }
+
+      if (meta.attributes.length > 0) {
+        setAttributes((current) => {
+          const existingNames = new Set(current.map((row) => row.name))
+          const newRows = meta.attributes.filter((row) => !existingNames.has(row.name))
+          return [...current, ...newRows]
+        })
+      }
+
+      const filled = []
+      if (meta.bbox) filled.push('Bounding Box')
+      if (meta.srid) filled.push('Sistem Koordinat')
+      if (meta.geometryType) filled.push('Tipe Geometri')
+      if (meta.attributes.length > 0) filled.push(`${meta.attributes.length} kolom Attributes`)
+      if (meta.geojson) filled.push(`peta pratinjau (${meta.geojson.features.length} fitur)`)
+
+      let noticeText =
+        filled.length > 0
+          ? `Berhasil membaca ${meta.filesUsed.join(', ')}. Otomatis terisi: ${filled.join(', ')}.`
+          : 'File shapefile terbaca, tapi tidak ada metadata yang berhasil ditarik. Isi manual di bawah.'
+
+      if (meta.geojsonSkipped) {
+        noticeText += ' File .shp berukuran besar — peta pratinjau interaktif dilewati, tapi bounding box tetap terisi.'
+      }
+
+      setShapefileNotice(noticeText)
+
+    } catch (err) {
+
+      console.error('Gagal membaca metadata shapefile:', err)
+      setShapefileNotice('Gagal membaca sebagian file shapefile. Isi metadata secara manual di bawah.')
+
+    }
+
+  }
+
+
   async function handleSubmit(event) {
 
     event.preventDefault()
@@ -144,11 +290,23 @@ function UploadDataset() {
       return
     }
 
-    const hasFiles = files.length > 0
+    const combinedFiles = [...spatialFiles, ...assetFiles]
+    const hasFiles = combinedFiles.length > 0
     const hasLink = externalUrl.trim().length > 0
 
-    if (!hasFiles && !hasLink) {
-      setErrorMessage('Isi minimal salah satu: unggah file atau isi link.')
+    // SESI 8 (FIX Poin 7): Embed URL sekarang juga dihitung sebagai
+    // "sudah punya sumber data/tampilan", karena fungsinya memang
+    // pengganti file (lihat catatan di bawah tombol Embed URL).
+    // Jadi validasi wajib-pilih-salah-satu ini mencakup ketiganya:
+    // file (shapefile/assets), Link/URL, ATAU Embed URL.
+    const hasEmbed = supportsEmbedUrl(effectiveResourceType) && embedUrl.trim().length > 0
+
+    if (!hasFiles && !hasLink && !hasEmbed) {
+      setErrorMessage(
+        supportsEmbedUrl(effectiveResourceType)
+          ? 'Isi minimal salah satu: unggah file, isi Link/URL, atau isi Embed URL.'
+          : 'Isi minimal salah satu: unggah file atau isi Link/URL.'
+      )
       return
     }
 
@@ -162,19 +320,21 @@ function UploadDataset() {
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType, region, language, srid, attribution, purpose,
+          resourceType: effectiveResourceType, subType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           linkedResources: linkedResourcesText.split('\n'),
+          eventDate, eventTime, eventLocation,
+          geometryType, geojson,
         })
 
       await uploadMyDataset({
-        files,
+        files: combinedFiles,
         thumbnailFile,
         title,
         abstract,
-        resourceType,
-        subType: resourceType === 'informasi' ? subType : undefined,
+        resourceType: effectiveResourceType,
+        subType: effectiveResourceType === 'informasi' ? subType : undefined,
         category: finalCategory,
         keywords,
         externalUrl,
@@ -194,7 +354,18 @@ function UploadDataset() {
   }
 
 
-  const showAttributeTable = supportsAttributeTable(resourceType)
+  const showAttributeTable = supportsAttributeTable(effectiveResourceType)
+  const showAgendaSchedule = supportsAgendaSchedule(effectiveResourceType, subType)
+  const showShapefileUpload = supportsShapefileUpload(effectiveResourceType)
+
+  // SESI 8 (FIX Poin 4 & 5): Embed URL sekarang HANYA untuk
+  // dataset & peta (lihat resourceFields.js) — fungsinya adalah
+  // ALTERNATIF berbasis-link dari file shapefile: kalau tidak ada
+  // file .shp untuk ditarik jadi peta interaktif, tapi sudah ada
+  // link tampilan peta/data interaktif dari sumber lain, link itu
+  // bisa ditempel di sini dan halaman detail akan menampilkannya
+  // sebagai iframe (menggantikan peta interaktif dari file).
+  const showEmbedUrl = supportsEmbedUrl(effectiveResourceType)
 
 
   return (
@@ -275,7 +446,10 @@ function UploadDataset() {
             <div>
               <span className="section-eyebrow">{currentUser?.role === 'admin' ? 'ADMINISTRATOR' : 'OPERATOR'}</span>
               <h1>Upload Data</h1>
-              <p>Unggah dataset, dashboard, atau WebGIS. Kamu boleh isi file, link, atau keduanya sekaligus.</p>
+              <p>
+                Unggah dataset, dashboard, atau WebGIS. Kolom bertanda <strong>(Wajib)</strong> harus
+                diisi, sisanya boleh dikosongkan.
+              </p>
             </div>
           </header>
 
@@ -311,11 +485,59 @@ function UploadDataset() {
                   <div className="admin-form-group">
                     <label>Jenis Resource</label>
                     <select value={resourceType} onChange={(e) => setResourceType(e.target.value)}>
-                      {RESOURCE_TYPE_OPTIONS.map((option) => (
+                      {UPLOAD_TYPE_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </select>
                   </div>
+
+                  {/* SESI 10 (Poin 6): toggle Dashboard/Aplikasi — cuma
+                      menentukan resource_type yang tersimpan, field form
+                      di bawah TETAP SAMA untuk keduanya. */}
+                  {resourceType === 'dashboard' && (
+                    <div className="admin-form-group">
+                      <label>Sub-jenis</label>
+                      <div style={{ display: 'inline-flex', border: '1px solid #d7e0e9', borderRadius: '10px', overflow: 'hidden' }}>
+
+                        <button
+                          type="button"
+                          onClick={() => setDashboardKind('dashboard')}
+                          style={{
+                            padding: '10px 18px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            background: dashboardKind === 'dashboard' ? '#0b5cab' : '#ffffff',
+                            color: dashboardKind === 'dashboard' ? '#ffffff' : '#617384',
+                          }}
+                        >
+                          ▥ Dashboard
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDashboardKind('application')}
+                          style={{
+                            padding: '10px 18px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            background: dashboardKind === 'application' ? '#0b5cab' : '#ffffff',
+                            color: dashboardKind === 'application' ? '#ffffff' : '#617384',
+                          }}
+                        >
+                          ⌗ Aplikasi
+                        </button>
+
+                      </div>
+                      <small style={{ display: 'block', marginTop: '8px' }}>
+                        Isi form di bawah ini sama saja untuk Dashboard maupun Aplikasi — yang beda cuma
+                        kategori jenis resource-nya saja.
+                      </small>
+                    </div>
+                  )}
 
                   {resourceType === 'informasi' && (
                     <div className="admin-form-group">
@@ -328,96 +550,194 @@ function UploadDataset() {
                     </div>
                   )}
 
+                  {/* SESI 5 (lanjutan): jadwal khusus Agenda — diisi
+                      sendiri oleh user, tampil di card Agenda nantinya. */}
+                  {showAgendaSchedule && (
+                    <>
+                      <div className="admin-form-group">
+                        <label>Tanggal Acara (Opsional)</label>
+                        <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
+                        <small>Tanggal pelaksanaan kegiatan (boleh beda dari tanggal upload ini).</small>
+                      </div>
+
+                      <div className="admin-form-group">
+                        <label>Waktu (Opsional)</label>
+                        <input
+                          type="text"
+                          value={eventTime}
+                          onChange={(e) => setEventTime(e.target.value)}
+                          placeholder="mis: 10:00 s/d 15:00 WIB"
+                        />
+                      </div>
+
+                      <div className="admin-form-group">
+                        <label>Tempat (Opsional)</label>
+                        <input
+                          type="text"
+                          value={eventLocation}
+                          onChange={(e) => setEventLocation(e.target.value)}
+                          placeholder="mis: Aula Diskominsa Provinsi Aceh"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   {/* #1: gambar sampul, muncul di card semua jenis resource */}
                   <div className="admin-form-group">
-                    <label>Gambar Sampul / Thumbnail (opsional)</label>
+                    <label>Gambar Sampul / Thumbnail (Opsional)</label>
                     <input type="file" accept="image/*" onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)} />
                     <small>Gambar ini yang akan tampil di bagian atas card, seperti data dari API lama.</small>
                   </div>
 
-                  <div className="admin-form-group">
-                    <label>File (opsional, bisa pilih lebih dari satu)</label>
-                    <input
-                      type="file"
-                      multiple
-                      onChange={async (e) => {
+                  {/* =========================================================
+                      SESI 8 (FIX Poin 4): GRUP "DATA UTAMA / SPASIAL" — HANYA
+                      untuk Dataset & Peta. Isinya file Shapefile (upload FILE)
+                      dan tepat di bawahnya Embed URL (upload LINK) — sengaja
+                      digabung berdekatan karena keduanya cara mengisi hal yang
+                      SAMA (tampilan peta/data utama di halaman detail), cuma
+                      medianya beda: satu lewat file, satu lewat link. Cukup
+                      isi salah satu; TIDAK perlu isi dua-duanya.
+                  ========================================================= */}
 
-                        const selectedFiles = Array.from(e.target.files || [])
-                        setFiles(selectedFiles)
+                  {showShapefileUpload && (
 
-                        // Kalau ada .dbf (bagian dari shapefile) dan
-                        // resource type-nya dataset, otomatis tarik
-                        // nama kolomnya jadi baris Attributes.
-                        if (resourceType === 'dataset') {
-
-                          const dbfFile = findDbfFile(selectedFiles)
-
-                          if (dbfFile) {
-
-                            try {
-
-                              const fieldNames = await extractDbfFieldNames(dbfFile)
-
-                              if (fieldNames.length > 0) {
-
-                                setAttributes((current) => [
-                                  ...current,
-                                  ...fieldNames.map((name) => ({ name, label: '', description: '' })),
-                                ])
-
-                                window.alert(
-                                  `${fieldNames.length} nama kolom berhasil ditarik otomatis dari ${dbfFile.name}. Silakan lengkapi Label/Description bila perlu.`
-                                )
-
-                              }
-
-                            } catch (err) {
-
-                              console.error('Gagal membaca .dbf:', err)
-
-                            }
-
-                          }
-
-                        }
-
+                    <div
+                      style={{
+                        border: '1px dashed #cbd5e1', borderRadius: '10px',
+                        padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
                       }}
-                    />
-                    {files.length > 0 && (
-                      <small>{files.length} file dipilih: {files.map((f) => f.name).join(', ')}</small>
-                    )}
-                    <small style={{ display: 'block', marginTop: '4px' }}>
-                      Untuk data spasial, unggah file shapefile lengkap (.shp, .dbf, .prj, .shx) sekaligus —
-                      nama kolom akan otomatis ditarik dari .dbf ke tabel Attributes di bawah.
-                    </small>
-                  </div>
+                    >
 
-                  <div className="admin-form-group">
-                    <label>Link / URL (opsional)</label>
-                    <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
-                    <small>Isi minimal salah satu: file atau link. Boleh isi keduanya.</small>
-                  </div>
+                      <div>
+                        <strong style={{ fontSize: '14px' }}>📍 Data Utama / Spasial (Opsional)</strong>
+                        <p style={{ fontSize: '12.5px', opacity: 0.75, margin: '4px 0 0' }}>
+                          Isi SALAH SATU: unggah file Shapefile (kalau ada file mentahnya), ATAU isi Embed URL
+                          (kalau sudah ada link tampilan peta/data interaktif dari sumber lain). Kalau dua-duanya
+                          diisi, Embed URL yang akan diprioritaskan tampil di halaman detail.
+                        </p>
+                      </div>
 
-                  {supportsEmbedUrl(resourceType) && (
-                    <div className="admin-form-group">
-                      <label>Embed URL (opsional)</label>
-                      <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
-                      <small>Halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini.</small>
+                      <div className="admin-form-group" style={{ margin: 0 }}>
+                        <label>File Shapefile — .shp, .shx, .dbf, .prj</label>
+                        <input
+                          type="file"
+                          multiple
+                          accept=".shp,.shx,.dbf,.prj"
+                          onChange={handleSpatialFilesChange}
+                        />
+                        {spatialFiles.length > 0 && (
+                          <small>{spatialFiles.length} file dipilih: {spatialFiles.map((f) => f.name).join(', ')}</small>
+                        )}
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Unggah 4 file ini SEKALIGUS (pilih semua lewat satu dialog file). Sistem otomatis
+                          menarik Sistem Koordinat, Bounding Box, Tipe Geometri, dan nama kolom Attributes
+                          dari sini, PLUS menampilkan peta pratinjau geometrinya di bawah. File-file ini juga
+                          tetap bisa diunduh lewat tab <strong>Assets</strong> pada halaman detail.
+                        </small>
+
+                        {shapefileNotice && (
+                          <div
+                            style={{
+                              marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
+                              background: 'var(--admin-success-bg)', color: 'var(--admin-success)',
+                              fontSize: '13px', fontWeight: 600,
+                            }}
+                          >
+                            {shapefileNotice}
+                          </div>
+                        )}
+
+                        {geometryType && (
+                          <div style={{ marginTop: '8px' }}>
+                            <span className="admin-status published">Tipe Geometri: {geometryType}</span>
+                          </div>
+                        )}
+
+                        {geojson && (
+                          <div style={{ marginTop: '12px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px' }}>Pratinjau Peta</label>
+                            <GeoJsonPreviewMap geojson={geojson} height={280} />
+                          </div>
+                        )}
+                      </div>
+
+                      {showEmbedUrl && (
+                        <div className="admin-form-group" style={{ margin: 0 }}>
+                          <label>Embed URL — alternatif dari file Shapefile</label>
+                          <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                          <small>
+                            Kalau diisi, halaman detail akan menampilkan tampilan tertanam (iframe) dari URL ini
+                            SEBAGAI GANTI peta interaktif hasil parsing file Shapefile di atas.
+                          </small>
+                        </div>
+                      )}
+
                     </div>
+
                   )}
 
+                  {/* =========================================================
+                      SESI 8 (FIX Poin 4 & 7): GRUP "FILE & LINK PENDUKUNG" —
+                      berlaku untuk SEMUA jenis resource. File pendukung (upload
+                      FILE) dan Link/URL (upload LINK) digabung dalam satu grup
+                      karena fungsinya SAMA (sumber/lampiran data pendukung),
+                      cuma medianya beda. WAJIB isi salah satu (boleh dua-duanya),
+                      makanya TIDAK ditulis "(opsional)" di judul grup ini.
+                  ========================================================= */}
+
+                  <div
+                    style={{
+                      border: '1px dashed #cbd5e1', borderRadius: '10px',
+                      padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px',
+                    }}
+                  >
+
+                    <div>
+                      <strong style={{ fontSize: '14px' }}>📎 File &amp; Link Pendukung (Wajib pilih salah satu)</strong>
+                      <p style={{ fontSize: '12.5px', opacity: 0.75, margin: '4px 0 0' }}>
+                        Isi minimal SALAH SATU dari dua kolom di bawah ini — boleh isi file saja, link saja,
+                        atau keduanya sekaligus.
+                        {showShapefileUpload && ' (Kalau kamu sudah isi Data Utama/Spasial di atas, grup ini boleh dikosongkan.)'}
+                      </p>
+                    </div>
+
+                    <div className="admin-form-group" style={{ margin: 0 }}>
+                      <label>{showShapefileUpload ? 'File Assets Tambahan' : 'File'}</label>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => setAssetFiles(Array.from(e.target.files || []))}
+                      />
+                      {assetFiles.length > 0 && (
+                        <small>{assetFiles.length} file dipilih: {assetFiles.map((f) => f.name).join(', ')}</small>
+                      )}
+                      {showShapefileUpload && (
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Untuk file pendukung lain (PDF laporan, gambar, dokumen resmi, dll) yang HANYA
+                          perlu bisa diunduh di tab <strong>Assets</strong> — tidak diparsing sebagai metadata.
+                        </small>
+                      )}
+                    </div>
+
+                    <div className="admin-form-group" style={{ margin: 0 }}>
+                      <label>Link / URL</label>
+                      <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
+                    </div>
+
+                  </div>
+
                   <div className="admin-form-group">
-                    <label>Judul</label>
+                    <label>Judul (Wajib)</label>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Deskripsi / Abstract</label>
+                    <label>Deskripsi / Abstract (Opsional)</label>
                     <textarea rows={4} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Kategori</label>
+                    <label>Kategori (Opsional)</label>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}>
                       <option value="">Pilih kategori</option>
                       {CATEGORY_OPTIONS.map((cat) => (
@@ -442,7 +762,7 @@ function UploadDataset() {
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Keyword</label>
+                    <label>Keyword (Opsional)</label>
                     <input
                       type="text"
                       value={keywords}
@@ -456,57 +776,61 @@ function UploadDataset() {
               </section>
 
 
-              {supportsExtraMetadataForm(resourceType) && (
+              {supportsExtraMetadataForm(effectiveResourceType) && (
 
                 <section className="admin-panel">
 
                   <div className="admin-panel-header">
                     <div>
-                      <h2>Metadata {resourceType === 'map' ? 'Peta' : resourceType === 'document' ? 'Dokumen' : 'Dataset'}</h2>
-                      <p>Diisi agar tab Info & Location di halaman detail bisa lengkap.</p>
+                      <h2>Metadata {effectiveResourceType === 'map' ? 'Peta' : effectiveResourceType === 'document' ? 'Dokumen' : 'Dataset'} (Opsional)</h2>
+                      <p>
+                        Diisi agar tab Info &amp; Location di halaman detail bisa lengkap.
+                        {showShapefileUpload && ' Sebagian sudah otomatis terisi dari file shapefile di atas — tinggal lengkapi sisanya.'}
+                      </p>
                     </div>
                   </div>
 
                   <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
                     <div className="admin-form-group">
-                      <label>Wilayah / Region</label>
+                      <label>Wilayah / Region (Opsional)</label>
                       <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="mis: Kabupaten Aceh Besar" />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Bahasa</label>
+                      <label>Bahasa (Opsional)</label>
                       <input type="text" value={language} onChange={(e) => setLanguage(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Sistem Koordinat (CRS)</label>
+                      <label>Sistem Koordinat / CRS (Opsional)</label>
                       <input type="text" value={srid} onChange={(e) => setSrid(e.target.value)} placeholder="EPSG:4326" />
+                      {showShapefileUpload && <small>Otomatis terisi dari file .prj bila diunggah di atas.</small>}
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Atribusi</label>
+                      <label>Atribusi (Opsional)</label>
                       <input type="text" value={attribution} onChange={(e) => setAttribution(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Tujuan</label>
+                      <label>Tujuan (Opsional)</label>
                       <textarea rows={3} value={purpose} onChange={(e) => setPurpose(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Informasi Tambahan</label>
+                      <label>Informasi Tambahan (Opsional)</label>
                       <textarea rows={3} value={supplementalInformation} onChange={(e) => setSupplementalInformation(e.target.value)} />
                     </div>
 
                     <div className="admin-form-group">
-                      <label>Batasan Penggunaan</label>
+                      <label>Batasan Penggunaan (Opsional)</label>
                       <textarea rows={3} value={constraintsOther} onChange={(e) => setConstraintsOther(e.target.value)} />
                     </div>
 
-                    {supportsBboxLocation(resourceType) && (
+                    {supportsBboxLocation(effectiveResourceType) && (
                     <div className="admin-form-group">
-                      <label>Bounding Box (WGS84) — opsional</label>
+                      <label>Bounding Box / WGS84 (Opsional)</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         {DATASET_BBOX_FIELDS.map((field) => {
                           const shortKey =
@@ -528,12 +852,13 @@ function UploadDataset() {
                           )
                                                 })}
                       </div>
+                      {showShapefileUpload && <small>Otomatis terisi dari file .shp bila diunggah di atas.</small>}
                     </div>
                     )}
 
-                    {supportsLinkedResources(resourceType) && (
+                    {supportsLinkedResources(effectiveResourceType) && (
                       <div className="admin-form-group">
-                        <label>Linked Resources (opsional)</label>
+                        <label>Linked Resources (Opsional)</label>
                         <textarea
                           rows={4}
                           value={linkedResourcesText}
@@ -558,7 +883,10 @@ function UploadDataset() {
                   <div className="admin-panel-header">
                     <div>
                       <h2>Attributes (Opsional)</h2>
-                      <p>Daftar kolom/atribut dataset — isi manual, atau unggah lewat Excel.</p>
+                      <p>
+                        Daftar kolom/atribut dataset — otomatis terisi dari file .dbf (nama & tipe kolom),
+                        atau isi manual/lewat Excel. Label & Description tetap perlu dilengkapi manual.
+                      </p>
                     </div>
 
                     <div
@@ -623,7 +951,7 @@ function UploadDataset() {
                         <table className="admin-table">
                           <thead>
                             <tr>
-                              <th>Name</th><th>Label</th><th>Description</th><th></th>
+                              <th>Name</th><th>Label</th><th>Description</th><th>Tipe</th><th></th>
                             </tr>
                           </thead>
                           <tbody>
@@ -637,6 +965,9 @@ function UploadDataset() {
                                 </td>
                                 <td>
                                   <input type="text" value={row.description} onChange={(e) => updateAttributeRow(index, 'description', e.target.value)} placeholder="Deskripsi" />
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '12px', opacity: 0.7 }}>{row.type || '-'}</span>
                                 </td>
                                 <td>
                                   <button type="button" className="admin-action-delete" onClick={() => removeAttributeRow(index)}>Hapus</button>

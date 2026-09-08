@@ -19,11 +19,12 @@ import {
 } from '../../utils/attributeExcel'
 
 import {
-  extractDbfFieldNames,
-  findDbfFile,
+  extractShapefileMetadata,
+  hasAnyShapefilePart,
 } from '../../utils/shapefileFields'
 
 import BoundingBoxPicker from '../../components/BoundingBoxPicker'
+import GeoJsonPreviewMap from '../../components/GeoJsonPreviewMap'
 
 
 const STEPS = [
@@ -56,7 +57,7 @@ function CreateDataset() {
   const [region, setRegion] = useState('')
   const [bbox, setBbox] = useState({ minLon: '', minLat: '', maxLon: '', maxLat: '' })
   const [license, setLicense] = useState('')
-    const [useMapPicker, setUseMapPicker] = useState(false)
+  const [useMapPicker, setUseMapPicker] = useState(false)
 
   // ===== STEP 3: OPTIONAL METADATA =====
   const [srid, setSrid] = useState('EPSG:4326')
@@ -72,6 +73,14 @@ function CreateDataset() {
   const [externalUrl, setExternalUrl] = useState('')
   const [attributes, setAttributes] = useState([])
   const [attributeExcelError, setAttributeExcelError] = useState('')
+
+  // SESI 6: sama seperti halaman Upload — geometri hasil
+  // parsing .shp/.dbf/.prj, dipakai untuk mengisi otomatis
+  // Bounding Box (Step 2), Sistem Koordinat (Step 3), dan
+  // menampilkan peta pratinjau di Step 4.
+  const [geometryType, setGeometryType] = useState('')
+  const [geojson, setGeojson] = useState(null)
+  const [shapefileNotice, setShapefileNotice] = useState('')
 
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
@@ -143,37 +152,67 @@ function CreateDataset() {
 
   }
 
+
+  // ===================================================
+  // SESI 6: FILE DATA — sekarang pakai parser shapefile
+  // PENUH (sama seperti halaman Upload), bukan cuma nama
+  // kolom .dbf. Otomatis mengisi Bounding Box, Sistem
+  // Koordinat, Tipe Geometri, Attributes, DAN menampilkan
+  // peta pratinjau kalau file lengkap (.shp+.dbf+.prj).
+  // ===================================================
+
   async function handleFilesChange(event) {
 
     const selectedFiles = Array.from(event.target.files || [])
     setFiles(selectedFiles)
+    setShapefileNotice('')
 
-    const dbfFile = findDbfFile(selectedFiles)
+    if (selectedFiles.length === 0) return
 
-    if (dbfFile) {
+    if (!hasAnyShapefilePart(selectedFiles)) {
+      return
+    }
 
-      try {
+    try {
 
-        const fieldNames = await extractDbfFieldNames(dbfFile)
+      const meta = await extractShapefileMetadata(selectedFiles)
 
-        if (fieldNames.length > 0) {
-
-          setAttributes((current) => [
-            ...current,
-            ...fieldNames.map((name) => ({ name, label: '', description: '' })),
-          ])
-
-          window.alert(
-            `${fieldNames.length} nama kolom berhasil ditarik otomatis dari ${dbfFile.name}. Silakan lengkapi Label/Description bila perlu (opsional).`
-          )
-
-        }
-
-      } catch (err) {
-
-        console.error('Gagal membaca .dbf:', err)
-
+      if (meta.bbox) {
+        setBbox({
+          minLon: String(meta.bbox.minLon), minLat: String(meta.bbox.minLat),
+          maxLon: String(meta.bbox.maxLon), maxLat: String(meta.bbox.maxLat),
+        })
       }
+
+      if (meta.srid) setSrid(meta.srid)
+      if (meta.geometryType) setGeometryType(meta.geometryType)
+      if (meta.geojson) setGeojson(meta.geojson)
+
+      if (meta.attributes.length > 0) {
+        setAttributes((current) => {
+          const existingNames = new Set(current.map((row) => row.name))
+          const newRows = meta.attributes.filter((row) => !existingNames.has(row.name))
+          return [...current, ...newRows]
+        })
+      }
+
+      const filled = []
+      if (meta.bbox) filled.push('Bounding Box')
+      if (meta.srid) filled.push('Sistem Koordinat')
+      if (meta.geometryType) filled.push('Tipe Geometri')
+      if (meta.attributes.length > 0) filled.push(`${meta.attributes.length} kolom Attributes`)
+      if (meta.geojson) filled.push(`peta pratinjau (${meta.geojson.features.length} fitur)`)
+
+      setShapefileNotice(
+        filled.length > 0
+          ? `Berhasil membaca ${meta.filesUsed.join(', ')}. Otomatis terisi: ${filled.join(', ')}.`
+          : 'File shapefile terbaca, tapi tidak ada metadata yang berhasil ditarik.'
+      )
+
+    } catch (err) {
+
+      console.error('Gagal membaca metadata shapefile:', err)
+      setShapefileNotice('Gagal membaca sebagian file shapefile. Isi metadata secara manual.')
 
     }
 
@@ -204,6 +243,7 @@ function CreateDataset() {
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           dateType, publicationDate, group, license,
+          geometryType, geojson,
         })
 
       await uploadMyDataset({
@@ -266,6 +306,8 @@ function CreateDataset() {
             <button type="button" className="active"><span>◈</span>Create Dataset</button>
             <Link to="/dashboard/create-map" className="admin-sidebar-link"><span>⌖</span>Create Map</Link>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
+            <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
+            <Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
           </nav>
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
@@ -453,7 +495,7 @@ function CreateDataset() {
                       <input type="text" value={region} onChange={(e) => setRegion(e.target.value)} placeholder="mis: Kabupaten Aceh Besar" />
                     </div>
 
-                                        <div className="admin-form-group">
+                    <div className="admin-form-group">
                       <label>Bounding Box (WGS84) — opsional</label>
 
                       <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
@@ -511,6 +553,11 @@ function CreateDataset() {
                         </small>
                       )}
 
+                      <small style={{ display: 'block', marginTop: '4px' }}>
+                        Kalau kamu sudah unggah shapefile lengkap di Langkah 4, kotak ini otomatis terisi —
+                        tidak perlu diisi manual lagi.
+                      </small>
+
                     </div>
 
                     <div className="admin-form-group">
@@ -555,6 +602,7 @@ function CreateDataset() {
                     <div className="admin-form-group">
                       <label>Sistem Koordinat (CRS)</label>
                       <input type="text" value={srid} onChange={(e) => setSrid(e.target.value)} placeholder="EPSG:4326" />
+                      <small>Otomatis terisi dari file .prj kalau kamu unggah shapefile lengkap di Langkah 4.</small>
                     </div>
 
                     <div className="admin-form-group">
@@ -604,7 +652,7 @@ function CreateDataset() {
                       <div>
                         <span className="section-eyebrow">LANGKAH 4</span>
                         <h2>Data & Attributes</h2>
-                        <p>Unggah file data (shapefile .shp/.dbf/.prj/.shx, atau file lain) dan/atau link.</p>
+                        <p>Unggah file data (shapefile .shp/.dbf/.prj/.shx sekaligus, atau file lain) dan/atau link.</p>
                       </div>
                     </div>
 
@@ -617,9 +665,35 @@ function CreateDataset() {
                           <small>{files.length} file dipilih: {files.map((f) => f.name).join(', ')}</small>
                         )}
                         <small style={{ display: 'block', marginTop: '4px' }}>
-                          Unggah .shp, .dbf, .prj, .shx sekaligus untuk data spasial — nama kolom
-                          otomatis ditarik dari .dbf ke tabel Attributes di bawah.
+                          Unggah .shp, .dbf, .prj, .shx SEKALIGUS untuk data spasial — Bounding Box,
+                          Sistem Koordinat, Tipe Geometri, dan Attributes otomatis ditarik, plus peta
+                          pratinjau muncul di bawah.
                         </small>
+
+                        {shapefileNotice && (
+                          <div
+                            style={{
+                              marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
+                              background: 'var(--admin-success-bg)', color: 'var(--admin-success)',
+                              fontSize: '13px', fontWeight: 600,
+                            }}
+                          >
+                            {shapefileNotice}
+                          </div>
+                        )}
+
+                        {geometryType && (
+                          <div style={{ marginTop: '8px' }}>
+                            <span className="admin-status published">Tipe Geometri: {geometryType}</span>
+                          </div>
+                        )}
+
+                        {geojson && (
+                          <div style={{ marginTop: '12px' }}>
+                            <label style={{ display: 'block', marginBottom: '6px' }}>Pratinjau Peta</label>
+                            <GeoJsonPreviewMap geojson={geojson} height={280} />
+                          </div>
+                        )}
                       </div>
 
                       <div className="admin-form-group">

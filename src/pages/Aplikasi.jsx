@@ -18,6 +18,10 @@ import {
   getResourceOwnerName,
 } from '../utils/ownDataAdapter'
 
+import {
+  getResourceTypeLabel,
+} from '../utils/datasetUtils'
+
 import GeoappCard from '../components/ApplicationCard'
 
 
@@ -51,16 +55,31 @@ function Aplikasi() {
           console.error('Gagal mengambil aplikasi API lama:', err)
         }
 
-        let ownList = []
+        let ownDashboards = []
 
         try {
-          ownList = await getPublishedByType('dashboard')
+          ownDashboards = await getPublishedByType('dashboard')
         } catch (err) {
           console.error('Gagal mengambil dashboard upload sendiri:', err)
         }
 
+        // #9: "Aplikasi" upload sendiri (resource_type =
+        // 'application') ditambahkan sebagai sumber terpisah
+        // dari Dashboard, tapi ditampilkan di halaman & card
+        // yang sama.
+
+        let ownApplications = []
+
+        try {
+          ownApplications = await getPublishedByType('application')
+        } catch (err) {
+          console.error('Gagal mengambil aplikasi upload sendiri:', err)
+        }
+
         const mergedApplications =
-          sortByDateDesc(mergeResourceLists(oldList, ownList))
+          sortByDateDesc(
+            mergeResourceLists(oldList, [...ownDashboards, ...ownApplications])
+          )
 
         setApplications(mergedApplications)
 
@@ -84,16 +103,29 @@ function Aplikasi() {
   }, [])
 
 
+  // =====================================================
+  // #9: filter "kategori" di halaman ini adalah JENIS
+  // resource (Dashboard / Aplikasi), bukan kategori topik
+  // (Sosial/Ekonomi/dll — itu ditampilkan sebagai badge di
+  // tiap card lewat mapCategory). Sebelumnya cuma ada
+  // "Dashboard" karena semua data (API lama + upload sendiri)
+  // selalu ditandai resource_type: 'dashboard'. Sekarang
+  // dibedakan lewat resource_type sebenarnya.
+  // =====================================================
+
+  function getApplicationTypeLabel(application) {
+    return getResourceTypeLabel(
+      application.resource_type === 'application' ? 'application' : 'dashboard'
+    )
+  }
+
+
   const categories = useMemo(() => {
 
     const categorySet = new Set()
 
     applications.forEach((application) => {
-      const category =
-        application.resource_type === 'dashboard'
-          ? 'Dashboard'
-          : application.category?.identifier || 'Aplikasi'
-      categorySet.add(category)
+      categorySet.add(getApplicationTypeLabel(application))
     })
 
     return ['Semua', ...Array.from(categorySet)]
@@ -126,10 +158,7 @@ function Aplikasi() {
       const title = (application.title || application.name || '').toLowerCase()
       const matchSearch = title.includes(keyword)
 
-      const applicationCategory =
-        application.resource_type === 'dashboard'
-          ? 'Dashboard'
-          : application.category?.identifier || 'Aplikasi'
+      const applicationCategory = getApplicationTypeLabel(application)
 
       const matchCategory = category === 'Semua' || applicationCategory === category
 

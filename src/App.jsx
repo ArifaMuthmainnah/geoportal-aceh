@@ -60,6 +60,9 @@ import JIGNDetail from './pages/JIGNDetail'
 import Berita
   from './pages/Berita'
 
+import BeritaDetail
+  from './pages/BeritaDetail'
+
 import Agenda
   from './pages/Agenda'
 
@@ -94,6 +97,9 @@ import UserDashboard
 import UploadDataset
   from './pages/user/UploadDataset'
 
+  import AmbilApi from './pages/user/AmbilApi'
+import Profil from './pages/user/Profil'
+
 import MyDatasets
   from './pages/user/MyDatasets'
 
@@ -104,6 +110,9 @@ import MyDatasets
 
 import AdminDashboard
   from './pages/admin/AdminDashboard'
+
+import EditDatasetAdmin
+  from './pages/admin/EditDatasetAdmin'
 
 
 // =====================================================
@@ -290,11 +299,29 @@ function App() {
               UPLOAD
           ================================================= */}
 
-                    <Route
+          <Route
             path="/dashboard/upload"
             element={
               <ProtectedRoute>
                 <UploadDataset />
+              </ProtectedRoute>
+            }
+          />
+
+                    <Route
+            path="/dashboard/ambil-api"
+            element={
+              <ProtectedRoute>
+                <AmbilApi />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard/profil"
+            element={
+              <ProtectedRoute>
+                <Profil />
               </ProtectedRoute>
             }
           />
@@ -349,6 +376,24 @@ function App() {
               >
 
                 <AdminDashboard />
+
+              </ProtectedRoute>
+            }
+          />
+
+          {/* SESI 8 (Poin 6): halaman PENUH untuk edit data dari
+              Dashboard Admin, menggantikan modal/pop-up lama.
+              :source = local | api-dataset | api-geoapp */}
+
+          <Route
+            path="/admin/edit/:source/:id"
+            element={
+
+              <ProtectedRoute
+                adminOnly
+              >
+
+                <EditDatasetAdmin />
 
               </ProtectedRoute>
             }
@@ -491,6 +536,18 @@ function App() {
               <PublicPage>
 
                 <Berita />
+
+              </PublicPage>
+            }
+          />
+
+          <Route
+            path="/informasi/berita/:id"
+            element={
+
+              <PublicPage>
+
+                <BeritaDetail />
 
               </PublicPage>
             }

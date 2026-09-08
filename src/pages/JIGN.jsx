@@ -13,10 +13,44 @@ import {
 } from '../api/userApi'
 
 import {
+  getAllGeoapps,
+} from '../api/geoappApi'
+
+import {
+  getAllMaps,
+} from '../api/mapApi'
+
+import {
+  getAllDocuments,
+} from '../api/documentApi'
+
+import {
   mergeOwnerLists,
 } from '../utils/ownDataAdapter'
 
 import { Link } from 'react-router'
+
+
+// =========================================
+// HITUNG JUMLAH RESOURCE PER OWNER
+// =========================================
+//
+// #8 (Sesi 4): endpoint "owners" API lama cuma kasih total
+// gabungan semua jenis resource ("count"), tanpa rincian per
+// jenis. Jadi di sini kita hitung sendiri dari daftar
+// geoapps/maps/documents lengkap, dikelompokkan per username
+// pemilik.
+
+function countByOwnerUsername(list) {
+  const map = new Map()
+  if (!Array.isArray(list)) return map
+  list.forEach((item) => {
+    const username = item?.owner?.username
+    if (!username) return
+    map.set(username, (map.get(username) || 0) + 1)
+  })
+  return map
+}
 
 
 function JIGN() {
@@ -100,6 +134,64 @@ function JIGN() {
 
 
       // =======================================
+      // RINCIAN JENIS DATA (Dashboard/Peta/Dokumen)
+      // DARI API LAMA — #8
+      // =======================================
+
+      let dashboardCountMap = new Map()
+      let mapCountMap = new Map()
+      let documentCountMap = new Map()
+
+      try {
+
+        const [oldGeoapps, oldMaps, oldDocuments] = await Promise.all([
+          getAllGeoapps().catch(() => []),
+          getAllMaps().catch(() => []),
+          getAllDocuments().catch(() => []),
+        ])
+
+        dashboardCountMap = countByOwnerUsername(oldGeoapps)
+        mapCountMap = countByOwnerUsername(oldMaps)
+        documentCountMap = countByOwnerUsername(oldDocuments)
+
+      } catch (err) {
+
+        console.error(
+          'Gagal menghitung rincian jenis data API lama:',
+          err
+        )
+
+      }
+
+      const enrichedOldOwners =
+        oldOwnerList.map((owner) => {
+
+          const dashboardCount = dashboardCountMap.get(owner.username) || 0
+          const mapCount = mapCountMap.get(owner.username) || 0
+          const documentCount = documentCountMap.get(owner.username) || 0
+
+          // Sisa dari total dianggap Dataset, karena API lama
+          // tidak punya endpoint rincian per-owner untuk dataset.
+          const datasetCount =
+            Math.max(
+              Number(owner.count || 0) - dashboardCount - mapCount - documentCount,
+              0
+            )
+
+          return {
+            ...owner,
+            dataset_count: datasetCount,
+            dashboard_count: dashboardCount,
+            application_count: 0,
+            map_count: mapCount,
+            document_count: documentCount,
+            informasi_count: 0,
+          }
+
+        })
+
+
+      // =======================================
       // PENGGUNA SENDIRI (LOKAL)
       // =======================================
 
@@ -131,7 +223,7 @@ function JIGN() {
 
       const mergedOwners =
         mergeOwnerLists(
-          oldOwnerList,
+          enrichedOldOwners,
           ownUserList
         )
 
@@ -404,59 +496,49 @@ function JIGN() {
 
         <div className="jign-toolbar-section">
 
-          <div className="jign-toolbar">
+          <div className="information-toolbar">
 
+            <div className="catalog-search-wrapper">
 
-            {/* SEARCH */}
+              <span className="catalog-search-icon" aria-hidden="true">
 
-            <div className="jign-search-row">
-
-              <div className="catalog-search-wrapper">
-
-                <span
-                  className="catalog-search-icon"
-                  aria-hidden="true"
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
                 >
 
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
 
-                    <circle
-                      cx="11"
-                      cy="11"
-                      r="7"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
+                  <path
+                    d="M16.5 16.5L21 21"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
 
-                    <path
-                      d="M16.5 16.5L21 21"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
+                </svg>
 
-                  </svg>
-
-                </span>
+              </span>
 
 
-                <input
-                  type="text"
-                  className="information-search"
-                  placeholder="Cari nama instansi atau username..."
-                  value={search}
-                  onChange={(e) =>
-                    setSearch(
-                      e.target.value
-                    )
-                  }
-                />
-
-              </div>
+              <input
+                type="text"
+                className="information-search"
+                placeholder="Cari nama instansi atau username..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(
+                    e.target.value
+                  )
+                }
+              />
 
             </div>
 
@@ -619,6 +701,18 @@ function JIGN() {
                     )
 
 
+                  // #8: rincian jumlah data per jenis resource,
+                  // hanya ditampilkan untuk yang jumlahnya > 0.
+                  const breakdown = [
+                    { label: 'Dataset', value: Number(owner.dataset_count || 0) },
+                    { label: 'Dashboard', value: Number(owner.dashboard_count || 0) },
+                    { label: 'Aplikasi', value: Number(owner.application_count || 0) },
+                    { label: 'Peta', value: Number(owner.map_count || 0) },
+                    { label: 'Dokumen', value: Number(owner.document_count || 0) },
+                    { label: 'Informasi', value: Number(owner.informasi_count || 0) },
+                  ].filter((entry) => entry.value > 0)
+
+
                   return (
 
                     <Link
@@ -714,7 +808,7 @@ function JIGN() {
                             </strong>
 
                             <span>
-                              Dataset
+                              Total Data
                             </span>
 
                           </div>
@@ -734,6 +828,42 @@ function JIGN() {
                           </div>
 
                         </div>
+
+
+                        {/* #8: RINCIAN PER JENIS DATA */}
+
+                        {breakdown.length > 0 && (
+
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: '6px',
+                              marginTop: '10px',
+                            }}
+                          >
+
+                            {breakdown.map((entry) => (
+
+                              <span
+                                key={entry.label}
+                                style={{
+                                  padding: '3px 9px',
+                                  borderRadius: '999px',
+                                  background: '#eef5fb',
+                                  color: '#0b5cab',
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {entry.value} {entry.label}
+                              </span>
+
+                            ))}
+
+                          </div>
+
+                        )}
 
                       </div>
 

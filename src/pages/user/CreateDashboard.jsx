@@ -6,18 +6,35 @@ import {
   getPublishedByType,
 } from '../../api/myDatasetApi'
 import { useAuth } from '../../context/AuthContext'
-import { buildExtraMetadata } from '../../utils/resourceFields'
+import { buildExtraMetadata, CATEGORY_OPTIONS } from '../../utils/resourceFields'
 
 function CreateDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
 
+  // =====================================================
+  // #9: pilih dulu jenisnya Dashboard atau Aplikasi. Keduanya
+  // memakai halaman detail yang SAMA (/aplikasi/:id) — bedanya
+  // cuma resource_type yang disimpan, dan Aplikasi cuma bisa
+  // diisi LINK (tanpa widget dataset/peta, tanpa embed_url
+  // terpisah — link aplikasinya sendiri yang jadi sumber
+  // iframe di halaman detail).
+  // =====================================================
+
+  const [resourceKind, setResourceKind] = useState('dashboard')
+
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [embedUrl, setEmbedUrl] = useState('')
   const [externalUrl, setExternalUrl] = useState('')
+
+  // #8: kategori disamakan seperti Dataset (pakai daftar
+  // kategori baku yang sama), supaya badge kategori di
+  // card & halaman detail konsisten.
+  const [category, setCategory] = useState('')
+  const [customCategory, setCustomCategory] = useState('')
 
   const [availableResources, setAvailableResources] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
@@ -27,12 +44,22 @@ function CreateDashboard() {
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
 
+  const isApplication = resourceKind === 'application'
+
 
   // ===================================================
   // AMBIL DATASET + PETA YANG SUDAH ADA UNTUK JADI WIDGET
+  // (cuma relevan untuk Dashboard, Aplikasi tidak pakai widget)
   // ===================================================
 
   useEffect(() => {
+
+    if (isApplication) {
+      setLoadingResources(false)
+      return
+    }
+
+    let mounted = true
 
     async function loadResources() {
 
@@ -70,11 +97,11 @@ function CreateDashboard() {
           map.set(item.id, item)
         })
 
-        setAvailableResources(Array.from(map.values()))
+        if (mounted) setAvailableResources(Array.from(map.values()))
 
       } finally {
 
-        setLoadingResources(false)
+        if (mounted) setLoadingResources(false)
 
       }
 
@@ -82,7 +109,9 @@ function CreateDashboard() {
 
     loadResources()
 
-  }, [])
+    return () => { mounted = false }
+
+  }, [isApplication])
 
 
   const filteredResources = useMemo(() => {
@@ -113,23 +142,45 @@ function CreateDashboard() {
   }
 
 
+  function handleChangeKind(nextKind) {
+    setResourceKind(nextKind)
+    setErrorMessage('')
+  }
+
+
   async function handleSubmit(event) {
 
     event.preventDefault()
 
     if (!title.trim()) {
-      setErrorMessage('Judul dashboard wajib diisi.')
+      setErrorMessage(`Judul ${isApplication ? 'aplikasi' : 'dashboard'} wajib diisi.`)
       return
     }
 
-    const hasWidgets = selectedIds.length > 0
-    const hasEmbed = embedUrl.trim().length > 0
     const hasLink = externalUrl.trim().length > 0
 
-    if (!hasWidgets && !hasEmbed && !hasLink) {
-      setErrorMessage('Pilih minimal 1 widget (dataset/peta), atau isi Embed URL / Link.')
-      return
+    if (isApplication) {
+
+      // #9: Aplikasi WAJIB diisi link, tidak menerima file.
+      if (!hasLink) {
+        setErrorMessage('Link aplikasi wajib diisi. Aplikasi hanya bisa diisi dengan link, tidak menerima upload file.')
+        return
+      }
+
+    } else {
+
+      const hasWidgets = selectedIds.length > 0
+      const hasEmbed = embedUrl.trim().length > 0
+
+      if (!hasWidgets && !hasEmbed && !hasLink) {
+        setErrorMessage('Pilih minimal 1 widget (dataset/peta), atau isi Embed URL / Link.')
+        return
+      }
+
     }
+
+    const finalCategory =
+      category === '__custom__' ? customCategory.trim() : category
 
     setStatus('uploading')
     setErrorMessage('')
@@ -137,16 +188,18 @@ function CreateDashboard() {
     try {
 
       const widgetTitles =
-        availableResources
-          .filter((item) => selectedIds.includes(item.id))
-          .map((item) =>
-            `${item.title} (${item.resource_type === 'map' ? 'Peta' : 'Dataset'})`
-          )
+        isApplication
+          ? []
+          : availableResources
+              .filter((item) => selectedIds.includes(item.id))
+              .map((item) =>
+                `${item.title} (${item.resource_type === 'map' ? 'Peta' : 'Dataset'})`
+              )
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType: 'dashboard',
-          embedUrl,
+          resourceType: resourceKind,
+          embedUrl: isApplication ? '' : embedUrl,
           linkedResources: widgetTitles,
         })
 
@@ -155,8 +208,8 @@ function CreateDashboard() {
         thumbnailFile,
         title,
         abstract,
-        resourceType: 'dashboard',
-        category: '',
+        resourceType: resourceKind,
+        category: finalCategory,
         keywords: '',
         externalUrl,
         extraMetadata,
@@ -166,9 +219,9 @@ function CreateDashboard() {
 
     } catch (err) {
 
-      console.error('Create dashboard error:', err)
+      console.error('Create dashboard/aplikasi error:', err)
       setStatus('error')
-      setErrorMessage(err.message || 'Gagal membuat dashboard.')
+      setErrorMessage(err.message || `Gagal membuat ${isApplication ? 'aplikasi' : 'dashboard'}.`)
 
     }
 
@@ -212,7 +265,9 @@ function CreateDashboard() {
             )}
             <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
             <Link to="/dashboard/create-map" className="admin-sidebar-link"><span>⌖</span>Create Map</Link>
-            <button type="button" className="active"><span>▥</span>Create Dashboard</button>
+            <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
+<Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
+            <button type="button" className="active"><span>▥</span>Dashboard / Aplikasi</button>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
           </nav>
@@ -227,8 +282,12 @@ function CreateDashboard() {
           <header className="admin-header">
             <div>
               <span className="section-eyebrow">{currentUser?.role === 'admin' ? 'ADMINISTRATOR' : 'OPERATOR'}</span>
-              <h1>Create Dashboard</h1>
-              <p>Susun dashboard dari dataset/peta yang sudah ada sebagai widget, atau tautkan dashboard eksternal.</p>
+              <h1>Create {isApplication ? 'Aplikasi' : 'Dashboard'}</h1>
+              <p>
+                {isApplication
+                  ? 'Tautkan aplikasi geospasial eksternal (mis. sistem informasi berbasis web) supaya tampil di halaman Aplikasi.'
+                  : 'Susun dashboard dari dataset/peta yang sudah ada sebagai widget, atau tautkan dashboard eksternal.'}
+              </p>
             </div>
           </header>
 
@@ -237,8 +296,8 @@ function CreateDashboard() {
             <div className="admin-panel">
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✓</div>
-                <strong>Dashboard berhasil dibuat</strong>
-                <p>Dashboard akan berstatus "Belum Publish" hingga disetujui admin.</p>
+                <strong>{isApplication ? 'Aplikasi' : 'Dashboard'} berhasil dibuat</strong>
+                <p>{isApplication ? 'Aplikasi' : 'Dashboard'} akan berstatus "Belum Publish" hingga disetujui admin.</p>
                 <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                   <Link to={currentUser?.role === 'admin' ? '/admin' : '/dashboard/datasets'} className="admin-secondary-button">
                     Lihat Data
@@ -253,7 +312,60 @@ function CreateDashboard() {
 
               <section className="admin-panel">
 
-                <div className="admin-panel-header"><div><h2>Informasi Dashboard</h2></div></div>
+                <div className="admin-panel-header"><div><h2>Jenis</h2></div></div>
+
+                <div style={{ padding: '20px 22px' }}>
+
+                  <div style={{ display: 'inline-flex', border: '1px solid #d7e0e9', borderRadius: '10px', overflow: 'hidden' }}>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeKind('dashboard')}
+                      style={{
+                        padding: '10px 18px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        background: !isApplication ? '#0b5cab' : '#ffffff',
+                        color: !isApplication ? '#ffffff' : '#617384',
+                      }}
+                    >
+                      ▥ Dashboard
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleChangeKind('application')}
+                      style={{
+                        padding: '10px 18px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        background: isApplication ? '#0b5cab' : '#ffffff',
+                        color: isApplication ? '#ffffff' : '#617384',
+                      }}
+                    >
+                      ⌗ Aplikasi
+                    </button>
+
+                  </div>
+
+                  <p style={{ margin: '10px 0 0', fontSize: '12.5px', color: '#7a8996' }}>
+                    {isApplication
+                      ? 'Aplikasi hanya bisa diisi dengan LINK (tidak bisa upload file), misalnya link Sistem Informasi Hidrologi, WebGIS, atau aplikasi geospasial lain berbasis web.'
+                      : 'Dashboard bisa disusun dari widget dataset/peta yang sudah ada, atau ditautkan ke dashboard eksternal (mis. Looker Studio/Power BI).'}
+                  </p>
+
+                </div>
+
+              </section>
+
+
+              <section className="admin-panel">
+
+                <div className="admin-panel-header"><div><h2>Informasi {isApplication ? 'Aplikasi' : 'Dashboard'}</h2></div></div>
 
                 <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
@@ -265,7 +377,7 @@ function CreateDashboard() {
                   </div>
 
                   <div className="admin-form-group">
-                    <label>Judul Dashboard *</label>
+                    <label>Judul {isApplication ? 'Aplikasi' : 'Dashboard'} *</label>
                     <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
                   </div>
 
@@ -274,98 +386,153 @@ function CreateDashboard() {
                     <textarea rows={3} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
                   </div>
 
-                  <div className="admin-form-group">
-                    <label>Link Dashboard Eksternal (opsional)</label>
-                    <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
-                    <small>Kalau dashboard-mu sudah ada di Looker Studio/Power BI/dll, isi linknya di sini.</small>
-                  </div>
+                  {/* #8/#9: kategori disamakan seperti Dataset */}
 
                   <div className="admin-form-group">
-                    <label>Embed URL (opsional)</label>
-                    <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
-                    <small>Kalau diisi, halaman detail aplikasi akan menampilkan iframe dari URL ini.</small>
+                    <label>Kategori</label>
+                    <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                      <option value="">Pilih kategori</option>
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option value="__custom__">Lainnya...</option>
+                    </select>
+                    {category === '__custom__' && (
+                      <>
+                        <input
+                          type="text"
+                          style={{ marginTop: '8px' }}
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          placeholder="Ketik kategori baru"
+                        />
+                        <small style={{ display: 'block', marginTop: '4px' }}>
+                          Gunakan bahasa Indonesia untuk kategori baru ini.
+                        </small>
+                      </>
+                    )}
                   </div>
 
-                </div>
+                  {isApplication ? (
 
-              </section>
-
-
-              <section className="admin-panel">
-
-                <div className="admin-panel-header">
-                  <div>
-                    <h2>Widgets (Dataset & Peta Terkait)</h2>
-                    <p>Pilih dataset/peta yang ingin ditampilkan sebagai bagian dari dashboard ini.</p>
-                  </div>
-                </div>
-
-                <div style={{ padding: '0 22px 20px' }}>
-
-                  <input
-                    type="search"
-                    placeholder="Cari dataset atau peta..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    style={{ width: '100%', marginBottom: '14px' }}
-                  />
-
-                  {loadingResources ? (
-
-                    <div className="admin-loading">Memuat daftar dataset & peta...</div>
-
-                  ) : filteredResources.length === 0 ? (
-
-                    <div className="admin-empty">
-                      <p>Belum ada dataset/peta yang tersedia. Buat dulu lewat "Create Dataset" atau "Create Map".</p>
+                    <div className="admin-form-group">
+                      <label>Link Aplikasi *</label>
+                      <input
+                        type="url"
+                        value={externalUrl}
+                        onChange={(e) => setExternalUrl(e.target.value)}
+                        placeholder="https://..."
+                        required
+                      />
+                      <small>
+                        Contoh: link menuju PSIH3-WS BARITO (Sistem Informasi Hidrologi, Hidrometeorologi
+                        dan Hidrogeologi Wilayah Sungai Barito), atau aplikasi web lain. Tombol "Buka
+                        Aplikasi" di halaman detail akan langsung mengarah ke link ini.
+                      </small>
                     </div>
 
                   ) : (
 
-                    <div style={{ maxHeight: '320px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+                    <>
+                      <div className="admin-form-group">
+                        <label>Link Dashboard Eksternal (opsional)</label>
+                        <input type="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} placeholder="https://..." />
+                        <small>Kalau dashboard-mu sudah ada di Looker Studio/Power BI/dll, isi linknya di sini.</small>
+                      </div>
 
-                      {filteredResources.map((item) => (
-
-                        <label
-                          key={item.id}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '10px 14px', borderBottom: '1px solid #f1f1f1',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(item.id)}
-                            onChange={() => toggleSelect(item.id)}
-                          />
-                          <div>
-                            <strong style={{ display: 'block' }}>{item.title || 'Tanpa judul'}</strong>
-                            <small style={{ opacity: 0.7 }}>
-                              {item.resource_type === 'map' ? 'Peta' : 'Dataset'}
-                              {item.category ? ` · ${item.category}` : ''}
-                            </small>
-                          </div>
-                        </label>
-
-                      ))}
-
-                    </div>
+                      <div className="admin-form-group">
+                        <label>Embed URL (opsional)</label>
+                        <input type="url" value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                        <small>Kalau diisi, halaman detail aplikasi akan menampilkan iframe dari URL ini.</small>
+                      </div>
+                    </>
 
                   )}
-
-                  <small style={{ display: 'block', marginTop: '10px' }}>
-                    {selectedIds.length} widget dipilih.
-                  </small>
 
                 </div>
 
               </section>
 
 
+              {!isApplication && (
+
+                <section className="admin-panel">
+
+                  <div className="admin-panel-header">
+                    <div>
+                      <h2>Widgets (Dataset & Peta Terkait)</h2>
+                      <p>Pilih dataset/peta yang ingin ditampilkan sebagai bagian dari dashboard ini.</p>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '0 22px 20px' }}>
+
+                    <input
+                      type="search"
+                      placeholder="Cari dataset atau peta..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      style={{ width: '100%', marginBottom: '14px' }}
+                    />
+
+                    {loadingResources ? (
+
+                      <div className="admin-loading">Memuat daftar dataset & peta...</div>
+
+                    ) : filteredResources.length === 0 ? (
+
+                      <div className="admin-empty">
+                        <p>Belum ada dataset/peta yang tersedia. Buat dulu lewat "Create Dataset" atau "Create Map".</p>
+                      </div>
+
+                    ) : (
+
+                      <div style={{ maxHeight: '320px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
+
+                        {filteredResources.map((item) => (
+
+                          <label
+                            key={item.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '10px 14px', borderBottom: '1px solid #f1f1f1',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(item.id)}
+                              onChange={() => toggleSelect(item.id)}
+                            />
+                            <div>
+                              <strong style={{ display: 'block' }}>{item.title || 'Tanpa judul'}</strong>
+                              <small style={{ opacity: 0.7 }}>
+                                {item.resource_type === 'map' ? 'Peta' : 'Dataset'}
+                                {item.category ? ` · ${item.category}` : ''}
+                              </small>
+                            </div>
+                          </label>
+
+                        ))}
+
+                      </div>
+
+                    )}
+
+                    <small style={{ display: 'block', marginTop: '10px' }}>
+                      {selectedIds.length} widget dipilih.
+                    </small>
+
+                  </div>
+
+                </section>
+
+              )}
+
+
               <div style={{ padding: '0 0 30px' }}>
                 <button type="submit" className="admin-view-site" disabled={status === 'uploading'}>
-                  {status === 'uploading' ? 'Menyimpan...' : 'Simpan Dashboard'}
+                  {status === 'uploading' ? 'Menyimpan...' : `Simpan ${isApplication ? 'Aplikasi' : 'Dashboard'}`}
                 </button>
               </div>
 

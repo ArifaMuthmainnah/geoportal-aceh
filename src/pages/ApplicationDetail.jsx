@@ -4,7 +4,6 @@ import {
 } from 'react'
 
 import {
-  Link,
   useParams,
 } from 'react-router'
 
@@ -16,6 +15,7 @@ import {
   getPublishedDetail,
   getMyDatasetDetail, 
   getAdminDatasetDetail,
+  getDatasetViewDetail,
 } from '../api/myDatasetApi'
 
 import {
@@ -23,10 +23,16 @@ import {
 } from '../utils/ownDataAdapter'
 
 import {
+  mapCategory,
+  getResourceTypeLabel,
   stripHtml,
 } from '../utils/datasetUtils'
 
 import { useAuth } from '../context/AuthContext'
+
+import CopyLinkButton from '../components/CopyLinkButton'
+import BackToTopButton from '../components/BackToTopButton'
+import OwnerBadge from '../components/OwnerBadge'
 
 function ApplicationDetail() {
 
@@ -44,6 +50,8 @@ function ApplicationDetail() {
 
 
   useEffect(() => {
+
+    let mounted = true
 
     async function fetchDetail() {
 
@@ -70,6 +78,14 @@ function ApplicationDetail() {
 
           if (!rawData && isAuthenticated) {
             try { rawData = await getMyDatasetDetail(rawId) } catch {}
+          }
+
+          // SESI 6: fallback terakhir — pengguna login mana pun (mis.
+          // operator lain, bukan pemilik & bukan admin) tetap bisa
+          // MELIHAT (read-only) aplikasi/dashboard ini walau belum
+          // dipublikasikan. Tidak ada hak edit/hapus lewat sini.
+          if (!rawData && isAuthenticated) {
+            try { rawData = await getDatasetViewDetail(rawId) } catch {}
           }
 
           if (!rawData) {
@@ -115,6 +131,8 @@ function ApplicationDetail() {
       fetchDetail()
     }
 
+    return () => { mounted = false }
+
   }, [id, isOwnId])
 
 
@@ -141,9 +159,7 @@ function ApplicationDetail() {
           <div className="information-empty">
             <h5>Aplikasi tidak ditemukan</h5>
             <p>{error || 'Data aplikasi tidak tersedia.'}</p>
-            <Link to="/aplikasi" className="application-back-button">
-              ← Kembali ke Aplikasi
-            </Link>
+            <BackToTopButton to="/aplikasi" label="Kembali ke Aplikasi" className="on-light" />
           </div>
         </div>
       </main>
@@ -175,10 +191,25 @@ function ApplicationDetail() {
     owner?.username ||
     'Tidak diketahui'
 
-  const category =
-    application.resource_type === 'dashboard'
-      ? 'Dashboard'
-      : application.category?.identifier || 'Aplikasi'
+  const ownerAvatar = owner?.avatar || null
+
+  // =====================================================
+  // #8 (Sesi 4): "category" sekarang SELALU dihitung lewat
+  // mapCategory() — sama persis seperti Dataset — bukan lagi
+  // dihardcode jadi literal "Dashboard". Kalau kategori dari
+  // API lama/upload user tidak ada di daftar baku, akan
+  // ditampilkan apa adanya (tidak dipaksa "Umum").
+  //
+  // "typeLabel" dipakai terpisah untuk menunjukkan JENIS
+  // resource-nya (Dashboard atau Aplikasi).
+  // =====================================================
+
+  const category = mapCategory(application.category?.identifier)
+
+  const typeLabel =
+    getResourceTypeLabel(application.resource_type === 'application' ? 'application' : 'dashboard')
+
+  const isApplicationType = application.resource_type === 'application'
 
   const date =
     application.date
@@ -189,9 +220,11 @@ function ApplicationDetail() {
         })
       : '-'
 
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
+
 
   // ===================================================
-  // SUMBER DASHBOARD
+  // SUMBER DASHBOARD / APLIKASI
   // ===================================================
   //
   // - Kalau dari API lama  : embed_url/detail_url berasal
@@ -199,8 +232,10 @@ function ApplicationDetail() {
   //   dashboard/detail di web Geoportal Aceh lama.
   // - Kalau upload sendiri : embed_url/detail_url berasal
   //   dari adaptOwnResource (link atau file yang di-upload
-  //   user), jadi klik akan membuka dashboard/file milik
-  //   user itu sendiri, BUKAN web lama.
+  //   user), jadi klik akan membuka dashboard/aplikasi milik
+  //   user itu sendiri, BUKAN web lama. Khusus "Aplikasi",
+  //   embed_url otomatis memakai link aplikasi yang diupload
+  //   user (karena Aplikasi tidak punya file, cuma link).
   //
   // Halaman ini sendiri (/aplikasi/:id) selalu berada di
   // web kita — hanya isi tombol/iframe yang berbeda sumber.
@@ -210,8 +245,38 @@ function ApplicationDetail() {
   const embedUrl = application.embed_url || null
   const detailUrl = application.detail_url || null
 
+  // =====================================================
+  // SESI 10 (Poin 3): gambar sampul/thumbnail dipakai sebagai
+  // "tampilan depan" statis khusus untuk Aplikasi (lihat catatan
+  // di bagian PREVIEW APLIKASI di bawah).
+  // =====================================================
+
+  const thumbnailUrl =
+    application.thumbnail_url ||
+    application.thumbnail ||
+    null
+
   const sourceLabel =
-    isOwnId ? 'Diunggah oleh pengguna' : 'Sumber: Geoportal Aceh'
+    isOwnId ? 'Diunggah oleh pengguna' : 'Geoportal Aceh'
+
+  // #9: tombol buka penuh langsung mengarah ke link aplikasi
+  // yang diupload user (detailUrl), label disesuaikan jenisnya.
+  const openButtonLabel =
+    isApplicationType
+      ? 'Buka Aplikasi'
+      : (isOwnId ? 'Buka Dashboard' : 'Buka di Geoportal')
+
+  const emptyStateTitle =
+    isApplicationType
+      ? 'Aplikasi tidak tersedia untuk ditampilkan langsung'
+      : 'Dashboard tidak tersedia untuk ditampilkan langsung'
+
+  const emptyStateMessage =
+    isApplicationType
+      ? 'Aplikasi ini belum memiliki link yang dapat ditampilkan.'
+      : (isOwnId
+          ? 'Aplikasi ini diunggah sebagai file dan tidak dapat ditampilkan sebagai iframe. Gunakan tombol di atas untuk membukanya.'
+          : 'Aplikasi ini belum memiliki alamat embed yang dapat ditampilkan.')
 
 
   return (
@@ -221,9 +286,9 @@ function ApplicationDetail() {
       <section className="application-detail-hero">
         <div className="container">
 
-          <Link to="/aplikasi" className="application-back-link">
-            ← Kembali ke Aplikasi
-          </Link>
+          <div className="application-detail-top">
+            <BackToTopButton to="/aplikasi" label="Kembali ke Aplikasi" />
+          </div>
 
           <div className="application-detail-header">
 
@@ -231,7 +296,10 @@ function ApplicationDetail() {
               {category}
             </span>
 
-            <h1>{title}</h1>
+            <div className="dataset-title-row">
+              <h1>{title}</h1>
+              <CopyLinkButton text={shareUrl} label="Salin tautan halaman ini" className="on-dark" />
+            </div>
 
             <p>{description}</p>
 
@@ -247,7 +315,9 @@ function ApplicationDetail() {
 
           <div className="application-detail-meta-item">
             <span>Instansi / Pemilik</span>
-            <strong>{ownerName}</strong>
+            <strong>
+              <OwnerBadge name={ownerName} avatar={ownerAvatar} />
+            </strong>
           </div>
 
           <div className="application-detail-meta-item">
@@ -257,6 +327,13 @@ function ApplicationDetail() {
 
           <div className="application-detail-meta-item">
             <span>Jenis</span>
+            <strong>{typeLabel}</strong>
+          </div>
+
+          {/* #8: box kategori ditambahkan di samping box Sumber,
+              memakai mapCategory() supaya konsisten dengan Dataset. */}
+          <div className="application-detail-meta-item">
+            <span>Kategori</span>
             <strong>{category}</strong>
           </div>
 
@@ -274,7 +351,7 @@ function ApplicationDetail() {
 
             <div>
               <span className="section-eyebrow">VISUALISASI</span>
-              <h2>{category}</h2>
+              <h2>{typeLabel}</h2>
             </div>
 
             {detailUrl && (
@@ -284,7 +361,7 @@ function ApplicationDetail() {
                 rel="noopener noreferrer"
                 className="application-external-link"
               >
-                {isOwnId ? 'Buka Dashboard' : 'Buka di Geoportal'}
+                {openButtonLabel}
                 <span>↗</span>
               </a>
             )}
@@ -292,7 +369,84 @@ function ApplicationDetail() {
           </div>
 
 
-          {embedUrl ? (
+          {/* =====================================================
+              SESI 10 (Poin 3): PREVIEW APLIKASI
+              =====================================================
+              Banyak situs Aplikasi eksternal (mis. data.acehprov.go.id)
+              mengirim header X-Frame-Options/CSP yang MENOLAK dirinya
+              ditampilkan lewat <iframe> — browser akan selalu
+              menampilkan "refused to connect", apa pun yang kita
+              lakukan di sisi kode. Ini bukan bug yang bisa diperbaiki
+              dengan iframe biasa.
+
+              Makanya khusus Aplikasi, kita TIDAK lagi mencoba
+              menampilkan iframe langsung dari embedUrl. Sebagai
+              gantinya: tampilkan gambar sampul (thumbnail) yang
+              diunggah operator sebagai "tampilan depan" statis,
+              dibungkus kotak yang terlihat seperti area
+              visualisasi/iframe, lengkap dengan tombol "Buka Tampilan
+              Penuh" — begitu ditekan, langsung membuka link aplikasi
+              aslinya di TAB BARU (bukan iframe).
+
+              Dashboard TIDAK diubah — tetap pakai iframe seperti
+              sebelumnya karena sudah berjalan dengan baik. */}
+
+          {isApplicationType ? (
+
+            detailUrl ? (
+
+              <div className="application-preview-frame">
+                <a
+                  href={detailUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="application-preview-link"
+                  aria-label={openButtonLabel}
+                >
+
+                  {thumbnailUrl ? (
+
+                    <img
+                      src={thumbnailUrl}
+                      alt={title}
+                      className="application-preview-image"
+                    />
+
+                  ) : (
+
+                    <div className="application-preview-placeholder">
+                      <span className="application-preview-icon">⌗</span>
+                      <strong>{title}</strong>
+                      <span>Tampilan depan belum diunggah untuk aplikasi ini.</span>
+                    </div>
+
+                  )}
+
+                  <span className="application-preview-overlay">
+                    <span className="application-preview-fullscreen-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="15 3 21 3 21 9" />
+                        <polyline points="9 21 3 21 3 15" />
+                        <line x1="21" y1="3" x2="14" y2="10" />
+                        <line x1="3" y1="21" x2="10" y2="14" />
+                      </svg>
+                      Buka Tampilan Penuh
+                    </span>
+                  </span>
+
+                </a>
+              </div>
+
+            ) : (
+
+              <div className="application-dashboard-empty">
+                <h3>{emptyStateTitle}</h3>
+                <p>{emptyStateMessage}</p>
+              </div>
+
+            )
+
+          ) : embedUrl ? (
 
             <div className="application-dashboard-frame">
               <iframe
@@ -307,13 +461,9 @@ function ApplicationDetail() {
 
             <div className="application-dashboard-empty">
 
-              <h3>Dashboard tidak tersedia untuk ditampilkan langsung</h3>
+              <h3>{emptyStateTitle}</h3>
 
-              <p>
-                {isOwnId
-                  ? 'Aplikasi ini diunggah sebagai file dan tidak dapat ditampilkan sebagai iframe. Gunakan tombol di atas untuk membukanya.'
-                  : 'Aplikasi ini belum memiliki alamat embed yang dapat ditampilkan.'}
-              </p>
+              <p>{emptyStateMessage}</p>
 
               {detailUrl && (
                 <a
@@ -322,7 +472,7 @@ function ApplicationDetail() {
                   rel="noopener noreferrer"
                   className="application-back-button"
                 >
-                  Buka Aplikasi
+                  {openButtonLabel}
                 </a>
               )}
 

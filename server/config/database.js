@@ -285,6 +285,12 @@ async function initializeDatabase() {
   // Akibatnya SETIAP upload dashboard GAGAL karena
   // melanggar CHECK constraint di database.
   //
+  // #9 (Sesi 4): 'application' ditambahkan LAGI sebagai
+  // jenis resource resmi — kali ini untuk "Aplikasi" yang
+  // terpisah dari "Dashboard" (beda tampilan iframe: iframe
+  // aplikasi asli, bukan iframe dashboard), bukan sisa
+  // constraint lama yang salah.
+  //
   // ---------------------------------------------------
 
     // Kolom thumbnail (#1) dan sub_type (#11, untuk
@@ -313,6 +319,7 @@ async function initializeDatabase() {
       resource_type IN (
         'dataset',
         'dashboard',
+        'application',
         'map',
         'document',
         'informasi'
@@ -337,7 +344,8 @@ async function initializeDatabase() {
       content_type IN (
         'file',
         'link',
-        'both'
+        'both',
+        'composite'
       )
     )
   `)
@@ -402,8 +410,42 @@ async function initializeDatabase() {
   `)
 
 
+  // ---------------------------------------------------
+  // AGENCY PROFILES (#10)
+  // ---------------------------------------------------
+  //
+  // Info instansi (deskripsi + link website resmi) TIDAK
+  // tersedia dari API Geoportal Aceh lama, jadi disimpan
+  // sendiri di sini. Dikunci per "username" instansi
+  // (bisa punya user lokal atau cuma owner dari API lama),
+  // supaya bisa dicocokkan langsung dengan halaman detail
+  // JIGN (/jign/:username).
+  //
+  // ---------------------------------------------------
+
+  await pool.query(`
+
+    CREATE TABLE IF NOT EXISTS agency_profiles (
+
+      id SERIAL PRIMARY KEY,
+
+      username TEXT NOT NULL UNIQUE,
+
+      description TEXT,
+
+      website_url TEXT,
+
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+    )
+
+  `)
+
+
   console.log(
-    'Tabel users, datasets, dan api_overrides siap.'
+    'Tabel users, datasets, api_overrides, dan agency_profiles siap.'
   )
 
 }

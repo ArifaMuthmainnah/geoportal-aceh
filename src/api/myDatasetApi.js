@@ -3,6 +3,7 @@ import {
   authPatch,
   authDelete,
   authPostFile,
+  authPatchFile,
 } from './apiClient'
 
 
@@ -57,6 +58,62 @@ export function uploadMyDataset({
 
 
 // =====================================================
+// SESI 6: EDIT + GANTI FILE SEKALIGUS
+// Dipakai EditMyDataset.jsx ketika user memilih file baru
+// (shapefile atau assets) saat mengedit data — file lama
+// otomatis dihapus & diganti yang baru di backend.
+// =====================================================
+
+export function updateMyDatasetWithFiles(id, {
+  title,
+  abstract,
+  category,
+  keywords,
+  externalUrl,
+  extraMetadata,
+  subType,
+  files,
+  thumbnailFile,
+  removeFiles,
+  // SESI 10 (FIX): resourceType sekarang juga boleh diubah oleh
+  // PEMILIK data (operator), bukan admin saja — backend hanya
+  // mengizinkannya selama data belum dipublikasikan (lihat
+  // EditMyDataset.jsx). isPublished tetap HANYA berlaku untuk
+  // admin (backend mengabaikannya untuk operator biasa) — dipakai
+  // halaman Edit Data admin (EditDatasetAdmin.jsx) supaya status
+  // publish bisa diubah sekalian saat mengganti file, tanpa perlu
+  // request terpisah.
+  resourceType,
+  isPublished,
+}) {
+
+  const formData = new FormData()
+
+  if (title !== undefined) formData.append('title', title)
+  if (abstract !== undefined) formData.append('abstract', abstract)
+  if (category !== undefined) formData.append('category', category)
+  if (keywords !== undefined) formData.append('keywords', keywords)
+  if (externalUrl !== undefined) formData.append('external_url', externalUrl || '')
+  if (extraMetadata !== undefined && extraMetadata !== null) formData.append('extra_metadata', extraMetadata)
+  if (subType !== undefined) formData.append('sub_type', subType)
+  if (removeFiles) formData.append('remove_files', 'true')
+  if (resourceType !== undefined) formData.append('resource_type', resourceType)
+  if (isPublished !== undefined) formData.append('is_published', isPublished ? 'true' : 'false')
+
+  if (Array.isArray(files)) {
+    files.forEach((file) => formData.append('base_file', file))
+  }
+
+  if (thumbnailFile) {
+    formData.append('thumbnail', thumbnailFile)
+  }
+
+  return authPatchFile(`/datasets/${id}`, formData)
+
+}
+
+
+// =====================================================
 // DATA MILIK USER
 // =====================================================
 
@@ -102,6 +159,21 @@ export async function getAdminDatasetsByType(resourceType) {
 
 export async function getAdminDatasetDetail(id) {
   const response = await authGet(`/datasets/admin/detail/${id}`)
+  return response?.dataset || null
+}
+
+
+// =====================================================
+// SESI 6: SEMUA DATA (ADMIN + OPERATOR, MODE LIHAT SAJA)
+// =====================================================
+
+export async function getAllVisibleDatasets() {
+  const response = await authGet('/datasets/all-visible')
+  return response?.datasets || []
+}
+
+export async function getDatasetViewDetail(id) {
+  const response = await authGet(`/datasets/view/${id}`)
   return response?.dataset || null
 }
 

@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import {
   getMyDatasetDetail,
   updateMyDataset,
+  updateMyDatasetWithFiles,
 } from '../../api/myDatasetApi'
 
 import { useAuth } from '../../context/AuthContext'
@@ -18,6 +19,8 @@ import {
   supportsLinkedResources,
   supportsEmbedUrl,
   supportsExtraMetadataForm,
+  supportsAgendaSchedule,
+  supportsShapefileUpload,
   buildExtraMetadata,
   parseExtraMetadata,
 } from '../../utils/resourceFields'
@@ -26,6 +29,27 @@ import {
   downloadAttributeTemplate,
   parseAttributeExcel,
 } from '../../utils/attributeExcel'
+
+import {
+  extractShapefileMetadata,
+  hasAnyShapefilePart,
+} from '../../utils/shapefileFields'
+
+import GeoJsonVertexEditor from '../../components/GeoJsonVertexEditor'
+
+
+function parseCurrentFiles(dataset) {
+  if (dataset?.files_json) {
+    try {
+      const parsed = JSON.parse(dataset.files_json)
+      if (Array.isArray(parsed)) return parsed
+    } catch {}
+  }
+  if (dataset?.file_path) {
+    return [{ file_path: dataset.file_path, file_name: dataset.file_name }]
+  }
+  return []
+}
 
 
 function EditMyDataset() {
@@ -48,6 +72,9 @@ function EditMyDataset() {
   const [externalUrl, setExternalUrl] = useState('')
   const [embedUrl, setEmbedUrl] = useState('')
   const [subType, setSubType] = useState('pemberitahuan')
+  const [eventDate, setEventDate] = useState('')
+  const [eventTime, setEventTime] = useState('')
+  const [eventLocation, setEventLocation] = useState('')
   const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [region, setRegion] = useState('')
@@ -62,6 +89,16 @@ function EditMyDataset() {
   const [attributeExcelError, setAttributeExcelError] = useState('')
 
   const [isPublished, setIsPublished] = useState(false)
+
+  // SESI 6: file saat ini (untuk ditampilkan), file BARU yang
+  // dipilih user (kalau mau mengganti), dan geometri (GeoJSON)
+  // hasil parsing shapefile yang bisa diedit titiknya langsung.
+  const [currentFiles, setCurrentFiles] = useState([])
+  const [newSpatialFiles, setNewSpatialFiles] = useState([])
+  const [newAssetFiles, setNewAssetFiles] = useState([])
+  const [geometryType, setGeometryType] = useState('')
+  const [geojson, setGeojson] = useState(null)
+  const [shapefileNotice, setShapefileNotice] = useState('')
 
 
   useEffect(() => {
@@ -84,6 +121,7 @@ function EditMyDataset() {
         setExternalUrl(dataset.external_url || '')
         setSubType(dataset.sub_type || 'pemberitahuan')
         setIsPublished(Boolean(dataset.is_published))
+        setCurrentFiles(parseCurrentFiles(dataset))
 
         const isKnown = CATEGORY_OPTIONS.includes(dataset.category)
         setCategory(isKnown ? dataset.category : (dataset.category ? '__custom__' : ''))
@@ -108,6 +146,13 @@ function EditMyDataset() {
           maxLat: metadata.bbox?.maxLat ?? '',
         })
         setAttributes(Array.isArray(metadata.attributes) ? metadata.attributes : [])
+        setGeometryType(metadata.geometry_type || '')
+        setGeojson(metadata.geojson || null)
+
+        // SESI 5 (lanjutan): jadwal Agenda
+        setEventDate(metadata.event_date || '')
+        setEventTime(metadata.event_time || '')
+        setEventLocation(metadata.event_location || '')
 
       } catch (err) {
 
@@ -185,13 +230,60 @@ function EditMyDataset() {
   }
 
 
-  // =====================================================
-  // FIX: sebelumnya di sini memanggil uploadMyDataset()
-  // (fungsi yang tidak di-import & bukan untuk edit), jadi
-  // tombol simpan selalu error. Sekarang benar memanggil
-  // updateMyDataset(id, ...) dan mengirim JSON biasa
-  // (bukan file — endpoint PATCH tidak menerima multipart).
-  // =====================================================
+  // ===================================================
+  // SESI 6: PILIH FILE SHAPEFILE BARU (mengganti seluruh
+  // geometri lama) — sama seperti di halaman Upload.
+  // ===================================================
+
+  async function handleSpatialFilesChange(event) {
+
+    const selectedFiles = Array.from(event.target.files || [])
+    setNewSpatialFiles(selectedFiles)
+    setShapefileNotice('')
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    if (!hasAnyShapefilePart(selectedFiles)) {
+      setShapefileNotice('File terpilih tidak dikenali sebagai bagian shapefile (.shp/.shx/.dbf/.prj).')
+      return
+    }
+
+    try {
+
+      const meta = await extractShapefileMetadata(selectedFiles)
+
+      if (meta.bbox) {
+        setBbox({
+          minLon: String(meta.bbox.minLon),
+          minLat: String(meta.bbox.minLat),
+          maxLon: String(meta.bbox.maxLon),
+          maxLat: String(meta.bbox.maxLat),
+        })
+      }
+
+      if (meta.srid) setSrid(meta.srid)
+      if (meta.geometryType) setGeometryType(meta.geometryType)
+      if (meta.geojson) setGeojson(meta.geojson)
+
+      if (meta.attributes.length > 0) {
+        setAttributes(meta.attributes)
+      }
+
+      setShapefileNotice(
+        `File baru berhasil dibaca (${meta.filesUsed.join(', ')}). Geometri, bounding box, dan attributes di bawah SUDAH DIGANTI dengan data dari file baru ini — akan tersimpan permanen setelah kamu klik "Simpan Perubahan".`
+      )
+
+    } catch (err) {
+
+      console.error('Gagal membaca metadata shapefile:', err)
+      setShapefileNotice('Gagal membaca sebagian file shapefile baru.')
+
+    }
+
+  }
+
 
   async function handleSubmit(event) {
 
@@ -211,26 +303,45 @@ function EditMyDataset() {
 
       const extraMetadata =
         buildExtraMetadata({
-          resourceType, region, language, srid, attribution, purpose,
+          resourceType, subType, region, language, srid, attribution, purpose,
           supplementalInformation, constraintsOther, bbox, attributes,
           embedUrl,
           linkedResources: linkedResourcesText.split('\n'),
+          eventDate, eventTime, eventLocation,
+          geometryType, geojson,
         })
 
-      const payload = {
-        title,
-        abstract,
-        category: finalCategory,
-        keywords,
-        external_url: externalUrl || null,
-        extra_metadata: extraMetadata,
-      }
+      const hasNewFiles = newSpatialFiles.length > 0 || newAssetFiles.length > 0
 
-      if (resourceType === 'informasi') {
-        payload.sub_type = subType
-      }
+      if (hasNewFiles) {
 
-      await updateMyDataset(id, payload)
+        await updateMyDatasetWithFiles(id, {
+          title, abstract, category: finalCategory, keywords,
+          externalUrl: externalUrl || null, extraMetadata,
+          subType: resourceType === 'informasi' ? subType : undefined,
+          resourceType,
+          files: [...newSpatialFiles, ...newAssetFiles],
+        })
+
+      } else {
+
+        const payload = {
+          title,
+          abstract,
+          category: finalCategory,
+          keywords,
+          external_url: externalUrl || null,
+          extra_metadata: extraMetadata,
+          resource_type: resourceType,
+        }
+
+        if (resourceType === 'informasi') {
+          payload.sub_type = subType
+        }
+
+        await updateMyDataset(id, payload)
+
+      }
 
       window.alert('Data berhasil diperbarui.')
       navigate('/dashboard/datasets')
@@ -276,6 +387,9 @@ function EditMyDataset() {
     )
   }
 
+  const showAgendaSchedule = supportsAgendaSchedule(resourceType, subType)
+  const showShapefileUpload = supportsShapefileUpload(resourceType)
+
 
   return (
 
@@ -302,6 +416,8 @@ function EditMyDataset() {
           <nav className="admin-sidebar-nav">
             <Link to="/dashboard" className="admin-sidebar-link"><span>▦</span>Dashboard</Link>
             <Link to="/dashboard/datasets" className="admin-sidebar-link"><span>◈</span>Data Saya</Link>
+            <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
+            <Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
           </nav>
@@ -334,12 +450,16 @@ function EditMyDataset() {
 
                 <div className="admin-form-group">
                   <label>Jenis Resource</label>
-                  <select value={resourceType} disabled>
+                  <select value={resourceType} onChange={(e) => setResourceType(e.target.value)} disabled={isPublished}>
                     {RESOURCE_TYPE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
-                  <small>Jenis resource hanya bisa diubah oleh admin.</small>
+                  <small>
+                    {isPublished
+                      ? 'Data sudah dipublikasikan, Jenis Resource tidak bisa diubah lagi. Hubungi admin bila perlu diubah.'
+                      : 'Jenis Resource bisa diubah selama data belum dipublikasikan.'}
+                  </small>
                 </div>
 
                 {resourceType === 'informasi' && (
@@ -353,10 +473,126 @@ function EditMyDataset() {
                   </div>
                 )}
 
-                <p style={{ fontSize: '13px', opacity: 0.7 }}>
-                  File dan gambar sampul tidak bisa diubah lewat halaman edit.
-                  Kalau ingin mengganti file, hapus data ini dan unggah ulang.
-                </p>
+                {/* SESI 5 (lanjutan): jadwal khusus Agenda */}
+                {showAgendaSchedule && (
+                  <>
+                    <div className="admin-form-group">
+                      <label>Tanggal Acara</label>
+                      <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} disabled={isPublished} />
+                      <small>Tanggal pelaksanaan kegiatan (boleh beda dari tanggal upload).</small>
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label>Waktu</label>
+                      <input
+                        type="text"
+                        value={eventTime}
+                        onChange={(e) => setEventTime(e.target.value)}
+                        disabled={isPublished}
+                        placeholder="mis: 10:00 s/d 15:00 WIB"
+                      />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label>Tempat</label>
+                      <input
+                        type="text"
+                        value={eventLocation}
+                        onChange={(e) => setEventLocation(e.target.value)}
+                        disabled={isPublished}
+                        placeholder="mis: Aula Diskominsa Provinsi Aceh"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* =========================================================
+                    SESI 6: FILE SAAT INI + UPLOAD ULANG
+                ========================================================= */}
+
+                <div className="admin-form-group">
+                  <label>File Saat Ini</label>
+                  {currentFiles.length > 0 ? (
+                    <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px' }}>
+                      {currentFiles.map((f, index) => (
+                        <li key={index}>{f.file_name || f.file_path}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <small>Belum ada file yang diunggah untuk data ini.</small>
+                  )}
+                </div>
+
+                {showShapefileUpload ? (
+
+                  <>
+                    <div className="admin-form-group">
+                      <label>Ganti File Shapefile — .shp, .shx, .dbf, .prj (opsional)</label>
+                      <input
+                        type="file"
+                        multiple
+                        accept=".shp,.shx,.dbf,.prj"
+                        onChange={handleSpatialFilesChange}
+                        disabled={isPublished}
+                      />
+                      <small>
+                        Kosongkan kalau tidak ingin mengganti file spasial. Kalau diisi, file &amp; geometri LAMA
+                        akan diganti seluruhnya oleh file baru ini.
+                      </small>
+
+                      {shapefileNotice && (
+                        <div
+                          style={{
+                            marginTop: '10px', padding: '10px 14px', borderRadius: '8px',
+                            background: 'var(--admin-success-bg)', color: 'var(--admin-success)',
+                            fontSize: '13px', fontWeight: 600,
+                          }}
+                        >
+                          {shapefileNotice}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="admin-form-group">
+                      <label>Ganti File Assets Tambahan (opsional)</label>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => setNewAssetFiles(Array.from(e.target.files || []))}
+                        disabled={isPublished}
+                      />
+                      {newAssetFiles.length > 0 && (
+                        <small>{newAssetFiles.length} file baru dipilih: {newAssetFiles.map((f) => f.name).join(', ')}</small>
+                      )}
+                    </div>
+                  </>
+
+                ) : (
+
+                  <div className="admin-form-group">
+                    <label>Ganti File (opsional)</label>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => setNewAssetFiles(Array.from(e.target.files || []))}
+                      disabled={isPublished}
+                    />
+                    {newAssetFiles.length > 0 && (
+                      <small>{newAssetFiles.length} file baru dipilih: {newAssetFiles.map((f) => f.name).join(', ')}</small>
+                    )}
+                  </div>
+
+                )}
+
+                {/* SESI 6: EDIT TITIK LANGSUNG DI PETA — kalau ada
+                    geometri (dari upload sebelumnya, atau file baru
+                    yang baru dipilih di atas). */}
+                {supportsBboxLocation(resourceType) && geojson && (
+                  <div className="admin-form-group">
+                    <label>Edit Titik di Peta (opsional)</label>
+                    <GeoJsonVertexEditor geojson={geojson} onChange={setGeojson} />
+                  </div>
+                )}
 
                 <div className="admin-form-group">
                   <label>Link / URL (opsional)</label>
@@ -486,6 +722,7 @@ function EditMyDataset() {
                           )
                         })}
                       </div>
+                      <small>Ikut menyesuaikan otomatis kalau kamu geser titik di peta atau ganti file shapefile di atas.</small>
                     </div>
                   )}
 
@@ -607,7 +844,7 @@ function EditMyDataset() {
 
     </main>
 
-  )
+  ) 
 
 }
 

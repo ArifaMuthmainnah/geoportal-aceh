@@ -8,6 +8,7 @@ import {
 import {
   Link,
   useNavigate,
+  useSearchParams,
 } from 'react-router'
 
 import {
@@ -18,7 +19,6 @@ import {
 
 import {
   getAdminGeoappsRaw,
-  updateGeoapp,
   hideGeoapp,
   restoreGeoapp,
 } from '../../api/geoappApi'
@@ -41,22 +41,16 @@ import {
 } from '../../context/AuthContext'
 
 import {
-  RESOURCE_TYPE_OPTIONS,
-  INFORMASI_SUBTYPE_OPTIONS,
-  CATEGORY_OPTIONS,
-  DATASET_BBOX_FIELDS,
-  supportsAttributeTable,
-  supportsBboxLocation,
-  supportsLinkedResources,
-  supportsEmbedUrl,
-  supportsExtraMetadataForm,
-  buildExtraMetadata,
-} from '../../utils/resourceFields'
+  IconSearch,
+  IconFilter,
+  IconEye,
+  IconPencil,
+  IconTrash,
+  IconCheckCircle,
+  IconEyeOff,
+} from '../../components/ActionIcons'
 
-import {
-  downloadAttributeTemplate,
-  parseAttributeExcel,
-} from '../../utils/attributeExcel'
+import CreateChoiceMenu from '../../components/CreateChoiceMenu'
 
 const AUTH_API_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5000/api'
 const SERVER_BASE_URL = AUTH_API_URL.replace(/\/api\/?$/, '')
@@ -110,6 +104,7 @@ function normalizeLocalRow(item) {
     published: Boolean(item.is_published),
     typeLabel:
       item.resource_type === 'dashboard' ? 'Dashboard'
+      : item.resource_type === 'application' ? 'Aplikasi'
       : item.resource_type === 'webgis' ? 'WebGIS'
       : item.resource_type === 'map' ? 'Peta'
       : item.resource_type === 'document' ? 'Dokumen'
@@ -120,29 +115,24 @@ function normalizeLocalRow(item) {
   }
 }
 
-const EMPTY_METADATA_FORM = {
-  region: '', language: '', srid: '', attribution: '', purpose: '',
-  supplementalInformation: '', constraintsOther: '',
-  bbox: { minLon: '', minLat: '', maxLon: '', maxLat: '' },
-  attributes: [],
-}
-
 function AdminDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout, isAdmin, refreshCurrentUser } = useAuth()
 
+  // ===================================================
+  // SESI 9 (Poin 10): dukung ?tab=users supaya link
+  // "Pengguna" dari sidebar halaman lain (mis. Data Saya)
+  // bisa langsung membuka tab Pengguna di sini, tanpa harus
+  // klik dua kali (buka Dashboard admin dulu, baru klik tab).
+  // ===================================================
+
+  const [searchParams] = useSearchParams()
+
   const [apiDatasets, setApiDatasets] = useState([])
   const [apiGeoapps, setApiGeoapps] = useState([])
   const [localDatasets, setLocalDatasets] = useState([])
   const [users, setUsers] = useState([])
-
-  const [files, setFiles] = useState([])
-  const [thumbnailFile, setThumbnailFile] = useState(null)
-  const [externalUrl, setExternalUrl] = useState('')
-  const [embedUrl, setEmbedUrl] = useState('')
-  const [subType, setSubType] = useState('pemberitahuan')
-  const [linkedResourcesText, setLinkedResourcesText] = useState('')
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -150,7 +140,7 @@ function AdminDashboard() {
   const [activeMenu, setActiveMenu] = useState('dashboard')
 
   const [filterOpen, setFilterOpen] = useState(false)
-  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, map: true, document: true, informasi: true })
+  const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
@@ -177,7 +167,7 @@ function AdminDashboard() {
         : rect.bottom + 8
 
       // Jangan sampai keluar sisi kanan layar
-      const left = Math.min(rect.left, window.innerWidth - popoverWidth - 16)
+      const left = Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 16)
 
       setPopoverPos({ top, left: Math.max(8, left) })
 
@@ -186,18 +176,6 @@ function AdminDashboard() {
   }
 
   const [togglingKey, setTogglingKey] = useState(null)
-
-  // ===================================================
-  // EDIT MODAL (#6: selengkap halaman upload untuk data lokal)
-  // ===================================================
-
-  const [editingRow, setEditingRow] = useState(null)
-  const [datasetForm, setDatasetForm] = useState({
-    title: '', abstract: '', category: '', customCategory: '', resourceType: 'dataset', externalUrl: '',
-  })
-  const [metadataForm, setMetadataForm] = useState(EMPTY_METADATA_FORM)
-  const [attributeExcelError, setAttributeExcelError] = useState('')
-  const [savingDataset, setSavingDataset] = useState(false)
 
   const [userModalMode, setUserModalMode] = useState(null)
   const [editingUser, setEditingUser] = useState(null)
@@ -231,6 +209,15 @@ function AdminDashboard() {
 
   useEffect(() => { loadDashboard() }, [])
 
+  // SESI 9 (Poin 10): buka tab "Pengguna" otomatis kalau
+  // halaman ini diakses lewat link "?tab=users".
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab === 'users') {
+      setActiveMenu('users')
+    }
+  }, [searchParams])
+
   const allRows = useMemo(() => {
     return [
       ...localDatasets.map(normalizeLocalRow),
@@ -263,7 +250,7 @@ function AdminDashboard() {
 
     const activeFilterCount = useMemo(() => {
       let count = 0
-      if (!filterType.dataset || !filterType.dashboard || !filterType.map || !filterType.document || !filterType.informasi) count++
+      if (!filterType.dataset || !filterType.dashboard || !filterType.application || !filterType.map || !filterType.document || !filterType.informasi) count++
       if (!filterStatus.published || !filterStatus.unpublished) count++
       if (filterCategory !== 'Semua') count++
       if (filterInstansi !== 'Semua') count++
@@ -304,6 +291,13 @@ function AdminDashboard() {
     }
   }
 
+  // ===================================================
+  // SESI 6 (FIX): "Hapus" HANYA untuk data lokal (upload-an
+  // user). Data dari API Geoportal Aceh lama TIDAK punya
+  // tombol Hapus — itu jadi pembeda: API cuma Publish/Unpublish,
+  // upload-an bisa dihapus permanen.
+  // ===================================================
+
   async function handleDelete(row) {
     if (row._source !== 'local') return
     const confirmed = window.confirm(`Hapus "${row.title}"? Data akan dihapus permanen dari server kita.`)
@@ -319,182 +313,16 @@ function AdminDashboard() {
   }
 
   // ===================================================
-  // OPEN EDIT — isi form selengkap halaman upload (#6)
+  // SESI 8 (FIX Poin 6): Edit data SEKARANG membuka halaman
+  // penuh /admin/edit/:source/:id (EditDatasetAdmin.jsx),
+  // BUKAN modal/pop-up lagi — sama seperti pola halaman
+  // "Edit Data" di Data Saya (EditMyDataset.jsx). :source
+  // dipakai halaman tujuan untuk tahu cara mengambil &
+  // menyimpan datanya (data lokal vs data dari API lama).
   // ===================================================
 
-  function openEditRow(row) {
-
-    setEditingRow(row)
-    setAttributeExcelError('')
-
-    const isLocal = row._source === 'local'
-    const isKnownCategory = CATEGORY_OPTIONS.includes(row.category)
-
-    setDatasetForm({
-      title: row.title || '',
-      abstract: row.raw.abstract || row.raw.description || '',
-      category: isLocal ? (isKnownCategory ? row.category : (row.category ? '__custom__' : '')) : row.category,
-      customCategory: isLocal && !isKnownCategory ? (row.category || '') : '',
-      resourceType: row.resourceType,
-      externalUrl: row.raw.external_url || '',
-    })
-
-    if (isLocal) {
-
-      const metadata = parseExtraMetadata(row.raw.extra_metadata)
-
-      setMetadataForm({
-        region: metadata.region || '',
-        language: metadata.language || '',
-        srid: metadata.srid || '',
-        attribution: metadata.attribution || '',
-        purpose: metadata.purpose || '',
-        supplementalInformation: metadata.supplemental_information || '',
-        constraintsOther: metadata.constraints_other || '',
-        bbox: {
-          minLon: metadata.bbox?.minLon ?? '',
-          minLat: metadata.bbox?.minLat ?? '',
-          maxLon: metadata.bbox?.maxLon ?? '',
-          maxLat: metadata.bbox?.maxLat ?? '',
-        },
-        attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
-      })
-
-    } else {
-
-      setMetadataForm(EMPTY_METADATA_FORM)
-
-    }
-
-  }
-
-  function closeEditRow() { setEditingRow(null) }
-
-  function addAttributeRow() {
-    setMetadataForm((current) => ({ ...current, attributes: [...current.attributes, { name: '', label: '', description: '' }] }))
-  }
-
-  function updateAttributeRow(index, field, value) {
-    setMetadataForm((current) => ({
-      ...current,
-      attributes: current.attributes.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
-    }))
-  }
-
-  function removeAttributeRow(index) {
-    setMetadataForm((current) => ({
-      ...current,
-      attributes: current.attributes.filter((_, i) => i !== index),
-    }))
-  }
-
-  async function handleAttributeExcelUpload(event) {
-    const file = event.target.files?.[0]
-    if (!file) return
-    setAttributeExcelError('')
-    try {
-      const parsedRows = await parseAttributeExcel(file)
-      if (parsedRows.length === 0) {
-        setAttributeExcelError('Tidak ada baris valid ditemukan. Pastikan kolom "name" terisi.')
-        return
-      }
-      setMetadataForm((current) => ({ ...current, attributes: [...current.attributes, ...parsedRows] }))
-      window.alert(`${parsedRows.length} atribut berhasil ditambahkan dari file Excel.`)
-    } catch (err) {
-      console.error('Gagal membaca file Excel:', err)
-      setAttributeExcelError('Gagal membaca file Excel. Pastikan format .xlsx/.xls sesuai template.')
-    } finally {
-      event.target.value = ''
-    }
-  }
-
-  async function handleSaveRow(event) {
-
-    event.preventDefault()
-    if (!editingRow) return
-
-    try {
-
-      setSavingDataset(true)
-
-      const finalCategory =
-        datasetForm.category === '__custom__' ? datasetForm.customCategory.trim() : datasetForm.category
-
-      if (editingRow._source === 'api-dataset') {
-
-        await updateDataset(editingRow.rawId, {
-          title: datasetForm.title, abstract: datasetForm.abstract, category: finalCategory,
-        })
-
-        setApiDatasets((current) => current.map((item) =>
-          item.pk === editingRow.rawId
-            ? { ...item, title: datasetForm.title, abstract: datasetForm.abstract, category: { ...item.category, identifier: finalCategory } }
-            : item
-        ))
-
-      } else if (editingRow._source === 'api-geoapp') {
-
-        await updateGeoapp(editingRow.rawId, {
-          title: datasetForm.title, abstract: datasetForm.abstract, category: finalCategory,
-        })
-
-        setApiGeoapps((current) => current.map((item) =>
-          item.pk === editingRow.rawId
-            ? { ...item, title: datasetForm.title, abstract: datasetForm.abstract, category: { ...item.category, identifier: finalCategory } }
-            : item
-        ))
-
-      } else {
-
-        const extraMetadata =
-          buildExtraMetadata({
-            resourceType: datasetForm.resourceType,
-            region: metadataForm.region,
-            language: metadataForm.language,
-            srid: metadataForm.srid,
-            attribution: metadataForm.attribution,
-            purpose: metadataForm.purpose,
-            supplementalInformation: metadataForm.supplementalInformation,
-            constraintsOther: metadataForm.constraintsOther,
-            bbox: metadataForm.bbox,
-            attributes: metadataForm.attributes,
-          })
-
-        await updateMyDataset(editingRow.rawId, {
-          title: datasetForm.title,
-          abstract: datasetForm.abstract,
-          category: finalCategory,
-          resource_type: datasetForm.resourceType,
-          external_url: datasetForm.externalUrl || null,
-          extra_metadata: extraMetadata,
-        })
-
-        setLocalDatasets((current) => current.map((item) =>
-          item.id === editingRow.rawId
-            ? {
-                ...item,
-                title: datasetForm.title,
-                abstract: datasetForm.abstract,
-                category: finalCategory,
-                resource_type: datasetForm.resourceType,
-                external_url: datasetForm.externalUrl || null,
-                extra_metadata: extraMetadata,
-              }
-            : item
-        ))
-
-      }
-
-      window.alert('Data berhasil diperbarui.')
-      closeEditRow()
-
-    } catch (err) {
-      console.error('Update dataset error:', err)
-      window.alert('Gagal memperbarui data.')
-    } finally {
-      setSavingDataset(false)
-    }
-
+  function goToEditPage(row) {
+    navigate(`/admin/edit/${row._source}/${row.rawId}`)
   }
 
   function openCreateUser() {
@@ -573,9 +401,6 @@ function AdminDashboard() {
 
   if (!isAdmin) return null
 
-  const isLocalEditing = editingRow?._source === 'local'
-  const showAttributeTable = isLocalEditing && supportsAttributeTable(datasetForm.resourceType)
-
   return (
     <main className="admin-page">
 
@@ -583,7 +408,20 @@ function AdminDashboard() {
 
         <aside className="admin-sidebar">
           <div className="admin-sidebar-brand"><span>GEOPORTAL</span><strong>ACEH</strong></div>
-          <div className="admin-sidebar-user">
+
+          {/* =============================================
+              SESI 9 (Poin 10): nama/avatar admin sekarang
+              bisa DIKLIK dan langsung mengarah ke halaman
+              profil — menu "Profil" terpisah di bawah sudah
+              tidak diperlukan lagi.
+          ============================================= */}
+
+          <Link
+            to="/dashboard/profil"
+            className="admin-sidebar-user"
+            title="Lihat profil saya"
+            style={{ textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}
+          >
             <div className="admin-user-avatar">
               {currentUser?.avatar_url ? (
                 <img
@@ -599,17 +437,32 @@ function AdminDashboard() {
               <strong>{currentUser?.username || 'Administrator'}</strong>
               <span>Administrator</span>
             </div>
-          </div>
+          </Link>
+
+          {/* =============================================
+              SIDEBAR MINIMAL — SESI 9 (Poin 10): cukup
+              Dashboard, Data Saya, Pengguna, Lihat Katalog,
+              WebGIS, Logout. "Ambil dari API" & "Profil"
+              DIHAPUS — Ambil dari API sudah ada di tombol +
+              (pojok kanan bawah), Profil pindah ke klik nama
+              di atas.
+          ============================================= */}
+
           <nav className="admin-sidebar-nav">
             <button type="button" className={activeMenu === 'dashboard' ? 'active' : ''} onClick={() => setActiveMenu('dashboard')}>
               <span>▦</span>Dashboard
             </button>
+
+            <Link to="/dashboard/datasets" className="admin-sidebar-link"><span>◈</span>Data Saya</Link>
+
             <button type="button" className={activeMenu === 'users' ? 'active' : ''} onClick={() => setActiveMenu('users')}>
               <span>♙</span>Pengguna
             </button>
+
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
             <Link to="/webgis" className="admin-sidebar-link"><span>⌖</span>WebGIS</Link>
           </nav>
+
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
         </aside>
 
@@ -621,11 +474,8 @@ function AdminDashboard() {
               <h1>Dashboard</h1>
               <p>Kelola data dan pengguna Geoportal Aceh.</p>
             </div>
-              <div className="admin-header-actions">
-                              <Link to="/dashboard/create-dataset" className="admin-secondary-button">+ Create Dataset</Link>
-              <Link to="/dashboard/create-map" className="admin-secondary-button">+ Create Map</Link>
-              <Link to="/dashboard/create-dashboard" className="admin-secondary-button">+ Create Dashboard</Link>
-                <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
+            <div className="admin-header-actions">
+              <button type="button" className="admin-refresh-button" onClick={handleRefresh} disabled={loading}>
                 ↻ {loading ? 'Memuat...' : 'Refresh'}
               </button>
               <Link to="/" className="admin-view-site">Lihat Website →</Link>
@@ -656,14 +506,26 @@ function AdminDashboard() {
               </div>
 
               {/* =============================================
-                  TOOLBAR — #5: filter (hamburger) di PALING KIRI,
-                  jauh dari search box.
+                  TOOLBAR — SESI 6: search di kiri (dengan ikon
+                  kaca pembesar), filter di PALING KANAN.
                 ============================================= */}
 
               <div
                 className="admin-toolbar"
-                style={{ display: 'flex', gap: '20px', alignItems: 'center', position: 'relative' }}
+                style={{ display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}
               >
+
+                <div className="search-box-wrap">
+                  <span className="search-box-icon"><IconSearch /></span>
+                  <input
+                    type="search"
+                    placeholder="Cari berdasarkan judul..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+
                 <div style={{ position: 'relative' }}>
                   <button
                     ref={filterButtonRef}
@@ -677,10 +539,7 @@ function AdminDashboard() {
                       cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '14px',
                     }}
                   >
-                    {/* #5: ikon corong filter (funnel), bukan hamburger */}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="4 4 20 4 14 12 14 19 10 21 10 12 4 4" />
-                    </svg>
+                    <IconFilter />
                     Filter
                     {/* #10: titik hijau kecil menandakan ada filter aktif */}
                     {activeFilterCount > 0 && (
@@ -693,84 +552,80 @@ function AdminDashboard() {
                   </button>
 
                   {filterOpen && (
-                    <div
-                      style={{
-                        position: 'fixed', top: popoverPos.top, left: popoverPos.left, zIndex: 1000,
-                        background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '16px', width: '320px',
-                        maxHeight: 'min(70vh, 420px)', overflowY: 'auto',
-                        display: 'flex', flexDirection: 'column', gap: '16px',
-                      }}
-                    >
+                    <>
+                      {/* SESI 6: klik di luar popover otomatis menutup filter */}
+                      <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>TYPE</strong>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {[
-                            { key: 'dataset', label: 'Dataset' },
-                            { key: 'dashboard', label: 'Dashboard' },
-                            { key: 'map', label: 'Peta' },
-                            { key: 'document', label: 'Dokumen' },
-                            { key: 'informasi', label: 'Informasi' },
-                          ].map((option) => (
-                            <label key={option.key} style={{
-                              display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
-                              borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
-                              background: filterType[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
-                            }}>
-                              <input type="checkbox" checked={filterType[option.key]}
-                                onChange={(e) => setFilterType((c) => ({ ...c, [option.key]: e.target.checked }))} />
-                              {option.label}
-                            </label>
-                          ))}
+                      <div
+                        style={{
+                          position: 'fixed', top: popoverPos.top, left: popoverPos.left, zIndex: 1000,
+                          background: '#fff', border: '1px solid #d1d5db', borderRadius: '10px',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: '16px', width: '320px',
+                          maxHeight: 'min(70vh, 420px)', overflowY: 'auto',
+                          display: 'flex', flexDirection: 'column', gap: '16px',
+                        }}
+                      >
+
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>TYPE</strong>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {[
+                              { key: 'dataset', label: 'Dataset' },
+                              { key: 'dashboard', label: 'Dashboard' },
+                              { key: 'application', label: 'Aplikasi' },
+                              { key: 'map', label: 'Peta' },
+                              { key: 'document', label: 'Dokumen' },
+                              { key: 'informasi', label: 'Informasi' },
+                            ].map((option) => (
+                              <label key={option.key} style={{
+                                display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
+                                borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
+                                background: filterType[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
+                              }}>
+                                <input type="checkbox" checked={filterType[option.key]}
+                                  onChange={(e) => setFilterType((c) => ({ ...c, [option.key]: e.target.checked }))} />
+                                {option.label}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>STATUS</strong>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {[{ key: 'published', label: 'Published' }, { key: 'unpublished', label: 'Unpublished' }].map((option) => (
-                            <label key={option.key} style={{
-                              display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
-                              borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
-                              background: filterStatus[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
-                            }}>
-                              <input type="checkbox" checked={filterStatus[option.key]}
-                                onChange={(e) => setFilterStatus((c) => ({ ...c, [option.key]: e.target.checked }))} />
-                              {option.label}
-                            </label>
-                          ))}
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>STATUS</strong>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {[{ key: 'published', label: 'Published' }, { key: 'unpublished', label: 'Unpublished' }].map((option) => (
+                              <label key={option.key} style={{
+                                display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px',
+                                borderRadius: '999px', border: '1px solid #d1d5db', cursor: 'pointer',
+                                background: filterStatus[option.key] ? '#eef2ff' : '#fff', fontSize: '13px',
+                              }}>
+                                <input type="checkbox" checked={filterStatus[option.key]}
+                                  onChange={(e) => setFilterStatus((c) => ({ ...c, [option.key]: e.target.checked }))} />
+                                {option.label}
+                              </label>
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>CATEGORY</strong>
-                        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
-                          {categoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </div>
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>CATEGORY</strong>
+                          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                            {categoryOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </div>
 
-                      <div>
-                        <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>INSTANSI</strong>
-                        <select value={filterInstansi} onChange={(e) => setFilterInstansi(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
-                          {instansiOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-                        </select>
-                      </div>
+                        <div>
+                          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '12px', opacity: 0.7 }}>INSTANSI</strong>
+                          <select value={filterInstansi} onChange={(e) => setFilterInstansi(e.target.value)} style={{ width: '100%', padding: '6px 10px', borderRadius: '8px', border: '1px solid #d1d5db' }}>
+                            {instansiOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                          </select>
+                        </div>
 
-                      <button type="button" className="admin-secondary-button" onClick={() => setFilterOpen(false)}>
-                        Terapkan
-                      </button>
-                    </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
-                <input
-                  type="search"
-                  placeholder="Cari berdasarkan judul..."
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  style={{ flex: 1 }}
-                />
               </div>
 
               {loading ? (
@@ -803,25 +658,46 @@ function AdminDashboard() {
                             <div className="admin-actions">
                               <Link
                                 to={
-                                  row.resourceType === 'dashboard'
+                                  row.resourceType === 'dashboard' || row.resourceType === 'application'
                                     ? `/aplikasi/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                     : `/katalog/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                 }
-                                className="admin-action-view"
+                                className="icon-btn icon-btn-view"
+                                data-tooltip="Lihat"
                               >
-                                Lihat
+                                <IconEye />
                               </Link>
-                              <button type="button" className="admin-action-view" onClick={() => openEditRow(row)}>Edit</button>
+
                               <button
                                 type="button"
-                                className={row.published ? 'admin-action-delete' : 'admin-action-view'}
+                                className="icon-btn icon-btn-edit"
+                                data-tooltip="Edit"
+                                onClick={() => goToEditPage(row)}
+                              >
+                                <IconPencil />
+                              </button>
+
+                              <button
+                                type="button"
+                                className={row.published ? 'icon-btn icon-btn-unpublish' : 'icon-btn icon-btn-publish'}
+                                data-tooltip={row.published ? 'Unpublish' : 'Publish'}
                                 disabled={togglingKey === row.key}
                                 onClick={() => handleTogglePublish(row)}
                               >
-                                {togglingKey === row.key ? '...' : row.published ? 'Unpublish' : 'Publish'}
+                                {row.published ? <IconEyeOff /> : <IconCheckCircle />}
                               </button>
+
+                              {/* SESI 6 (FIX): Hapus HANYA untuk data lokal —
+                                  ini pembeda antara data API vs upload-an user. */}
                               {row._source === 'local' && (
-                                <button type="button" className="admin-action-delete" onClick={() => handleDelete(row)}>Hapus</button>
+                                <button
+                                  type="button"
+                                  className="icon-btn icon-btn-delete"
+                                  data-tooltip="Hapus"
+                                  onClick={() => handleDelete(row)}
+                                >
+                                  <IconTrash />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -871,9 +747,13 @@ function AdminDashboard() {
                           <td>{user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID') : '-'}</td>
                           <td>
                             <div className="admin-actions">
-                              <button type="button" className="admin-action-view" onClick={() => openEditUser(user)}>Edit</button>
+                              <button type="button" className="icon-btn icon-btn-edit" data-tooltip="Edit" onClick={() => openEditUser(user)}>
+                                <IconPencil />
+                              </button>
                               {(user.id || user.pk) !== currentUser?.id && (
-                                <button type="button" className="admin-action-delete" onClick={() => handleDeleteUser(user)}>Hapus</button>
+                                <button type="button" className="icon-btn icon-btn-delete" data-tooltip="Hapus" onClick={() => handleDeleteUser(user)}>
+                                  <IconTrash />
+                                </button>
                               )}
                             </div>
                           </td>
@@ -893,193 +773,15 @@ function AdminDashboard() {
 
 
       {/* =============================================
-          FAB — #3: tombol bulat "+" tanpa teks, pojok
-          kanan bawah, langsung ke halaman upload.
+          SESI 9 (Poin 8): FAB "+" lama yang cuma link
+          langsung ke /dashboard/upload sekarang diganti
+          dengan menu seperempat lingkaran yang sama seperti
+          di halaman "Data Saya" — jadi admin juga bisa
+          langsung pilih Dataset / Peta / Dashboard / Upload
+          / Ambil dari API dari satu tombol yang sama.
       ============================================= */}
 
-      <Link
-        to="/dashboard/upload"
-        title="Upload Data"
-        className="admin-view-site"
-        style={{
-          position: 'fixed', bottom: '30px', right: '30px', width: '56px', height: '56px',
-          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '28px', lineHeight: 1, padding: 0,
-          boxShadow: '0 4px 14px rgba(0,0,0,0.25)', zIndex: 50,
-        }}
-      >
-        +
-      </Link>
-
-
-      {/* =============================================
-          MODAL EDIT — #6: lengkap untuk data lokal
-      ============================================= */}
-
-      {editingRow && (
-
-        <div className="admin-modal-overlay" onClick={closeEditRow}>
-          <div className="admin-modal" onClick={(event) => event.stopPropagation()} style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-
-            <div className="admin-modal-header">
-              <h3>Edit Data</h3>
-              <button type="button" className="admin-modal-close" onClick={closeEditRow}>×</button>
-            </div>
-
-            <form onSubmit={handleSaveRow}>
-
-              <div className="admin-modal-body">
-
-                {isLocalEditing && (
-                  <div className="admin-form-group">
-                    <label>Jenis Resource</label>
-                    <select value={datasetForm.resourceType} onChange={(e) => setDatasetForm((c) => ({ ...c, resourceType: e.target.value }))}>
-                      {RESOURCE_TYPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                      <option value="webgis">WebGIS (data lama)</option>
-                    </select>
-                  </div>
-                )}
-
-                {isLocalEditing && (
-                  <div className="admin-form-group">
-                    <label>Link / URL (opsional)</label>
-                    <input type="url" value={datasetForm.externalUrl} onChange={(e) => setDatasetForm((c) => ({ ...c, externalUrl: e.target.value }))} placeholder="https://..." />
-                  </div>
-                )}
-
-                <div className="admin-form-group">
-                  <label>Judul</label>
-                  <input type="text" value={datasetForm.title} onChange={(e) => setDatasetForm((c) => ({ ...c, title: e.target.value }))} required />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Deskripsi / Abstract</label>
-                  <textarea rows={4} value={datasetForm.abstract} onChange={(e) => setDatasetForm((c) => ({ ...c, abstract: e.target.value }))} />
-                </div>
-
-                <div className="admin-form-group">
-                  <label>Kategori</label>
-
-                  {isLocalEditing ? (
-                    <>
-                      <select value={datasetForm.category} onChange={(e) => setDatasetForm((c) => ({ ...c, category: e.target.value }))}>
-                        <option value="">Pilih kategori</option>
-                        {CATEGORY_OPTIONS.map((cat) => <option key={cat} value={cat}>{cat}</option>)}
-                        <option value="__custom__">Lainnya...</option>
-                      </select>
-                      {datasetForm.category === '__custom__' && (
-                        <>
-                          <input
-                            type="text"
-                            style={{ marginTop: '8px' }}
-                            value={datasetForm.customCategory}
-                            onChange={(e) => setDatasetForm((c) => ({ ...c, customCategory: e.target.value }))}
-                            placeholder="Ketik kategori baru"
-                          />
-                          <small style={{ display: 'block', marginTop: '4px' }}>
-                            Gunakan bahasa Indonesia untuk kategori baru ini.
-                          </small>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <input type="text" value={datasetForm.category} onChange={(e) => setDatasetForm((c) => ({ ...c, category: e.target.value }))} />
-                  )}
-                </div>
-
-                  {isLocalEditing && supportsExtraMetadataForm(datasetForm.resourceType) && (
-
-                  <>
-                    <div className="admin-form-group"><label>Wilayah / Region</label><input type="text" value={metadataForm.region} onChange={(e) => setMetadataForm((c) => ({ ...c, region: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Bahasa</label><input type="text" value={metadataForm.language} onChange={(e) => setMetadataForm((c) => ({ ...c, language: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Sistem Koordinat (CRS)</label><input type="text" value={metadataForm.srid} onChange={(e) => setMetadataForm((c) => ({ ...c, srid: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Atribusi</label><input type="text" value={metadataForm.attribution} onChange={(e) => setMetadataForm((c) => ({ ...c, attribution: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Tujuan</label><textarea rows={3} value={metadataForm.purpose} onChange={(e) => setMetadataForm((c) => ({ ...c, purpose: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Informasi Tambahan</label><textarea rows={3} value={metadataForm.supplementalInformation} onChange={(e) => setMetadataForm((c) => ({ ...c, supplementalInformation: e.target.value }))} /></div>
-                    <div className="admin-form-group"><label>Batasan Penggunaan</label><textarea rows={3} value={metadataForm.constraintsOther} onChange={(e) => setMetadataForm((c) => ({ ...c, constraintsOther: e.target.value }))} /></div>
-
-                    <div className="admin-form-group">
-                      <label>Bounding Box (WGS84)</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        {DATASET_BBOX_FIELDS.map((field) => {
-                          const shortKey =
-                            field.key.replace('bbox_min_lon', 'minLon').replace('bbox_min_lat', 'minLat').replace('bbox_max_lon', 'maxLon').replace('bbox_max_lat', 'maxLat')
-                          return (
-                            <input
-                              key={field.key} type="number" step="any" placeholder={field.label}
-                              value={metadataForm.bbox[shortKey] || ''}
-                              onChange={(e) => setMetadataForm((c) => ({ ...c, bbox: { ...c.bbox, [shortKey]: e.target.value } }))}
-                            />
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </>
-
-                )}
-
-                {showAttributeTable && (
-
-                  <div className="admin-form-group">
-
-                    <label>Attributes</label>
-
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                      <button type="button" className="admin-secondary-button" onClick={downloadAttributeTemplate}>⬇ Template Excel</button>
-                      <label className="admin-secondary-button" style={{ cursor: 'pointer', margin: 0 }}>
-                        ⬆ Upload Excel
-                        <input type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleAttributeExcelUpload} />
-                      </label>
-                      <button type="button" className="admin-secondary-button" onClick={addAttributeRow}>+ Baris Manual</button>
-                    </div>
-
-                    {attributeExcelError && <div className="admin-alert" style={{ marginBottom: '10px' }}>{attributeExcelError}</div>}
-
-                    {metadataForm.attributes.length === 0 ? (
-                      <div className="admin-empty"><p>Belum ada atribut ditambahkan.</p></div>
-                    ) : (
-                      <div className="admin-table-wrapper">
-                        <table className="admin-table">
-                          <thead><tr><th>Name</th><th>Label</th><th>Description</th><th></th></tr></thead>
-                          <tbody>
-                            {metadataForm.attributes.map((row, index) => (
-                              <tr key={index}>
-                                <td><input type="text" value={row.name} onChange={(e) => updateAttributeRow(index, 'name', e.target.value)} /></td>
-                                <td><input type="text" value={row.label} onChange={(e) => updateAttributeRow(index, 'label', e.target.value)} /></td>
-                                <td><input type="text" value={row.description} onChange={(e) => updateAttributeRow(index, 'description', e.target.value)} /></td>
-                                <td><button type="button" className="admin-action-delete" onClick={() => removeAttributeRow(index)}>Hapus</button></td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                  </div>
-
-                )}
-
-                {!isLocalEditing && (
-                  <p style={{ fontSize: '13px', opacity: 0.75 }}>
-                    Perubahan ini hanya berlaku di tampilan web kita. Data asli di Geoportal Aceh tidak ikut berubah.
-                  </p>
-                )}
-
-              </div>
-
-              <div className="admin-modal-footer">
-                <button type="button" className="admin-secondary-button" onClick={closeEditRow}>Batal</button>
-                <button type="submit" className="admin-view-site" disabled={savingDataset}>{savingDataset ? 'Menyimpan...' : 'Simpan'}</button>
-              </div>
-
-            </form>
-
-          </div>
-        </div>
-
-      )}
+      <CreateChoiceMenu />
 
 
       {userModalMode && (

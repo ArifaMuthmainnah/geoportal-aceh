@@ -45,17 +45,22 @@ function DatasetCard({ dataset, owner }) {
   // TUJUAN LINK (fix #2)
   // =====================================================
   //
-  // Card ini dipakai untuk dataset MAUPUN dashboard (mis.
-  // di halaman detail JIGN yang menggabungkan keduanya).
+  // Card ini dipakai untuk dataset MAUPUN dashboard/aplikasi
+  // (mis. di halaman detail JIGN yang menggabungkan semuanya).
   // Sebelumnya selalu diarahkan ke /katalog/:id walau
   // jenisnya dashboard, sehingga gagal diambil (endpoint
   // dataset dipanggil untuk id geoapp). Sekarang dicek
   // dulu resource_type-nya.
   //
+  // #9 (Sesi 4): 'application' memakai halaman detail yang
+  // SAMA dengan 'dashboard' (/aplikasi/:id) — tidak ada
+  // halaman detail baru, cuma beda kategori & sumber iframe.
+  //
   // =====================================================
 
   const linkTo =
     dataset.resource_type === 'dashboard' ? `/aplikasi/${dataset.pk}`
+    : dataset.resource_type === 'application' ? `/aplikasi/${dataset.pk}`
     : dataset.resource_type === 'map' ? `/peta/${dataset.pk}`
     : dataset.resource_type === 'document' ? `/dokumen/${dataset.pk}`
     : `/katalog/${dataset.pk}`

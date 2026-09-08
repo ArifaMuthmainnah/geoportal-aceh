@@ -50,6 +50,14 @@ const uploadAvatar = multer({ storage: avatarStorage })
 // =====================================================
 // DAFTAR PENGGUNA PUBLIK (UNTUK HALAMAN JIGN)
 // =====================================================
+//
+// #8 (Sesi 4): sebelumnya cuma kasih total gabungan semua
+// jenis resource ("count"). Sekarang dipecah per jenis
+// (dataset/dashboard/application/map/document/informasi)
+// supaya halaman JIGN & JIGNDetail bisa menampilkan rincian
+// Peta/Dokumen/Informasi per instansi, bukan cuma "Dataset".
+//
+// =====================================================
 
 router.get('/public', async (req, res) => {
 
@@ -64,7 +72,25 @@ router.get('/public', async (req, res) => {
           u.avatar_url,
           COUNT(d.id) FILTER (
             WHERE d.is_published = 1
-          ) AS count
+          ) AS count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'dataset'
+          ) AS dataset_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'dashboard'
+          ) AS dashboard_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'application'
+          ) AS application_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'map'
+          ) AS map_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'document'
+          ) AS document_count,
+          COUNT(d.id) FILTER (
+            WHERE d.is_published = 1 AND d.resource_type = 'informasi'
+          ) AS informasi_count
         FROM users u
         LEFT JOIN datasets d
           ON d.owner_id = u.id
@@ -91,6 +117,110 @@ router.get('/public', async (req, res) => {
 
 })
 
+// =====================================================
+// SESI 6: UPDATE PROFIL SENDIRI (operator MAUPUN admin)
+// Beda dari PATCH /:id di bawah (khusus admin mengedit
+// SIAPA SAJA) — ini HANYA authenticateToken, tanpa
+// requireAdmin, dan cuma boleh mengubah akun MILIK SENDIRI
+// (req.user.id), TIDAK BISA ganti role sendiri.
+// =====================================================
+
+router.patch(
+  '/me',
+  authenticateToken,
+  uploadAvatar.single('avatar'),
+  async (req, res) => {
+
+    try {
+
+      const id = req.user.id
+
+      const existingUser =
+        await db.prepare(`SELECT * FROM users WHERE id = $1`).get(id)
+
+      if (!existingUser) {
+        if (req.file) { try { fs.unlinkSync(req.file.path) } catch {} }
+        return res.status(404).json({ success: false, message: 'Pengguna tidak ditemukan.' })
+      }
+
+      const { username, email, password, current_password } = req.body
+
+      const nextUsername =
+        username !== undefined && username.trim() ? username.trim() : existingUser.username
+
+      const nextEmail =
+        email !== undefined && email.trim() ? email.trim().toLowerCase() : existingUser.email
+
+      const conflict =
+        await db.prepare(`
+          SELECT id FROM users
+          WHERE (username = $1 OR email = $2) AND id != $3
+        `).get(nextUsername, nextEmail, id)
+
+      if (conflict) {
+        if (req.file) { try { fs.unlinkSync(req.file.path) } catch {} }
+        return res.status(409).json({ success: false, message: 'Username atau email sudah digunakan pengguna lain.' })
+      }
+
+      let nextPasswordHash = existingUser.password
+
+      if (password && password.trim()) {
+
+        const currentOk =
+          current_password && bcrypt.compareSync(current_password, existingUser.password)
+
+        if (!currentOk) {
+          if (req.file) { try { fs.unlinkSync(req.file.path) } catch {} }
+          return res.status(400).json({ success: false, message: 'Password saat ini salah.' })
+        }
+
+        if (password.trim().length < 6) {
+          if (req.file) { try { fs.unlinkSync(req.file.path) } catch {} }
+          return res.status(400).json({ success: false, message: 'Password baru minimal 6 karakter.' })
+        }
+
+        nextPasswordHash = bcrypt.hashSync(password.trim(), 12)
+
+      }
+
+      let nextAvatarUrl = existingUser.avatar_url
+
+      if (req.file) {
+
+        if (existingUser.avatar_url) {
+          const oldPath = path.join(__dirname, '..', 'uploads', existingUser.avatar_url)
+          if (fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath) } catch {} }
+        }
+
+        nextAvatarUrl = `avatars/${req.file.filename}`
+
+      }
+
+      await db.prepare(`
+        UPDATE users
+        SET username=$1, email=$2, password=$3, avatar_url=$4
+        WHERE id=$5
+      `).run(nextUsername, nextEmail, nextPasswordHash, nextAvatarUrl, id)
+
+      return res.json({
+        success: true,
+        message: 'Profil berhasil diperbarui.',
+        user: {
+          id, username: nextUsername, email: nextEmail,
+          role: existingUser.role, avatar_url: nextAvatarUrl,
+        },
+      })
+
+    } catch (error) {
+
+      console.error('UPDATE OWN PROFILE ERROR:', error)
+      if (req.file) { try { fs.unlinkSync(req.file.path) } catch {} }
+      return res.status(500).json({ success: false, message: 'Gagal memperbarui profil.' })
+
+    }
+
+  }
+)
 
 // =====================================================
 // SEMUA ROUTE DI SINI WAJIB ADMIN

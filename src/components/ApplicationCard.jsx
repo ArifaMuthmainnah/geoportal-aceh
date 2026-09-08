@@ -1,5 +1,9 @@
 import { Link } from 'react-router'
-import { stripHtml } from '../utils/datasetUtils'
+import {
+  mapCategory,
+  getResourceTypeLabel,
+  stripHtml,
+} from '../utils/datasetUtils'
 
 
 function GeoappCard({ application }) {
@@ -29,10 +33,22 @@ function GeoappCard({ application }) {
       ? new Date(application.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
       : '-'
 
-  const category =
-    application.resource_type === 'dashboard'
-      ? 'Dashboard'
-      : application.category?.identifier || 'Aplikasi'
+  // =====================================================
+  // #8 (Sesi 4): kategori badge SEKARANG disamakan dengan
+  // Dataset — dihitung lewat mapCategory(), bukan dihardcode
+  // jadi literal "Dashboard"/"Aplikasi" lagi. Kalau kategori
+  // yang diupload user tidak ada di daftar kategori baku,
+  // mapCategory() akan menampilkannya apa adanya (tidak
+  // dipaksa jadi "Umum").
+  // =====================================================
+
+  const category = mapCategory(application.category?.identifier)
+
+  // Jenis resource (Dashboard/Aplikasi) ditampilkan terpisah,
+  // di baris meta bawah bersama tanggal — supaya listing yang
+  // menggabungkan Dashboard & Aplikasi tetap mudah dibedakan.
+  const typeLabel =
+    getResourceTypeLabel(application.resource_type === 'application' ? 'application' : 'dashboard')
 
   // #9: selalu ke halaman detail INTERNAL kita, bukan langsung ke link luar
   const internalDetailUrl = `/aplikasi/${application.pk || application.uuid || application.id}`
@@ -88,7 +104,7 @@ function GeoappCard({ application }) {
               <span className="katalog-card-owner-name">{ownerName}</span>
             </div>
 
-            <small className="katalog-card-date">{formattedDate}</small>
+            <small className="katalog-card-date">{typeLabel} · {formattedDate}</small>
 
           </div>
 

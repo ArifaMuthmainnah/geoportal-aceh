@@ -445,12 +445,26 @@ export async function apiGetAll(
       )
 
 
+    // ---------------------------------------------------
+    // BUG FIX (#8): sebelumnya key "maps" dan "documents"
+    // tidak ada di daftar fallback ini. Endpoint /maps dan
+    // /documents dari API Geoportal Aceh lama mengembalikan
+    // list-nya di bawah field "maps" / "documents" (bukan
+    // "results"), sehingga sebelumnya `results` selalu
+    // kosong dan halaman Peta & Dokumen (yang memakai
+    // getAllMaps()/getAllDocuments() -> apiGetAll) tidak
+    // pernah menampilkan card apa pun walau API sebenarnya
+    // mengembalikan data.
+    // ---------------------------------------------------
+
     const results =
       Array.isArray(response)
         ? response
         : response?.results ||
           response?.datasets ||
           response?.geoapps ||
+          response?.maps ||
+          response?.documents ||
           response?.owners ||
           response?.users ||
           response?.data ||
@@ -702,6 +716,53 @@ export async function authPostFile(
       data?.message ||
       data?.error ||
       `Gagal mengunggah file (${response.status})`
+    )
+  }
+
+  return data
+
+}
+
+export async function authPatchFile(
+  endpoint,
+  formData
+) {
+
+  const token = getToken()
+
+  const headers = {
+    Accept: 'application/json',
+  }
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  const response =
+    await fetch(
+      buildAuthUrl(endpoint),
+      {
+        method: 'PATCH',
+        headers,
+        body: formData,
+      }
+    )
+
+  const text = await response.text()
+
+  let data = {}
+
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    data = { message: text }
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+      data?.error ||
+      `Gagal memperbarui data (${response.status})`
     )
   }
 
