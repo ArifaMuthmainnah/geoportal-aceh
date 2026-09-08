@@ -143,27 +143,9 @@ function PemberitahuanDetail() {
           </div>
         )}
 
-        <div className="informasi-detail-owner">
-          {ownerAvatar ? (
-            <img src={ownerAvatar} alt={ownerName} className="dataset-owner-logo" />
-          ) : (
-            <span className="katalog-card-owner-avatar-placeholder">👤</span>
-          )}
-          <div>
-            <strong>{ownerName}</strong>
-            <span>Diterbitkan {formatDateOnly(item.date)}</span>
-          </div>
-        </div>
-
         <article className="informasi-detail-body">
           {fullDescription || 'Belum ada isi pemberitahuan.'}
         </article>
-
-        <div className="informasi-detail-back">
-          <Link to="/informasi/pemberitahuan" className="btn btn-outline-primary">
-            ← Kembali ke daftar Pemberitahuan
-          </Link>
-        </div>
 
       </section>
 

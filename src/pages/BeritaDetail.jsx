@@ -142,27 +142,9 @@ function BeritaDetail() {
           </div>
         )}
 
-        <div className="informasi-detail-owner">
-          {ownerAvatar ? (
-            <img src={ownerAvatar} alt={ownerName} className="dataset-owner-logo" />
-          ) : (
-            <span className="katalog-card-owner-avatar-placeholder">👤</span>
-          )}
-          <div>
-            <strong>{ownerName}</strong>
-            <span>Diterbitkan {formatDateOnly(item.date)}</span>
-          </div>
-        </div>
-
         <article className="informasi-detail-body">
           {fullDescription || 'Belum ada isi berita.'}
         </article>
-
-        <div className="informasi-detail-back">
-          <Link to="/informasi/berita" className="btn btn-outline-primary">
-            ← Kembali ke daftar Berita
-          </Link>
-        </div>
 
       </section>
 

@@ -5992,8 +5992,8 @@ main {
 ========================================= */
 
 .dataset-detail-header {
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #083b73 0%, #0b5cab 55%, #1677c8 100%);
+  border-bottom: none;
   padding: 42px 0 48px;
 }
 
@@ -12665,10 +12665,12 @@ main {
 }
 
 .dataset-owner-logo {
-  width: 26px;
-  height: 26px;
+  width: 26px !important;
+  height: 26px !important;
+  max-width: 26px !important;
+  max-height: 26px !important;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid #e2e8f0;
   background: #ffffff;
   flex-shrink: 0;
@@ -12794,11 +12796,6 @@ main {
    HALAMAN DETAIL (Peta, Dokumen, Dataset) —
    disamakan dengan halaman detail Dashboard/Aplikasi
 ----------------------------------------- */
-
-.dataset-detail-header {
-  background: linear-gradient(135deg, #083b73 0%, #0b5cab 55%, #1677c8 100%) !important;
-  border-bottom: none !important;
-}
 
 .dataset-detail-header .dataset-breadcrumb a {
   color: rgba(255, 255, 255, 0.8) !important;
@@ -13956,11 +13953,6 @@ main {
   width: 100%;
   height: 100%;
   z-index: 0;
-  pointer-events: none;
-}
-
-.webgis-preview-map .leaflet-control-container {
-  display: none;
 }
 
 .katalog-card:hover,
@@ -14207,3 +14199,17 @@ main {
   }
 
 }
+
+.dataset-detail-header .dataset-breadcrumb a { color: rgba(255, 255, 255, 0.8) !important; }
+.dataset-detail-header .dataset-breadcrumb a:hover { color: #ffffff !important; }
+.dataset-detail-header .dataset-breadcrumb span { color: rgba(255, 255, 255, 0.55) !important; }
+.dataset-detail-header .dataset-resource-type { color: rgba(255, 255, 255, 0.8) !important; }
+.dataset-detail-header .dataset-type-icon { color: #ffffff !important; }
+.dataset-detail-header .dataset-from { color: rgba(255, 255, 255, 0.55) !important; }
+.dataset-detail-header .dataset-owner-link { color: #ffffff !important; }
+.dataset-detail-header h1 { color: #ffffff !important; }
+.dataset-detail-header .dataset-header-category span {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+.dataset-header-description { color: rgba(255, 255, 255, 0.86) !important; }
