@@ -10117,6 +10117,40 @@ main {
   margin-top: 50px;
 }
 
+.village-map-popup {
+  min-width: 180px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.village-popup-type {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.village-popup-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.village-popup-code {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-bottom: 5px;
+  border-radius: 10px;
+  background: #eef0ff;
+  font-size: 11px;
+}
+
+.village-popup-coordinate {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #555;
+}
+
 /* 
 ===========================
    SIDEBAR & SEARCH PANEL
@@ -10232,6 +10266,30 @@ main {
   color: #aaa;
   font-size: 11px;
   line-height: 1.4;
+}
+
+.search-status,
+.search-no-result,
+.search-error {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.search-status {
+  color: #b7b7b7;
+}
+
+.search-no-result {
+  color: #b7b7b7;
+}
+
+.search-error {
+  color: #ff6b6b;
+}
+
+.btn-search-icon:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Custom scrollbar */
