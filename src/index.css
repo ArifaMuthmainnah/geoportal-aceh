@@ -1393,8 +1393,6 @@ main {
   box-shadow:
     0 8px 20px
       rgba(8, 59, 115, 0.25);
-
-  pointer-events: none;
 }
 
 .map-label {
@@ -1415,8 +1413,6 @@ main {
   font-size: 0.75rem;
 
   font-weight: 700;
-
-  pointer-events: none;
 }
 
 
@@ -4119,8 +4115,8 @@ main {
    ========================= */
 
 .information-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e5eaf0;
+  background: linear-gradient(135deg, #083b73 0%, #0b5cab 55%, #1677c8 100%) !important;
+  border-bottom: none !important;
 }
 
 .information-header-inner {
@@ -4132,19 +4128,28 @@ main {
   margin-bottom: 10px;
 }
 
+.information-breadcrumb a {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.information-breadcrumb a:hover {
+  color: #ffffff !important;
+}
+
 .information-breadcrumb span {
   font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55) !important;
 }
 
 .information-breadcrumb .current {
-  color: #0b5cab;
+  color: #ffffff !important;
   font-weight: 600;
 }
 
 .information-header h1 {
   margin: 0 0 8px;
 
-  color: #172b3a;
+  color: #ffffff !important;
 
   font-size: clamp(2rem, 4vw, 2.8rem);
   line-height: 1.15;
@@ -4158,7 +4163,7 @@ main {
 
   margin: 0;
 
-  color: #718291;
+  color: rgba(255, 255, 255, 0.86) !important;
 
   font-size: 0.92rem;
   line-height: 1.7;
@@ -6929,35 +6934,6 @@ main {
   justify-content: space-between;
 }
 
-
-/* =====================================================
-   SESI 13: TOMBOL "LOGIN" DI POJOK KANAN ATAS TOPBAR
-===================================================== */
-
-.navbar-login-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  color: #ffffff !important;
-
-  font-weight: 600;
-  text-decoration: none;
-
-  transition: opacity 0.2s ease;
-}
-
-.navbar-login-button:hover,
-.navbar-login-button:focus,
-.navbar-login-button:active,
-.navbar-login-button.active {
-  color: #ffffff !important;
-  opacity: 0.85;
-}
-
-.navbar-login-icon {
-  color: #ffffff;
-}
 
 /* =====================================================
    LOGIN
@@ -13937,17 +13913,11 @@ main {
 
   z-index: 0;
 
-  pointer-events: auto;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .webgis-preview-map .leaflet-control-container {
-  display: block;
-}
-
-.webgis-preview-map .leaflet-top.leaflet-left {
-  top: 12px;
-  left: 12px;
+  display: none;
 }
 
 
