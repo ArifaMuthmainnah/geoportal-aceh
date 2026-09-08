@@ -64,6 +64,14 @@ function Footer() {
               WebGIS
             </a>
 
+            <a href="/peta">
+              Peta
+            </a>
+
+            <a href="/dokumen">
+              Dokumen
+            </a>
+
             <a href="/aplikasi">
               Aplikasi
             </a>
@@ -83,12 +91,16 @@ function Footer() {
               JIGN
             </a>
 
-            <a href="/informasi">
-              Informasi
+            <a href="/informasi/berita">
+              Berita
             </a>
 
-            <a href="/webgis">
-              Peta Interaktif
+            <a href="/informasi/agenda">
+              Agenda
+            </a>
+
+            <a href="/informasi/pemberitahuan">
+              Pemberitahuan
             </a>
 
           </div>
