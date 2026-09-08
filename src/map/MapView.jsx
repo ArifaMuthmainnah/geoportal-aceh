@@ -6,6 +6,7 @@ import {
   Popup,
   ZoomControl,
   GeoJSON,
+  Polygon,
   useMap,
 } from 'react-leaflet'
 import MapControls from './MapControls'
@@ -41,6 +42,8 @@ function MapView() {
   
   // --- 1. STATE UNTUK KOORDINAT PENCARIAN ---
   const [targetCoords, setTargetCoords] = useState(null);
+
+  const [selectedVillage, setSelectedVillage] = useState(null)
 
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState(null)
 
@@ -323,6 +326,50 @@ function MapView() {
       }
   
     }
+
+    const handleSelectVillage = async (village) => {
+      try {
+        const response = await fetch(
+          `https://wilayah.smartartstudio.my.id/api/boundaries/${village.kode}`
+        )
+    
+        if (!response.ok) {
+          throw new Error(
+            `Gagal mengambil boundary desa: ${response.status}`
+          )
+        }
+    
+        const detail = await response.json()
+    
+        if (
+          detail?.lat === undefined ||
+          detail?.lng === undefined
+        ) {
+          throw new Error(
+            'Koordinat desa tidak tersedia.'
+          )
+        }
+    
+        setSelectedVillage(detail)
+    
+        setTargetCoords([
+          Number(detail.lat),
+          Number(detail.lng),
+        ])
+    
+        setShowVillageSearch(false)
+    
+      } catch (error) {
+        console.error(
+          'Gagal mengambil lokasi desa:',
+          error
+        )
+    
+        alert(
+          'Lokasi desa gagal dimuat.'
+        )
+      }
+    }
   
   
     // --------------------------------------------------
@@ -399,6 +446,50 @@ function MapView() {
   
   }
 
+  const handleSelectVillage = async (village) => {
+    try {
+      const response = await fetch(
+        `https://wilayah.smartartstudio.my.id/api/boundaries/${village.kode}`
+      )
+  
+      if (!response.ok) {
+        throw new Error(
+          `Gagal mengambil boundary desa: ${response.status}`
+        )
+      }
+  
+      const detail = await response.json()
+  
+      if (
+        detail?.lat === undefined ||
+        detail?.lng === undefined
+      ) {
+        throw new Error(
+          'Koordinat desa tidak tersedia.'
+        )
+      }
+  
+      setSelectedVillage(detail)
+  
+      setTargetCoords([
+        Number(detail.lat),
+        Number(detail.lng),
+      ])
+  
+      setShowVillageSearch(false)
+  
+    } catch (error) {
+      console.error(
+        'Gagal mengambil lokasi desa:',
+        error
+      )
+  
+      alert(
+        'Lokasi desa gagal dimuat.'
+      )
+    }
+  }
+
   return (
     <div className="webgis-map-wrapper">
       <MapContainer center={center} zoom={8} className="map-container" zoomControl={false}>
@@ -438,6 +529,15 @@ function MapView() {
 
   ))
 }
+
+{/* POLYGON BATAS DESA HASIL PENCARIAN */}
+{selectedVillage?.path?.length > 0 && (
+  <Polygon
+    positions={selectedVillage.path[0]}
+    weight={3}
+    fillOpacity={0.2}
+  />
+)}
         
         {/* Koordinat Live */}
         <MouseCoordinate />
@@ -462,15 +562,53 @@ function MapView() {
           />
 
           {/* Panel Bawah: Pencarian Lokasi (Jarak diatur via CSS gap: 20px) */}
-          <SearchPanel onSelectLocation={(coords) => setTargetCoords(coords)} />
+          <SearchPanel
+  onSelectLocation={(coords) => {
+    setSelectedVillage(null)
+    setTargetCoords(coords)
+  }}
+/>
         </div>
 
         {/* Marker untuk lokasi yang dicari */}
-        {targetCoords && (
-          <Marker position={targetCoords}>
-            <Popup>Lokasi ditemukan!</Popup>
-          </Marker>
-        )}
+        {targetCoords && !selectedVillage && (
+  <Marker position={targetCoords}>
+    <Popup>Lokasi ditemukan!</Popup>
+  </Marker>
+)}
+
+{selectedVillage && (
+  <Marker
+    position={[
+      Number(selectedVillage.lat),
+      Number(selectedVillage.lng),
+    ]}
+  >
+    <Popup>
+      <div className="village-map-popup">
+
+        <div className="village-popup-type">
+          DESA/KELURAHAN
+        </div>
+
+        <div className="village-popup-name">
+          {selectedVillage.nama}
+        </div>
+
+        <div className="village-popup-code">
+          Kode: {selectedVillage.kode}
+        </div>
+
+        <div className="village-popup-coordinate">
+          📍 Lat: {Number(selectedVillage.lat).toFixed(5)},
+          {' '}
+          Lng: {Number(selectedVillage.lng).toFixed(5)}
+        </div>
+
+      </div>
+    </Popup>
+  </Marker>
+)}
 
 {selectedFeatureInfo?.coordinates && (
 
@@ -558,7 +696,12 @@ function MapView() {
 
        {/* MODAL BASIS DESA */}
        {showVillageSearch && (
-        <VillageSearchModal onClose={() => setShowVillageSearch(false)} />
+       <VillageSearchModal
+       onClose={() =>
+         setShowVillageSearch(false)
+       }
+       onSelectVillage={handleSelectVillage}
+     />
       )}
     </div>
   )
