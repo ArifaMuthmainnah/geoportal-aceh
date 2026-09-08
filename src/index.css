@@ -1393,6 +1393,8 @@ main {
   box-shadow:
     0 8px 20px
       rgba(8, 59, 115, 0.25);
+
+  pointer-events: none;
 }
 
 .map-label {
@@ -1413,6 +1415,8 @@ main {
   font-size: 0.75rem;
 
   font-weight: 700;
+
+  pointer-events: none;
 }
 
 
@@ -6925,6 +6929,35 @@ main {
   justify-content: space-between;
 }
 
+
+/* =====================================================
+   SESI 13: TOMBOL "LOGIN" DI POJOK KANAN ATAS TOPBAR
+===================================================== */
+
+.navbar-login-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  color: #ffffff !important;
+
+  font-weight: 600;
+  text-decoration: none;
+
+  transition: opacity 0.2s ease;
+}
+
+.navbar-login-button:hover,
+.navbar-login-button:focus,
+.navbar-login-button:active,
+.navbar-login-button.active {
+  color: #ffffff !important;
+  opacity: 0.85;
+}
+
+.navbar-login-icon {
+  color: #ffffff;
+}
 
 /* =====================================================
    LOGIN
@@ -13904,11 +13937,17 @@ main {
 
   z-index: 0;
 
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .webgis-preview-map .leaflet-control-container {
-  display: none;
+  display: block;
+}
+
+.webgis-preview-map .leaflet-top.leaflet-left {
+  top: 12px;
+  left: 12px;
 }
 
 

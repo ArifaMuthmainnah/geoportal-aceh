@@ -53,6 +53,7 @@ import {
 import {
   MapContainer,
   TileLayer,
+  useMapEvents,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -61,6 +62,37 @@ import ApplicationCard from '../components/ApplicationCard'
 import AnimatedCounter from '../components/AnimatedCounter'
 import HomeMapsSection from '../components/HomeMapsSection'
 import HomeDocumentsSection from '../components/HomeDocumentsSection'
+
+// =====================================================
+// SESI 13: PETA PREVIEW "JELAJAHI ACEH" -> GOOGLE MAPS
+// =====================================================
+// Koordinat & zoom disamakan dengan MapContainer di bawah
+// supaya lokasi yang dibuka di Google Maps konsisten
+// dengan preview yang ditampilkan.
+
+const ACEH_MAP_CENTER = [4.65, 96.7]
+const ACEH_MAP_ZOOM = 7
+
+const ACEH_GOOGLE_MAPS_URL =
+  `https://www.google.com/maps/@${ACEH_MAP_CENTER[0]},${ACEH_MAP_CENTER[1]},${ACEH_MAP_ZOOM}z`
+
+function WebgisPreviewClickHandler() {
+
+  // Menangkap klik (bukan drag/geser) pada peta preview,
+  // lalu membuka Google Maps di tab baru.
+  useMapEvents({
+    click() {
+      window.open(
+        ACEH_GOOGLE_MAPS_URL,
+        '_blank',
+        'noopener,noreferrer'
+      )
+    },
+  })
+
+  return null
+
+}
 
 function Home() {
 
@@ -151,7 +183,7 @@ function Home() {
       let oldDatasetList = []
       let ownDatasetList = []
 
-      let oldDatasetTotal = 0
+            let oldDatasetTotal = 0
 
       try {
 
@@ -223,7 +255,7 @@ function Home() {
       // ===============================================
       // MAPS (API LAMA) + PETA UPLOAD SENDIRI (#1)
       // ===============================================
-
+      
       let ownMapTotal = 0
       try {
         ownMapTotal =
@@ -262,9 +294,12 @@ function Home() {
 
 
       // ===============================================
-      // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
+      // DOCUMENTS (API LAMA)
       // ===============================================
 
+            // ===============================================
+      // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
+      // ===============================================
       let ownDocumentTotal = 0
       try {
         ownDocumentTotal =
@@ -322,7 +357,7 @@ function Home() {
 
       }
 
-      try {
+            try {
 
         const oldGeoappTotal =
           await getGeoappTotalCount()
@@ -987,22 +1022,25 @@ function Home() {
             <div className="webgis-preview">
 
               <MapContainer
-                center={[4.65, 96.7]}
-                zoom={7}
+                center={ACEH_MAP_CENTER}
+                zoom={ACEH_MAP_ZOOM}
                 className="webgis-preview-map"
-                zoomControl={false}
+                zoomControl={true}
                 attributionControl={false}
-                dragging={false}
-                scrollWheelZoom={false}
+                dragging={true}
+                scrollWheelZoom={true}
                 doubleClickZoom={false}
-                touchZoom={false}
+                touchZoom={true}
                 boxZoom={false}
                 keyboard={false}
               >
 
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  url="https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}"
+                  subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
                 />
+
+                <WebgisPreviewClickHandler />
 
               </MapContainer>
 
@@ -1013,7 +1051,7 @@ function Home() {
 
 
               <div className="map-label">
-                Peta Interaktif Aceh
+                Peta Interaktif Aceh (Klik untuk buka Google Maps)
               </div>
 
             </div>
@@ -1022,7 +1060,7 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
 
 
       {/* =================================================
@@ -1208,7 +1246,7 @@ function Home() {
 
         </div>
 
-      </section>
+            </section>
 
 
       {/* =================================================
