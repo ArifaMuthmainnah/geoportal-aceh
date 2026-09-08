@@ -20,6 +20,7 @@ import {
   getDatasetDetail,
   getDatasetFeatures,
 } from '../api/datasetApi'
+import FeatureInfoPanel from './FeatureInfoPanel'
 
 
 // --- KOMPONEN PEMBANTU UNTUK FLY TO (Pindah Lokasi Peta) ---
@@ -40,6 +41,8 @@ function MapView() {
   
   // --- 1. STATE UNTUK KOORDINAT PENCARIAN ---
   const [targetCoords, setTargetCoords] = useState(null);
+
+  const [selectedFeatureInfo, setSelectedFeatureInfo] = useState(null)
 
   // --- 2. STATE UNTUK LAYER YANG AKTIF ---
   const [layers, setLayers] =
@@ -66,9 +69,27 @@ function MapView() {
 
   // --- 5. FUNGSI LOGIC ---
   const toggleLayer = (id) => {
-    setLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l))
-  }
 
+    setLayers(prev =>
+      prev.map(layer =>
+        layer.id === id
+          ? {
+              ...layer,
+              visible: !layer.visible
+            }
+          : layer
+      )
+    )
+  
+    if (
+      selectedFeatureInfo?.layerId === id
+    ) {
+  
+      setSelectedFeatureInfo(null)
+  
+    }
+  
+  }
   const handleAddLayer =
   async (newDataset) => {
 
@@ -165,6 +186,12 @@ function MapView() {
         
           geojson,
         
+          // Template atribut dari Geoportal Aceh
+          featureInfoTemplate:
+            detail?.featureinfo_custom_template ||
+            newDataset?.featureinfo_custom_template ||
+            null,
+        
         }
 
       setLayers(
@@ -191,10 +218,185 @@ function MapView() {
 
   }
 
+  const handleAddFileLayer = (
+    fileLayer
+  ) => {
+  
+    if (!fileLayer?.geojson) {
+  
+      alert(
+        'Data file tidak tersedia.'
+      )
+  
+      return
+    }
+  
+  
+    setLayers(previous => [
+  
+      ...previous,
+  
+      fileLayer
+  
+    ])
+  
+  
+    setShowAddModal(false)
+  
+  }
+
   const handleRemoveLayers = (idsToRemove) => {
-    if (idsToRemove.length === 0) return;
-    setLayers(prev => prev.filter(l => !idsToRemove.includes(l.id)));
-    setShowRemoveModal(false);
+
+    if (idsToRemove.length === 0) return
+  
+    setLayers(
+      prev =>
+        prev.filter(
+          l => !idsToRemove.includes(l.id)
+        )
+    )
+  
+    if (
+      selectedFeatureInfo &&
+      idsToRemove.includes(
+        selectedFeatureInfo.layerId
+      )
+    ) {
+  
+      setSelectedFeatureInfo(null)
+  
+    }
+  
+    setShowRemoveModal(false)
+  
+  }
+
+  const getFeatureAttributes = (
+    properties = {},
+    featureInfoTemplate = null
+  ) => {
+  
+    if (!properties) return []
+  
+    // --------------------------------------------------
+    // 1. COBA BACA FIELD DARI TEMPLATE RESMI GEONODE
+    // --------------------------------------------------
+  
+    if (featureInfoTemplate) {
+  
+      const regex =
+        /properties\[['"](.+?)['"]\]/g
+  
+      const fields = []
+  
+      let match
+  
+      while (
+        (match = regex.exec(featureInfoTemplate)) !== null
+      ) {
+  
+        const fieldName = match[1]
+  
+        if (!fields.includes(fieldName)) {
+          fields.push(fieldName)
+        }
+  
+      }
+  
+      if (fields.length > 0) {
+  
+        return fields.map((field) => ({
+  
+          key: field,
+  
+          label: field,
+  
+          value:
+            properties[field] !== null &&
+            properties[field] !== undefined &&
+            properties[field] !== ''
+              ? String(properties[field])
+              : '-',
+  
+        }))
+  
+      }
+  
+    }
+  
+  
+    // --------------------------------------------------
+    // 2. FALLBACK:
+    // Kalau dataset tidak mempunyai feature-info template,
+    // tampilkan seluruh properties GeoJSON
+    // --------------------------------------------------
+  
+    return Object.entries(properties)
+  
+      .filter(([key]) => {
+  
+        // Field teknis boleh kita sembunyikan
+        const hiddenFields = [
+          'id',
+          'fid',
+          'the_geom',
+          'geom',
+          'geometry',
+        ]
+  
+        return !hiddenFields.includes(
+          key.toLowerCase()
+        )
+  
+      })
+  
+      .map(([key, value]) => ({
+  
+        key,
+  
+        label: key,
+  
+        value:
+          value !== null &&
+          value !== undefined &&
+          value !== ''
+            ? String(value)
+            : '-',
+  
+      }))
+  
+  }
+
+  const handleFeatureClick = (
+    feature,
+    event,
+    layer
+  ) => {
+  
+    const properties =
+      feature?.properties || {}
+  
+    const attributes =
+      getFeatureAttributes(
+        properties,
+        layer.featureInfoTemplate
+      )
+  
+    setSelectedFeatureInfo({
+  
+      layerId: layer.id,
+  
+      layerName: layer.name,
+  
+      coordinates: {
+        lat: event.latlng.lat,
+        lng: event.latlng.lng,
+      },
+  
+      attributes,
+  
+    })
+  
   }
 
   return (
@@ -209,16 +411,33 @@ function MapView() {
       layer.visible &&
       layer.geojson
   )
-  .map(
-    (layer) => (
+  .map((layer) => (
 
-      <GeoJSON
-        key={layer.id}
-        data={layer.geojson}
-      />
+    <GeoJSON
+      key={layer.id}
+      data={layer.geojson}
 
-    )
-  )}
+      onEachFeature={(feature, leafletLayer) => {
+
+        leafletLayer.on({
+
+          click: (event) => {
+
+            handleFeatureClick(
+              feature,
+              event,
+              layer
+            )
+
+          }
+
+        })
+
+      }}
+    />
+
+  ))
+}
         
         {/* Koordinat Live */}
         <MouseCoordinate />
@@ -253,8 +472,34 @@ function MapView() {
           </Marker>
         )}
 
+{selectedFeatureInfo?.coordinates && (
+
+<Marker
+  position={[
+    selectedFeatureInfo.coordinates.lat,
+    selectedFeatureInfo.coordinates.lng,
+  ]}
+/>
+
+)}
+
         
       </MapContainer>
+
+      {/* PANEL INFORMASI FEATURE */}
+{selectedFeatureInfo && (
+
+<FeatureInfoPanel
+
+  info={selectedFeatureInfo}
+
+  onClose={() =>
+    setSelectedFeatureInfo(null)
+  }
+
+/>
+
+)}
 
       {/* --- SEMUA MODAL/POP-UP --- */}
 
@@ -287,11 +532,20 @@ function MapView() {
 
       {/* MODAL TAMBAH PETA */}
       {showAddModal && (
-        <AddLayerModal 
-          onClose={() => setShowAddModal(false)} 
-          onAdd={handleAddLayer} 
-        />
-      )}
+
+<AddLayerModal
+
+  onClose={() =>
+    setShowAddModal(false)
+  }
+
+  onAdd={handleAddLayer}
+
+  onAddFile={handleAddFileLayer}
+
+/>
+
+)}
 
       {/* MODAL HAPUS PETA */}
       {showRemoveModal && (

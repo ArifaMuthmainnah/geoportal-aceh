@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { getAllDatasets } from '../api/datasetApi'
+import shp from 'shpjs'
 
-function AddLayerModal({ onClose, onAdd }) {
+function AddLayerModal({
+  onClose,
+  onAdd,
+  onAddFile
+}) {
   const [activeTab, setActiveTab] = useState('DATASET') 
   const [datasets, setDatasets] = useState([])
   const [selected, setSelected] = useState(null)
@@ -16,7 +21,9 @@ function AddLayerModal({ onClose, onAdd }) {
   const [showSimpulWarning, setShowSimpulWarning] = useState(false)
 
   // --- STATE FILE ---
-  const [selectedFile, setSelectedFile] = useState(null)
+  const [selectedFiles, setSelectedFiles] = useState([])
+  const [fileError, setFileError] = useState('')
+  const [processingFile, setProcessingFile] = useState(false)
 
   // --- STATE URL (NEW - ATM KALSEL) ---
   const [urlServerCat, setUrlServerCat] = useState('')
@@ -70,8 +77,248 @@ function AddLayerModal({ onClose, onAdd }) {
   }
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0]
-    if (file) setSelectedFile(file)
+
+    const files = Array.from(
+      e.target.files || []
+    )
+  
+    setFileError('')
+  
+    if (files.length === 0) {
+      setSelectedFiles([])
+      return
+    }
+  
+    const allowedExtensions = [
+      '.shp',
+      '.shx',
+      '.dbf',
+      '.prj'
+    ]
+  
+    const invalidFiles = files.filter(
+      file =>
+        !allowedExtensions.some(
+          ext =>
+            file.name
+              .toLowerCase()
+              .endsWith(ext)
+        )
+    )
+  
+    if (invalidFiles.length > 0) {
+  
+      setFileError(
+        'File hanya boleh berupa .shp, .shx, .dbf, dan .prj.'
+      )
+  
+      setSelectedFiles([])
+  
+      return
+    }
+  
+    setSelectedFiles(files)
+  }
+
+  const validateShapefileSet = () => {
+
+    const shpFile = selectedFiles.find(
+      file =>
+        file.name
+          .toLowerCase()
+          .endsWith('.shp')
+    )
+  
+    const shxFile = selectedFiles.find(
+      file =>
+        file.name
+          .toLowerCase()
+          .endsWith('.shx')
+    )
+  
+    const dbfFile = selectedFiles.find(
+      file =>
+        file.name
+          .toLowerCase()
+          .endsWith('.dbf')
+    )
+  
+    if (
+      !shpFile ||
+      !shxFile ||
+      !dbfFile
+    ) {
+  
+      setFileError(
+        'Shapefile minimal harus terdiri dari file .shp, .shx, dan .dbf.'
+      )
+  
+      return false
+    }
+  
+  
+    // Pastikan semua file berasal
+    // dari dataset yang sama
+  
+    const getBaseName = (filename) =>
+      filename
+        .replace(/\.(shp|shx|dbf|prj)$/i, '')
+        .toLowerCase()
+  
+  
+    const baseNames = [
+      shpFile,
+      shxFile,
+      dbfFile
+    ].map(
+      file => getBaseName(file.name)
+    )
+  
+  
+    if (
+      !baseNames.every(
+        name => name === baseNames[0]
+      )
+    ) {
+  
+      setFileError(
+        'File .shp, .shx, dan .dbf harus memiliki nama dasar yang sama.'
+      )
+  
+      return false
+    }
+  
+  
+    return true
+  }
+
+  const handleAddFile = async () => {
+
+    if (!validateShapefileSet()) {
+      return
+    }
+  
+  
+    try {
+  
+      setProcessingFile(true)
+      setFileError('')
+  
+  
+      const shpFile =
+        selectedFiles.find(
+          file =>
+            file.name
+              .toLowerCase()
+              .endsWith('.shp')
+        )
+  
+  
+      const dbfFile =
+        selectedFiles.find(
+          file =>
+            file.name
+              .toLowerCase()
+              .endsWith('.dbf')
+        )
+  
+  
+      const prjFile =
+        selectedFiles.find(
+          file =>
+            file.name
+              .toLowerCase()
+              .endsWith('.prj')
+        )
+  
+  
+      // Baca file SHP dan DBF
+      const shpBuffer =
+        await shpFile.arrayBuffer()
+  
+      const dbfBuffer =
+        await dbfFile.arrayBuffer()
+  
+  
+      // PRJ berupa teks
+      let prjText = null
+  
+      if (prjFile) {
+        prjText =
+          await prjFile.text()
+      }
+  
+  
+      // Konversi Shapefile menjadi GeoJSON
+      const geojson =
+        await shp({
+          shp: shpBuffer,
+          dbf: dbfBuffer,
+          prj: prjText || undefined
+        })
+  
+  
+      if (!geojson) {
+  
+        throw new Error(
+          'GeoJSON tidak berhasil dibuat.'
+        )
+  
+      }
+  
+  
+      // Nama layer diambil dari nama .shp
+      const layerName =
+        shpFile.name.replace(
+          /\.shp$/i,
+          ''
+        )
+  
+  
+      const fileLayer = {
+  
+        id:
+          `file-${Date.now()}`,
+  
+        name:
+          layerName,
+  
+        source:
+          'file',
+  
+        visible:
+          true,
+  
+        geojson,
+  
+        featureInfoTemplate:
+          null,
+  
+      }
+  
+  
+      onAddFile(fileLayer)
+  
+      onClose()
+  
+  
+    } catch (error) {
+  
+      console.error(
+        'Gagal membaca Shapefile:',
+        error
+      )
+  
+      setFileError(
+        'Shapefile gagal dibaca. Pastikan file .shp, .shx, .dbf dan proyeksinya benar.'
+      )
+  
+    } finally {
+  
+      setProcessingFile(false)
+  
+    }
+  
   }
 
   // HANDLER URL (GET DATA SIMULATION)
@@ -188,26 +435,107 @@ function AddLayerModal({ onClose, onAdd }) {
           )}
 
           {/* TAB FILE */}
-          {activeTab === 'FILE' && (
-            <div className="file-upload-container">
-              <div className="notice-box-file">
-                <strong>Perhatikan.</strong>
-                <p>Shapefile, minimal terdiri dari set (.shp .shx .dbf); tidak memiliki dimensi Z; proyeksi EPSG:4326</p>
-              </div>
-              <div className="file-input-wrapper">
-                <input type="text" className="file-path-display" placeholder="Choose file" value={selectedFile ? selectedFile.name : ""} readOnly />
-                <label className="btn-browse">Browse
-                  <input type="file" onChange={handleFileChange} style={{ display: 'none' }} />
-                </label>
-              </div>
-              {selectedFile && (
-                <div className="file-info-selected">
-                  <span>📄 {selectedFile.name}</span>
-                  <small>{(selectedFile.size / 1024).toFixed(2)} KB</small>
-                </div>
-              )}
-            </div>
-          )}
+{activeTab === 'FILE' && (
+
+<div className="file-upload-container">
+
+  <div className="notice-box-file">
+
+    <strong>Perhatikan.</strong>
+
+    <p>
+      Shapefile minimal terdiri dari set
+      (.shp .shx .dbf);
+      file .prj disarankan;
+      tidak memiliki dimensi Z;
+      proyeksi EPSG:4326.
+    </p>
+
+  </div>
+
+
+  <div className="file-input-wrapper">
+
+    <input
+      type="text"
+      className="file-path-display"
+      placeholder="Choose shapefile..."
+      value={
+        selectedFiles.length > 0
+          ? `${selectedFiles.length} file dipilih`
+          : ''
+      }
+      readOnly
+    />
+
+
+    <label className="btn-browse">
+
+      Browse
+
+      <input
+        type="file"
+        multiple
+        accept=".shp,.shx,.dbf,.prj"
+        onChange={handleFileChange}
+        style={{
+          display: 'none'
+        }}
+      />
+
+    </label>
+
+  </div>
+
+
+  {/* DAFTAR FILE TERPILIH */}
+
+  {selectedFiles.length > 0 && (
+
+    <div className="selected-files-list">
+
+      {selectedFiles.map(
+        (file, index) => (
+
+          <div
+            className="file-info-selected"
+            key={`${file.name}-${index}`}
+          >
+
+            <span>
+              📄 {file.name}
+            </span>
+
+            <small>
+              {(file.size / 1024)
+                .toFixed(2)} KB
+            </small>
+
+          </div>
+
+        )
+      )}
+
+    </div>
+
+  )}
+
+
+  {/* ERROR */}
+
+  {fileError && (
+
+    <div className="file-error-message">
+
+      {fileError}
+
+    </div>
+
+  )}
+
+</div>
+
+)}
 
           {/* TAB URL (ATM KALSEL - Gambar 2 s/d 10) */}
           {activeTab === 'URL' && (
@@ -281,19 +609,46 @@ function AddLayerModal({ onClose, onAdd }) {
 
         <div className="modal-footer">
           <button className="btn-close-modal" onClick={onClose}>✖ Close</button>
-          <button 
-            className="btn-add-modal" 
-            disabled={activeTab === 'DATASET' ? !selected : (activeTab === 'FILE' ? !selectedFile : true)} 
-            onClick={() => {
-              if (activeTab === 'DATASET' && selected) {
-                onAdd(selected);
-              } else if (activeTab === 'FILE' && selectedFile) {
-                alert("Fungsi upload file sedang diproses...");
-              }
-            }}
-          >
-            ➕ Add
-          </button>
+          <button
+  className="btn-add-modal"
+
+  disabled={
+    activeTab === 'DATASET'
+      ? !selected
+      : activeTab === 'FILE'
+        ? selectedFiles.length === 0 ||
+          processingFile
+        : true
+  }
+
+  onClick={() => {
+
+    if (
+      activeTab === 'DATASET' &&
+      selected
+    ) {
+
+      onAdd(selected)
+
+    }
+
+    else if (
+      activeTab === 'FILE'
+    ) {
+
+      handleAddFile()
+
+    }
+
+  }}
+>
+
+  {processingFile
+    ? 'Memproses...'
+    : '➕ Add'
+  }
+
+</button>
         </div>
       </div>
     </div>
