@@ -555,24 +555,13 @@ function DatasetDetail() {
   //
   // ===================================================
 
-  const [
-    locationImageStage,
-    setLocationImageStage,
-  ] = useState('primary')
-
-
-  // ===================================================
+    // ===================================================
   // FETCH DETAIL
   // ===================================================
 
   useEffect(() => {
 
     let mounted = true
-
-    // Reset fallback gambar lokasi setiap kali pindah
-    // ke dataset lain, supaya tidak "nyangkut" di stage
-    // fallback/none milik dataset sebelumnya.
-    setLocationImageStage('primary')
 
     async function fetchDetail() {
 
@@ -1007,17 +996,6 @@ function DatasetDetail() {
     toPointWKT(center)
 
 
-  const primaryLocationImageUrl =
-    dataset.thumbnail_url ||
-    dataset.thumbnail ||
-    dataset.thumbnailUrl ||
-    null
-
-  const showPrimaryLocationImage =
-    Boolean(primaryLocationImageUrl) &&
-    locationImageStage === 'primary'
-
-
   // ===================================================
   // METADATA
   // ===================================================
@@ -1086,7 +1064,7 @@ function DatasetDetail() {
     )
 
 
-  const infoLinks =
+    const infoLinks =
     links.filter(
       (link) =>
         ![
@@ -1096,6 +1074,14 @@ function DatasetDetail() {
         ].includes(
           link?.link_type
         )
+    )
+
+
+  const hasGeoFeatures =
+    Boolean(
+      dataset._geojson &&
+      Array.isArray(dataset._geojson.features) &&
+      dataset._geojson.features.length > 0
     )
 
 
@@ -1220,7 +1206,7 @@ function DatasetDetail() {
             MAP
         ================================================= */}
 
-        {dataset.embed_url ? (
+                {dataset.embed_url ? (
 
           <div className="dataset-map-wrapper">
 
@@ -1236,17 +1222,21 @@ function DatasetDetail() {
 
           </div>
 
-        ) : (dataset._geojson || bbox) ? (
+        ) : hasGeoFeatures ? (
 
-          // SESI 7: kalau tidak ada embed_url (data upload sendiri),
-          // tapi ADA geojson (shapefile ter-parsing) ATAU minimal
-          // ADA bbox (cakupan area), tetap tampilkan peta — supaya
-          // tab peta TIDAK PERNAH kosong lagi seperti sebelumnya.
           <GeoFeatureExplorer
             geojson={dataset._geojson}
             bbox={bbox}
             title={dataset.title}
             attributes={dataset._attributes}
+          />
+
+        ) : bbox ? (
+
+          <LocationBoundsMap
+            bbox={bbox}
+            center={center}
+            height={480}
           />
 
         ) : null}
@@ -1800,27 +1790,11 @@ function DatasetDetail() {
                 tengah. thumbnail_url asli dari API tetap
                 diprioritaskan dulu kalau tersedia & berhasil. */}
 
-            {showPrimaryLocationImage ? (
-
-              <div className="dataset-location-image">
-
-                <img
-                  src={primaryLocationImageUrl}
-                  alt={
-                    `Lokasi ${dataset.title}`
-                  }
-                  loading="lazy"
-                  onError={() => setLocationImageStage('fallback')}
-                />
-
-              </div>
-
-            ) : bbox ? (
+                        {bbox ? (
 
               <LocationBoundsMap bbox={bbox} center={center} />
 
             ) : null}
-
 
             <div className="dataset-location-grid">
 

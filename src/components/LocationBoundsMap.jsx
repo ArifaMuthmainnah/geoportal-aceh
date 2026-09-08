@@ -4,20 +4,25 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 // =====================================================
-// SESI 7 — PENGGANTI GAMBAR STATIS TAB LOCATION
+// PENGGANTI GAMBAR STATIS TAB LOCATION
 // =====================================================
 // Sebelumnya tab Location memakai <img> yang diambil dari
 // "https://staticmap.openstreetmap.de/..." — domain ini
 // TIDAK BISA di-resolve (ERR_NAME_NOT_RESOLVED), makanya
 // gambar + kotak bounding box + tanda (+) di tengah selalu
-// gagal muncul di kedua halaman detail (Peta & Dataset).
+// gagal muncul.
 //
-// Komponen ini menggantinya dengan peta Leaflet sungguhan
-// (tile OpenStreetMap asli, PASTI berhasil dimuat) yang
-// digambar mati rasa/non-interaktif ringan, ditambah:
+// Komponen ini memakai peta Leaflet sungguhan (tile
+// OpenStreetMap asli, PASTI berhasil dimuat) tapi SELURUH
+// interaksinya (drag/geser, scroll zoom, tombol zoom,
+// double-click zoom, dst) DIMATIKAN TOTAL — jadi perilakunya
+// persis seperti gambar statis biasa (tidak bisa digeser/
+// diperbesar sama sekali), bukan mode peta interaktif.
+// Ditambah:
 //  - kotak Bounding Box (Rectangle biru gelap)
 //  - tanda "+" (crosshair) tepat di titik tengah
-// persis seperti tampilan di web SIG lama.
+// dengan tile bersih tanpa arsiran/hatch apa pun, dipakai
+// SAMA PERSIS untuk data upload sendiri MAUPUN data dari API.
 // =====================================================
 
 const crosshairIcon = L.divIcon({
@@ -54,7 +59,7 @@ function FitToBounds({ bounds, center }) {
 
 }
 
-function LocationBoundsMap({ bbox, center, height = 300 }) {
+function LocationBoundsMap({ bbox, center, height = 300, className = '' }) {
 
   if (!center) return null
 
@@ -70,12 +75,25 @@ function LocationBoundsMap({ bbox, center, height = 300 }) {
 
   return (
 
-    <div className="dataset-location-image location-bounds-map" style={{ height }}>
+    <div
+      className={
+        `dataset-location-image location-bounds-map location-bounds-map-static ${className}`.trim()
+      }
+      style={{ height }}
+    >
 
       <MapContainer
         center={centerPoint}
         zoom={6}
+        zoomControl={false}
+        dragging={false}
         scrollWheelZoom={false}
+        doubleClickZoom={false}
+        touchZoom={false}
+        boxZoom={false}
+        keyboard={false}
+        tap={false}
+        inertia={false}
         style={{ height: '100%', width: '100%' }}
       >
 

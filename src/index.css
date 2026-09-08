@@ -12661,6 +12661,21 @@ main {
   font-family: inherit;
 }
 
+/* Peta bounding box statis — SELURUH interaksi mouse/touch
+   dimatikan (pointer-events: none) supaya benar-benar
+   berperilaku seperti gambar biasa, bukan peta interaktif. */
+.location-bounds-map-static {
+  pointer-events: none;
+}
+
+.location-bounds-map-static .leaflet-container {
+  cursor: default !important;
+}
+
+.location-bounds-map-static .leaflet-control-zoom {
+  display: none;
+}
+
 .location-crosshair-icon span {
   position: relative;
   display: block;
@@ -13565,71 +13580,117 @@ main {
    bertipe Aplikasi. Banyak situs Aplikasi eksternal mengirim header
    X-Frame-Options/CSP yang menolak dirinya ditampilkan lewat iframe,
    sehingga browser selalu menampilkan "refused to connect" — ini tidak
-   bisa diperbaiki dengan iframe biasa. Sebagai gantinya, gambar sampul
-   (thumbnail) yang diunggah operator ditampilkan sebagai "tampilan
-   depan" statis di dalam kotak bertema sama seperti area visualisasi
-   Dashboard, lengkap dengan tombol "Buka Tampilan Penuh" yang membuka
-   link aplikasi aslinya di TAB BARU (bukan iframe). */
+   bisa diperbaiki dengan iframe biasa. Sebagai gantinya, area visualisasi
+   menampilkan SATU kotak bertema biru (sama seperti tema Dashboard)
+   berisi satu tombol besar & jelas "Buka Aplikasi" yang membuka link
+   aplikasi aslinya di TAB BARU (bukan iframe). */
 
 .application-preview-frame {
   width: 100%;
   min-height: 460px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #083b73 0%, #0b5cab 55%, #1677c8 100%);
 }
 
-.application-preview-link {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  min-height: 460px;
-  overflow: hidden;
+.application-preview-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 560px;
+  padding: 48px 32px;
+  text-align: center;
+}
+
+.application-preview-cta-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.application-preview-cta-title {
+  max-width: 480px;
+  color: #ffffff;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.application-preview-cta-text {
+  max-width: 420px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.application-preview-cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 16px 32px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0b5cab;
+  font-size: 1rem;
+  font-weight: 800;
   text-decoration: none;
-  color: inherit;
-  cursor: pointer;
+  box-shadow: 0 10px 26px rgba(8, 59, 115, 0.35);
+  transition: 0.2s ease;
 }
 
-.application-preview-image {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.35s ease;
+.application-preview-cta-button:hover {
+  background: #eef5fb;
+  color: #083b73;
+  transform: translateY(-2px);
 }
 
-.application-preview-link:hover .application-preview-image {
-  transform: scale(1.035);
+.application-preview-cta-button span {
+  font-size: 1.1rem;
 }
 
-.application-preview-placeholder {
-  position: absolute;
-  inset: 0;
+@media (max-width: 767px) {
+
+  .application-preview-frame {
+    min-height: 340px;
+  }
+
+  .application-preview-cta {
+    padding: 36px 22px;
+  }
+
+}
+
+@media (max-width: 480px) {
+
+  .application-preview-frame {
+    min-height: 280px;
+  }
+
+  .application-preview-cta-button {
+    padding: 13px 24px;
+    font-size: 0.9rem;
+  }
+
+}
+
 
 /* =========================================================
    SESI 11 — HOME, FOOTER, HERO, WEBGIS PREVIEW, CARD HOVER
-   Blok ini ditambahkan di paling akhir file. Semua style
-   lama di atas TIDAK ada yang dihapus/diubah — aturan di
-   bawah ini hanya menambah properti baru, dan untuk
-   properti yang sama (mis. background), aturan di sini
-   otomatis menang karena letaknya paling akhir (cascade).
    ========================================================= */
-
-
-/* ---------------------------------------------------------
-   1) SECTION "APLIKASI GEOSPASIAL" — warna ivory/abu muda
-   --------------------------------------------------------- */
 
 .home-applications-section {
   background: #faf8f3;
 }
-
-
-/* ---------------------------------------------------------
-   2) FOOTER — judul & deskripsi diperbesar + deskripsi
-      diposisikan ke tengah secara vertikal
-   --------------------------------------------------------- */
 
 .footer-brand h2 {
   font-size: 1.65rem;
@@ -13645,32 +13706,23 @@ main {
   line-height: 1.9;
 }
 
-
-/* HERO + STATISTIK */
 .home-hero-wrapper {
   position: relative;
   padding-bottom: 90px;
   overflow: hidden;
 }
 
-/* Background biru cuma setengah */
 .home-hero-wrapper::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 73%; /* Atur ini */
-  background: linear-gradient(
-    135deg,
-    #07386d 0%,
-    #0b5cab 55%,
-    #1677c8 100%
-  );
+  height: 73%;
+  background: linear-gradient(135deg, #07386d 0%, #0b5cab 55%, #1677c8 100%);
   z-index: 0;
 }
 
-/* Hero dan statistik di atas background */
 .home-hero,
 .home-stats {
   position: relative;
@@ -13687,36 +13739,18 @@ main {
   }
 }
 
-
-/* ---------------------------------------------------------
-   4) WEBGIS PREVIEW — peta Aceh asli (OpenStreetMap),
-      menggantikan kotak arsir lama
-   --------------------------------------------------------- */
-
 .webgis-preview-map {
   position: absolute;
   inset: 0;
-
   width: 100%;
   height: 100%;
-
   z-index: 0;
-
   pointer-events: none;
 }
 
 .webgis-preview-map .leaflet-control-container {
   display: none;
 }
-
-
-/* ---------------------------------------------------------
-   5) EFEK HOVER "BIRU PUDAR" UNTUK SEMUA CARD
-      (Katalog, Aplikasi, Instansi/JIGN, Informasi, Admin,
-      Peta, Layer, Login) — efek transform/shadow/border
-      lama TETAP jalan seperti biasa, ini hanya menambah
-      warna latar saat cursor tepat di atas card.
-   --------------------------------------------------------- */
 
 .katalog-card:hover,
 .home-application-card:hover,
@@ -13735,14 +13769,6 @@ main {
   background-color: #eaf3fb;
 }
 
-
-
-/* ---------------------------------------------------------
-   1) TOPBAR — login/user area digeser mepet ke pojok kanan
-      (tombol logout sudah dihapus dari Navbar.jsx, jadi
-      style .navbar-logout-button tidak dipakai lagi)
-   --------------------------------------------------------- */
-
 .navbar-topbar .container.navbar-topbar-inner,
 .navbar-topbar-inner {
   max-width: none;
@@ -13754,30 +13780,16 @@ main {
 }
 
 @media (max-width: 600px) {
-
   .navbar-topbar-inner {
     padding-left: 15px;
     padding-right: 15px;
   }
-
 }
-
-
-/* ---------------------------------------------------------
-   2) SECTION "APLIKASI GEOSPASIAL" — jarak warna ke tulisan
-      "LAYANAN DIGITAL" dipepetkan jadi sekitar 0.5–1cm
-   --------------------------------------------------------- */
 
 .home-applications-section {
   background: #faf8f3;
   padding-top: 30px;
 }
-
-
-/* ---------------------------------------------------------
-   3) FOOTER — judul & deskripsi diperbesar lagi + deskripsi
-      benar-benar di tengah (horizontal & vertikal)
-   --------------------------------------------------------- */
 
 .footer-brand h2 {
   font-size: 2.1rem;
@@ -13874,9 +13886,6 @@ main {
     font-size: 0.78rem;
   }
 
-}
-
-  text-align: center;
 }
 
 .footer-description p {

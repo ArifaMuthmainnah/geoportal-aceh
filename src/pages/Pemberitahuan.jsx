@@ -26,8 +26,6 @@ function Pemberitahuan() {
   const [sortOrder, setSortOrder] = useState('newest')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
 
-  const [lightboxItem, setLightboxItem] = useState(null)
-
   useEffect(() => {
 
     async function fetchData() {
@@ -63,20 +61,6 @@ function Pemberitahuan() {
     fetchData()
 
   }, [])
-
-  // Tutup lightbox dengan tombol Escape
-  useEffect(() => {
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') setLightboxItem(null)
-    }
-
-    if (lightboxItem) {
-      window.addEventListener('keydown', handleKeyDown)
-      return () => window.removeEventListener('keydown', handleKeyDown)
-    }
-
-  }, [lightboxItem])
 
   const instansiOptions = useMemo(() => {
     const names = new Set()
@@ -200,70 +184,69 @@ function Pemberitahuan() {
               const description = stripHtml(item.abstract || '')
 
               return (
-                <div className="col-md-6" key={item.id}>
+                <div className="col-md-6 col-lg-4" key={item.id}>
 
-                  {/* Kartu pemberitahuan besar, flyer diklik -> fullscreen */}
-                  <article className="card katalog-card h-100">
+                  <Link
+                    to={`/informasi/pemberitahuan/${item.id}`}
+                    className="text-decoration-none text-reset dataset-card-link"
+                  >
+                    <article className="card katalog-card h-100">
 
-                    <div
-                      className="katalog-card-image katalog-card-flyer-image"
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => item.thumbnail_url && setLightboxItem(item)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && item.thumbnail_url) setLightboxItem(item)
-                      }}
-                    >
-                      {item.thumbnail_url ? (
-                        <img
-                          src={item.thumbnail_url}
-                          alt={item.title || 'Pemberitahuan'}
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="katalog-card-image-placeholder">
+                      <div className="katalog-card-image">
+                        {item.thumbnail_url ? (
+                          <img
+                            src={item.thumbnail_url}
+                            alt={item.title || 'Pemberitahuan'}
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                              e.currentTarget.parentElement.classList.add('has-image-error')
+                            }}
+                          />
+                        ) : (
+                          <div className="katalog-card-image-placeholder">
+                            <span>INFO</span>
+                          </div>
+                        )}
+                        <div className="katalog-card-image-fallback">
                           <span>INFO</span>
                         </div>
-                      )}
+                      </div>
 
-                      {item.thumbnail_url && (
-                        <span className="katalog-card-flyer-hint">🔍 Klik untuk memperbesar</span>
-                      )}
-                    </div>
+                      <div className="card-body katalog-card-body">
 
-                    <div className="card-body katalog-card-body">
+                        <span className="katalog-card-category">PEMBERITAHUAN</span>
 
-                      <span className="katalog-card-category">PEMBERITAHUAN</span>
+                        <h5 className="katalog-card-title" title={item.title || 'Tanpa judul'}>
+                          {item.title || 'Tanpa judul'}
+                        </h5>
 
-                      <h5 className="katalog-card-title" title={item.title || 'Tanpa judul'}>
-                        {item.title || 'Tanpa judul'}
-                      </h5>
+                        {description && (
+                          <p className="katalog-card-description">
+                            {description.slice(0, 150)}
+                            {description.length > 150 ? '...' : ''}
+                          </p>
+                        )}
 
-                      {description && (
-                        <p className="katalog-card-description">
-                          {description.slice(0, 180)}
-                          {description.length > 180 ? '...' : ''}
-                        </p>
-                      )}
+                        <div className="katalog-card-meta">
 
-                      <div className="katalog-card-meta">
+                          <div className="katalog-card-owner" title={ownerName}>
+                            {ownerAvatar ? (
+                              <img src={ownerAvatar} alt={ownerName} className="katalog-card-owner-avatar" />
+                            ) : (
+                              <div className="katalog-card-owner-avatar-placeholder">👤</div>
+                            )}
+                            <span className="katalog-card-owner-name">{ownerName}</span>
+                          </div>
 
-                        <div className="katalog-card-owner" title={ownerName}>
-                          {ownerAvatar ? (
-                            <img src={ownerAvatar} alt={ownerName} className="katalog-card-owner-avatar" />
-                          ) : (
-                            <div className="katalog-card-owner-avatar-placeholder">👤</div>
-                          )}
-                          <span className="katalog-card-owner-name">{ownerName}</span>
+                          <small className="katalog-card-date">{formatDate(item.date)}</small>
+
                         </div>
-
-                        <small className="katalog-card-date">{formatDate(item.date)}</small>
 
                       </div>
 
-                    </div>
-
-                  </article>
+                    </article>
+                  </Link>
 
                 </div>
               )
@@ -273,34 +256,6 @@ function Pemberitahuan() {
         )}
 
       </section>
-
-      {lightboxItem && (
-        <div
-          className="pemberitahuan-lightbox-overlay"
-          onClick={() => setLightboxItem(null)}
-        >
-          <div
-            className="pemberitahuan-lightbox-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="pemberitahuan-lightbox-close"
-              onClick={() => setLightboxItem(null)}
-              aria-label="Tutup"
-            >
-              ✕
-            </button>
-
-            <img src={lightboxItem.thumbnail_url} alt={lightboxItem.title || 'Pemberitahuan'} />
-
-            <div className="pemberitahuan-lightbox-caption">
-              <h5>{lightboxItem.title}</h5>
-              <span>{getOwnerName(lightboxItem.owner)} · {formatDate(lightboxItem.date)}</span>
-            </div>
-          </div>
-        </div>
-      )}
 
     </main>
   )
