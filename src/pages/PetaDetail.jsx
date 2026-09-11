@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-
 import { getMapDetail } from '../api/mapApi'
 import { getPublishedDetail, getDatasetViewDetail } from '../api/myDatasetApi'
+import { getDatasetDetail, getDatasetFeatures } from '../api/datasetApi'
+import { getMapLayersOverride, saveMapLayers, saveMapLayersOverride } from '../api/mapLayerApi'
 import { adaptOwnResource } from '../utils/ownDataAdapter'
 import { getOwnerName, getOwnerAvatar, stripHtml } from '../utils/datasetUtils'
 import { useAuth } from '../context/AuthContext'
-
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 import OwnerBadge from '../components/OwnerBadge'
 import GeoFeatureExplorer from '../components/GeoFeatureExplorer'
+import AddDatasetLayerModal from '../components/AddDatasetLayerModal'
 
 function formatDate(date) {
   if (!date) return '-'
@@ -30,12 +31,6 @@ function getCenter(bbox) {
   return { lat: (bbox.minLat + bbox.maxLat) / 2, lon: (bbox.minLon + bbox.maxLon) / 2 }
 }
 
-// =========================================
-// WKT (Well Known Text) — dipakai untuk tombol
-// copy di Bounding Box & Center, mengikuti format
-// yang sama dengan web SIG lama.
-// =========================================
-
 function toBboxWKT(bbox) {
   if (!bbox) return ''
   const { minLon, minLat, maxLon, maxLat } = bbox
@@ -47,15 +42,6 @@ function toPointWKT(center) {
   return `POINT (${center.lon} ${center.lat})`
 }
 
-// =========================================
-// Gambar lokasi (mirip preview lokasi di web SIG
-// lama), dirender dari static map OpenStreetMap
-// berdasarkan titik tengah & bounding box. Dipakai
-// TETAP di tab Location — statis, tidak berubah
-// walau ada GeoJSON (peta interaktif ada di ATAS
-// tab, bukan di sini).
-// =========================================
-
 function buildLocationImageUrl(bbox, center) {
   if (!center) return null
 
@@ -63,7 +49,6 @@ function buildLocationImageUrl(bbox, center) {
   const width = 640
   const height = 320
   const color = '3a6ea5'
-
   const bboxPath = bbox
     ? `&path=color:0x${color}ff|weight:3|${bbox.minLat},${bbox.minLon}|${bbox.minLat},${bbox.maxLon}|${bbox.maxLat},${bbox.maxLon}|${bbox.maxLat},${bbox.minLon}|${bbox.minLat},${bbox.minLon}`
     : ''
@@ -73,7 +58,6 @@ function buildLocationImageUrl(bbox, center) {
   const armMeters = 9 * metersPerPixel
   const armLatDeg = armMeters / 111320
   const armLonDeg = armMeters / (111320 * Math.max(Math.cos(latRad), 0.1))
-
   const crosshairPath =
     `&path=color:0x${color}ff|weight:3` +
     `|${center.lat},${center.lon - armLonDeg}` +
@@ -87,11 +71,6 @@ function buildLocationImageUrl(bbox, center) {
   return `https://staticmap.openstreetmap.de/staticmap.php?center=${center.lat},${center.lon}&zoom=${zoom}&size=${width}x${height}&maptype=mapnik${bboxPath}${crosshairPath}`
 }
 
-// =========================================
-// Deteksi apakah sebuah string linked resource
-// adalah URL, supaya tetap bisa diklik.
-// =========================================
-
 function isUrl(value) {
   if (typeof value !== 'string') return false
   return /^https?:\/\//i.test(value.trim())
@@ -101,16 +80,20 @@ function PetaDetail() {
 
   const { id } = useParams()
   const isOwnId = typeof id === 'string' && id.startsWith('own-')
-  const { isAuthenticated } = useAuth()
-
+  const { isAuthenticated, isAdmin } = useAuth()
   const [map, setMap] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('info')
+  const [apiMapLayers, setApiMapLayers] = useState([])
+  const [layerDatasets, setLayerDatasets] = useState([])
+  const [layersLoading, setLayersLoading] = useState(false)
+  const [layerSaving, setLayerSaving] = useState(false)
+  const [showAddLayerModal, setShowAddLayerModal] = useState(false)
+  const canManageLayers = isOwnId ? isAuthenticated : isAdmin
+  const layerRefs = (isOwnId ? (map?._map_layers || []) : apiMapLayers)
+    .map((ref) => ({ ...ref, source: ref.source || 'own' }))
 
-  // Fallback berlapis untuk gambar lokasi statis: 'primary' (coba
-  // thumbnail_url asli dulu) -> 'fallback' (peta statis dari
-  // bbox) -> 'none' (keduanya gagal, sembunyikan gambar).
   const [locationImageStage, setLocationImageStage] = useState('primary')
 
   useEffect(() => {
@@ -163,6 +146,176 @@ function PetaDetail() {
 
   }, [id, isOwnId, isAuthenticated])
 
+  useEffect(() => {
+
+    if (isOwnId || !map || !isAdmin) {
+      setApiMapLayers([])
+      return
+    }
+
+    let mounted = true
+
+    async function loadOverride() {
+      try {
+        const layers = await getMapLayersOverride('map', id)
+        if (mounted) setApiMapLayers(layers)
+      } catch (err) {
+        console.error('Gagal mengambil layer peta tersimpan:', err)
+      }
+    }
+
+    loadOverride()
+
+    return () => { mounted = false }
+
+  }, [map, isOwnId, isAdmin, id])
+
+  useEffect(() => {
+
+    if (layerRefs.length === 0) {
+      setLayerDatasets([])
+      return
+    }
+
+    let mounted = true
+
+    async function loadLayers() {
+
+      setLayersLoading(true)
+
+      const results = await Promise.all(
+        layerRefs.map(async (layerRef) => {
+
+          try {
+
+            if (layerRef.source === 'api') {
+
+              const detail = await getDatasetDetail(layerRef.id).catch(() => null)
+              const item = detail?.dataset || detail
+
+              if (!item) {
+                return { ...layerRef, geojson: null, missing: true }
+              }
+
+              const typeName = item.alternate || item.typename
+              const featureCollection = typeName
+                ? await getDatasetFeatures(typeName).catch(() => null)
+                : null
+
+              return {
+                ...layerRef,
+                title: item.title || layerRef.title,
+                geojson: featureCollection,
+                missing: false,
+              }
+
+            }
+
+            let rawData = null
+            try { rawData = await getPublishedDetail(layerRef.id) } catch { rawData = null }
+
+            if (!rawData && isAuthenticated) {
+              try { rawData = await getDatasetViewDetail(layerRef.id) } catch { rawData = null }
+            }
+
+            if (!rawData) {
+              return { ...layerRef, geojson: null, missing: true }
+            }
+
+            const adapted = adaptOwnResource(rawData)
+
+            return {
+              ...layerRef,
+              title: adapted?.title || layerRef.title,
+              geojson: adapted?._geojson || null,
+              missing: false,
+            }
+
+          } catch (err) {
+            console.error('Gagal mengambil detail layer dataset:', err)
+            return { ...layerRef, geojson: null, missing: true }
+          }
+
+        })
+      )
+
+      if (mounted) setLayerDatasets(results)
+      setLayersLoading(false)
+
+    }
+
+    loadLayers()
+
+    return () => { mounted = false }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(layerRefs), isAuthenticated])
+
+  async function persistLayers(nextLayers) {
+    if (isOwnId) {
+      await saveMapLayers(map._rawId, nextLayers)
+      setMap((current) => (current ? { ...current, _map_layers: nextLayers } : current))
+    } else {
+      await saveMapLayersOverride('map', id, nextLayers)
+      setApiMapLayers(nextLayers)
+    }
+  }
+
+  async function handleAddLayer(dataset) {
+
+    const nextLayers = [
+      ...layerRefs,
+      { id: dataset.id, source: dataset.source, title: dataset.title, category: dataset.category },
+    ]
+
+    setLayerSaving(true)
+
+    try {
+
+      await persistLayers(nextLayers)
+      setShowAddLayerModal(false)
+
+    } catch (err) {
+
+      console.error('Gagal menambah layer:', err)
+      alert('Gagal menambah dataset sebagai layer.')
+
+    } finally {
+
+      setLayerSaving(false)
+
+    }
+
+  }
+
+  async function handleRemoveLayer(layerRef) {
+
+    const confirmed = window.confirm('Hapus dataset ini dari peta?')
+    if (!confirmed) return
+
+    const nextLayers = layerRefs.filter(
+      (item) => !(item.id === layerRef.id && item.source === layerRef.source)
+    )
+
+    setLayerSaving(true)
+
+    try {
+
+      await persistLayers(nextLayers)
+
+    } catch (err) {
+
+      console.error('Gagal menghapus layer:', err)
+      alert('Gagal menghapus layer.')
+
+    } finally {
+
+      setLayerSaving(false)
+
+    }
+
+  }
+
   if (loading) {
     return (
       <main className="dataset-detail-page">
@@ -189,9 +342,21 @@ function PetaDetail() {
   const center = getCenter(bbox)
   const linkedResources = isOwnId ? (map._linked_resources || []) : []
   const regions = Array.isArray(map.regions) ? map.regions : []
-
   const bboxWKT = toBboxWKT(bbox)
   const pointWKT = toPointWKT(center)
+  const combinedFeatures = [
+    ...(map._geojson?.features || []),
+    ...layerDatasets.flatMap((layer) =>
+      (layer.geojson?.features || []).map((feature) => ({
+        ...feature,
+        properties: { ...(feature.properties || {}), _layerTitle: layer.title },
+      }))
+    ),
+  ]
+
+  const combinedGeojson = combinedFeatures.length > 0
+    ? { type: 'FeatureCollection', features: combinedFeatures }
+    : null
 
   const primaryLocationImageUrl = map.thumbnail_url || map.thumbnail || map.thumbnailUrl || null
   const fallbackLocationImageUrl = buildLocationImageUrl(bbox, center)
@@ -220,6 +385,15 @@ function PetaDetail() {
             <Link to="/peta">Peta</Link><span> / </span><span>Detail</span>
           </div>
 
+          <div className="dataset-resource-type">
+            <span className="dataset-type-icon">◫</span>
+            <span>Peta</span>
+            <span className="dataset-from">dari</span>
+            <span className="dataset-owner-link">{ownerName}</span>
+            <span className="dataset-from">/</span>
+            <span>{formatDate(map.date)}</span>
+          </div>
+
           <div className="dataset-title-row">
             <h1>{map.title}</h1>
             <CopyLinkButton text={shareUrl} label="Salin tautan halaman ini" className="on-dark" />
@@ -231,26 +405,19 @@ function PetaDetail() {
 
       <section className="container dataset-detail-content">
 
-        {/* =================================================
-            MAP HERO — SESI 6 (revisi): kalau ada embed_url
-            (data API/manual), pakai iframe seperti biasa. Kalau
-            data upload sendiri dengan shapefile ter-parsing,
-            pakai peta interaktif GeoFeatureExplorer (klik fitur
-            -> panel atribut), formatnya dibuat mirip embed_url API.
-        ================================================= */}
-
         {map.embed_url ? (
           <div className="dataset-map-wrapper">
             <iframe src={map.embed_url} title={map.title} className="dataset-map-iframe" loading="lazy" allowFullScreen />
           </div>
-        ) : map._geojson ? (
-          <GeoFeatureExplorer geojson={map._geojson} title={map.title} attributes={map._attributes} />
+        ) : combinedGeojson ? (
+          <GeoFeatureExplorer geojson={combinedGeojson} title={map.title} attributes={map._attributes} />
         ) : null}
 
         <div className="dataset-tabs">
           <button type="button" className={activeTab === 'info' ? 'active' : ''} onClick={() => setActiveTab('info')}>Info</button>
           <button type="button" className={activeTab === 'location' ? 'active' : ''} onClick={() => setActiveTab('location')}>Location</button>
           <button type="button" className={activeTab === 'linked' ? 'active' : ''} onClick={() => setActiveTab('linked')}>Linked Resources</button>
+          <button type="button" className={activeTab === 'layers' ? 'active' : ''} onClick={() => setActiveTab('layers')}>Layer Peta</button>
         </div>
 
         {activeTab === 'info' && (
@@ -299,12 +466,6 @@ function PetaDetail() {
             )}
           </section>
         )}
-
-        {/* =================================================
-            LOCATION — SESI 6 (revisi): DIKEMBALIKAN persis
-            seperti sebelumnya, gambar statis + tabel Bounding
-            Box + Center. TIDAK memakai GeoJSON di sini.
-        ================================================= */}
 
         {activeTab === 'location' && (
           <section className="dataset-location-section">
@@ -362,7 +523,6 @@ function PetaDetail() {
                     <div><span>Max Lat</span><strong>{bbox.maxLat.toFixed(6)}</strong></div>
                     <div><span>Max Lon</span><strong>{bbox.maxLon.toFixed(6)}</strong></div>
                   </div>
-                  
                 </div>
 
                 {center && (
@@ -375,7 +535,6 @@ function PetaDetail() {
                       <div><span>Lat</span><strong>{center.lat.toFixed(6)}</strong></div>
                       <div><span>Lon</span><strong>{center.lon.toFixed(6)}</strong></div>
                     </div>
-                    
                   </div>
                 )}
               </>
@@ -424,6 +583,75 @@ function PetaDetail() {
               </div>
             )}
           </section>
+        )}
+
+        {activeTab === 'layers' && (
+
+          <section className="dataset-assets-section">
+
+            {canManageLayers && (
+              <div className="layer-add-bar">
+                <button
+                  type="button"
+                  className="admin-view-site"
+                  onClick={() => setShowAddLayerModal(true)}
+                >
+                  + Tambah Dataset
+                </button>
+              </div>
+            )}
+
+            {layersLoading ? (
+
+              <p>Memuat layer...</p>
+
+            ) : layerRefs.length === 0 ? (
+
+              <div className="dataset-attributes-empty">
+                <p>Belum ada dataset yang ditambahkan sebagai layer pada peta ini.</p>
+              </div>
+
+            ) : (
+
+              <div className="dataset-assets-list">
+                {layerDatasets.map((layer) => (
+                  <div key={`${layer.source}-${layer.id}`} className="layer-item-card">
+                    <div>
+                      <strong>{layer.title}</strong>
+                      <span className={`layer-modal-badge ${layer.source}`}>
+                        {layer.source === 'api' ? 'API Lama' : 'Upload Sendiri'}
+                      </span>
+                      {layer.missing && (
+                        <span className="layer-item-missing">Dataset ini sudah tidak tersedia</span>
+                      )}
+                    </div>
+                    {canManageLayers && (
+                      <button
+                        type="button"
+                        className="admin-action-delete"
+                        onClick={() => handleRemoveLayer(layer)}
+                        disabled={layerSaving}
+                      >
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            )}
+
+            {showAddLayerModal && (
+              <AddDatasetLayerModal
+                onClose={() => setShowAddLayerModal(false)}
+                onAdd={handleAddLayer}
+                excludeKeys={layerRefs.map((item) => `${item.source}-${item.id}`)}
+                saving={layerSaving}
+              />
+            )}
+
+          </section>
+
         )}
 
       </section>

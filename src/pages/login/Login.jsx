@@ -1,54 +1,39 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-
 import { useAuth } from '../../context/AuthContext'
 
-
 function Login() {
-
   const navigate =
     useNavigate()
-
 
   const {
     login
   } = useAuth()
-
 
   const [
     username,
     setUsername
   ] = useState('')
 
-
   const [
     password,
     setPassword
   ] = useState('')
-
 
   const [
     error,
     setError
   ] = useState('')
 
-
   const [
     loading,
     setLoading
   ] = useState(false)
 
-
-  // ===================================================
-  // SUBMIT
-  // ===================================================
-
   async function handleSubmit(e) {
 
     e.preventDefault()
-
     setError('')
-
 
     if (
       !username.trim() ||
@@ -62,22 +47,15 @@ function Login() {
       return
     }
 
-
     try {
 
       setLoading(true)
-
 
       const user =
         await login(
           username.trim(),
           password
         )
-
-
-      // ===============================================
-      // REDIRECT BERDASARKAN ROLE
-      // ===============================================
 
       if (
         user.role === 'admin'
@@ -108,7 +86,6 @@ function Login() {
         error
       )
 
-
       setError(
         error.message ||
         'Username atau password salah.'
@@ -122,28 +99,20 @@ function Login() {
 
   }
 
-
   return (
 
     <div className="login-page">
-
       <main className="login-main">
-
         <div className="login-container">
-
           <div className="login-card">
-
             <div className="login-card-header">
-
               <div className="login-icon">
                 🔐
               </div>
 
-
               <h1>
                 Login
               </h1>
-
 
               <p>
                 Masuk ke sistem pengelolaan
@@ -152,7 +121,6 @@ function Login() {
 
             </div>
 
-
             {error && (
 
               <div className="login-error">
@@ -160,7 +128,6 @@ function Login() {
               </div>
 
             )}
-
 
             <form
               onSubmit={handleSubmit}
@@ -172,7 +139,6 @@ function Login() {
                 <label htmlFor="username">
                   Username
                 </label>
-
 
                 <input
                   id="username"
@@ -190,13 +156,11 @@ function Login() {
 
               </div>
 
-
               <div className="login-field">
 
                 <label htmlFor="password">
                   Password
                 </label>
-
 
                 <input
                   id="password"
@@ -214,7 +178,6 @@ function Login() {
 
               </div>
 
-
               <button
                 type="submit"
                 className="login-submit"
@@ -230,13 +193,11 @@ function Login() {
 
             </form>
 
-
             <div className="login-card-footer">
 
               <span>
                 Geoportal Aceh
               </span>
-
 
               <span>
                 Sistem Informasi Geospasial
@@ -255,6 +216,5 @@ function Login() {
   )
 
 }
-
 
 export default Login

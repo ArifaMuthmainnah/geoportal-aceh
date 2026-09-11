@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import '../../index.css';
 
-// Data Dummy sesuai rujukan
 const AGENCIES = [
   { id: 1, name: 'BAPPEDA', count: 26 },
   { id: 2, name: 'BPBD', count: 90 },
@@ -48,17 +47,13 @@ function Kartografi() {
 
   return (
     <div className="login-content-page">
-      {/* HEADER HERO (Tetap) */}
       <section className="login-simple-hero" style={{ paddingLeft: '40px' }}>
         <span className="login-page-eyebrow">KARTOGRAFI</span>
         <h1>Kartografi<br /><span>Geoportal Aceh</span></h1>
         <p>Informasi dan layanan kartografi untuk mendukung penyajian data geospasial secara informatif dan mudah dipahami.</p>
       </section>
-
-      {/* DASHBOARD KARTOGRAFI */}
-      <div className="kartografi-main-container">
-        
-        {/* SIDEBAR KIRI */}
+      
+      <div className="kartografi-main-container">  
         <aside className="kartografi-sidebar">
           <input type="text" placeholder="Search..." className="sidebar-search" />
           <ul className="agency-list">
@@ -75,7 +70,6 @@ function Kartografi() {
           </ul>
         </aside>
 
-        {/* CONTENT TENGAH */}
         <div className="kartografi-content">
           <div className="search-peta-wrapper">
             <input type="text" placeholder="Cari Peta..." className="input-cari-peta" />
@@ -100,7 +94,6 @@ function Kartografi() {
         </div>
       </div>
 
-      {/* MODAL POPUP */}
       {selectedMap && (
         <div className="modal-overlay">
           <div className="modal-content">

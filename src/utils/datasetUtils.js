@@ -1,12 +1,4 @@
-// =========================================
-// CATEGORY
-// =========================================
-
 export const CATEGORY_MAP = {
-  // -----------------------------------------
-  // Bahasa Indonesia / identifier API
-  // -----------------------------------------
-
   society: 'Sosial',
   social: 'Sosial',
   biota: 'Biota',
@@ -36,11 +28,6 @@ export const CATEGORY_MAP = {
   population: 'Kependudukan',
 }
 
-
-// =========================================
-// CATEGORY MAPPING
-// =========================================
-
 export function mapCategory(identifier) {
   if (!identifier) {
     return 'Umum'
@@ -53,7 +40,6 @@ export function mapCategory(identifier) {
   }
 
   const normalizedKey = key.toLowerCase()
-
   const matchedKey = Object.keys(CATEGORY_MAP).find(
     (item) => item.toLowerCase() === normalizedKey
   )
@@ -62,23 +48,8 @@ export function mapCategory(identifier) {
     return CATEGORY_MAP[matchedKey]
   }
 
-  // Kategori kustom yang ditulis user sendiri:
-  // tampilkan apa adanya, JANGAN dijadikan 'Umum'.
   return key
 }
-
-
-// =========================================
-// RESOURCE TYPE LABEL
-// =========================================
-//
-// #8/#9 (Sesi 4): dipakai supaya label jenis resource
-// (Dataset/Dashboard/Aplikasi/Peta/Dokumen/Informasi)
-// konsisten di semua halaman (JIGN, JIGNDetail, Aplikasi,
-// ApplicationCard, ApplicationDetail), tanpa hardcode
-// ulang string yang sama di banyak file berbeda.
-//
-// =========================================
 
 export const RESOURCE_TYPE_LABELS = {
   dataset: 'Dataset',
@@ -93,12 +64,6 @@ export function getResourceTypeLabel(resourceType) {
   return RESOURCE_TYPE_LABELS[resourceType] || 'Dataset'
 }
 
-
-// =========================================
-// OWNER / INSTANSI
-// =========================================
-
-// Nama panjang dari API → nama singkat untuk UI
 export const OWNER_NAME_MAP = {
   'Badan Pusat Statistik BPS Republik Indonesia dan Badan Kependudukan dan Keluarga Berencana Nasional BKKBN':
     'BPS & BKKBN',
@@ -131,11 +96,6 @@ export const OWNER_NAME_MAP = {
     'PUPR Aceh',
 }
 
-
-// =========================================
-// NORMALIZE OWNER NAME
-// =========================================
-
 function normalizeOwnerName(name) {
   return String(name || '')
     .replace(/\s+/g, ' ')
@@ -143,11 +103,6 @@ function normalizeOwnerName(name) {
     .replace(/\./g, '')
     .trim()
 }
-
-
-// =========================================
-// OWNER FULL NAME
-// =========================================
 
 export function getOwnerFullName(owner) {
   if (!owner) {
@@ -169,11 +124,6 @@ export function getOwnerFullName(owner) {
   )
 }
 
-
-// =========================================
-// OWNER NAME
-// =========================================
-
 export function getOwnerName(owner) {
   const fullName = getOwnerFullName(owner)
 
@@ -187,19 +137,9 @@ export function getOwnerName(owner) {
   )
 }
 
-
-// =========================================
-// OWNER AVATAR
-// =========================================
-
 export function getOwnerAvatar(owner) {
   return owner?.avatar || null
 }
-
-
-// =========================================
-// DESCRIPTION
-// =========================================
 
 export function stripHtml(html) {
   if (!html) {
@@ -214,20 +154,6 @@ export function stripHtml(html) {
 
   return doc.body.textContent || ''
 }
-
-
-// =========================================
-// INFORMASI — PENANDA "SUDAH DIBACA"
-// =========================================
-//
-// SESI 5: dipakai Navbar (titik notifikasi di dropdown
-// Informasi) dan halaman Berita/Agenda/Pemberitahuan
-// (menandai kategori sebagai "sudah dibaca" saat halaman
-// dikunjungi). Disimpan di localStorage per kategori,
-// bukan per user, supaya tetap ringan (tanpa endpoint baru
-// di backend).
-//
-// =========================================
 
 export const INFORMASI_SEEN_STORAGE_KEYS = {
   berita: 'geoportal_informasi_seen_berita',

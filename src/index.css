@@ -2063,7 +2063,7 @@ main {
   position: relative;
   overflow: hidden;
 
-  padding: 78px 0 86px;
+  padding: 70px 0 60px;
 
   background:
     linear-gradient(
@@ -2075,8 +2075,6 @@ main {
 
   color: #ffffff;
 }
-
-
 /* DECORATIVE CIRCLE */
 
 .catalog-hero::before {
@@ -2164,13 +2162,13 @@ main {
   color: #ffffff;
 
   font-size:
-    clamp(2.2rem, 5vw, 4rem);
+    clamp(2rem, 4vw, 3.2rem);
 
-  line-height: 1.08;
+  line-height: 1.1;
 
   font-weight: 800;
 
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
 }
 
 
@@ -2179,14 +2177,14 @@ main {
 .catalog-hero p {
   max-width: 650px;
 
-  margin: 20px 0 0;
+  margin: 15px 0 0;
 
   color:
-    rgba(255, 255, 255, 0.84);
+    rgba(255, 255, 255, 0.85);
 
-  font-size: 1.08rem;
+  font-size: 1rem;
 
-  line-height: 1.8;
+  line-height: 1.7;
 }
 
 /* =========================
@@ -2258,7 +2256,7 @@ main {
 .applications-hero {
   position: relative;
   overflow: hidden;
-  padding: 78px 0 86px;
+  padding: 57px 0 46px;
   background:
     linear-gradient(
       135deg,
@@ -2318,23 +2316,22 @@ main {
 
   color: #ffffff;
 
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  line-height: 1.08;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.1;
   font-weight: 800;
 
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
 }
 
 .applications-hero p {
   max-width: 650px;
-  margin: 20px 0 0;
+  margin: 15px 0 0;
 
-  color: rgba(255, 255, 255, 0.84);
+  color: rgba(255, 255, 255, 0.85);
 
-  font-size: 1.08rem;
-  line-height: 1.8;
+  font-size: 1rem;
+  line-height: 1.7;
 }
-
 
 /* =========================
    CONTENT
@@ -2343,7 +2340,6 @@ main {
 .applications-content {
   padding: 46px 0 80px;
 }
-
 
 /* =========================
    SEARCH + FILTER
@@ -4109,19 +4105,21 @@ main {
   background: #f8fafc;
 }
 
-
 /* =========================
    PAGE HEADER
    ========================= */
 
 .information-header {
-  background: linear-gradient(135deg, #083b73 0%, #0b5cab 55%, #1677c8 100%) !important;
-  border-bottom: none !important;
+  position: relative;
+  overflow: hidden;
+  padding: 60px 0 50px; 
+  background: linear-gradient(135deg, #07386d 0%, #0b5cab 55%, #1677c8 100%);
+  color: #ffffff;
 }
 
 .information-header-inner {
-  padding-top: 48px;
-  padding-bottom: 48px;
+  padding-top: 22px;
+  padding-bottom: 22px;
 }
 
 .information-breadcrumb {
@@ -4151,11 +4149,11 @@ main {
 
   color: #ffffff !important;
 
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  line-height: 1.15;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 1.1;
   font-weight: 800;
 
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .information-header p {
@@ -4165,10 +4163,9 @@ main {
 
   color: rgba(255, 255, 255, 0.86) !important;
 
-  font-size: 0.92rem;
+  font-size: 1rem;
   line-height: 1.7;
 }
-
 
 /* =========================================================
    JIGN PAGE
@@ -4181,7 +4178,6 @@ main {
   background: #f5f8fc;
   color: #172b3a;
 }
-
 
 /* =========================
    SEARCH AREA
@@ -4246,7 +4242,6 @@ main {
   font-size: 0.75rem;
 }
 
-
 /* =========================
    CONTENT HEADER
    ========================= */
@@ -4287,7 +4282,6 @@ main {
   font-size: 0.82rem;
   line-height: 1.6;
 }
-
 
 /* =========================
    CATEGORY FILTER
@@ -4338,7 +4332,6 @@ main {
   color: #ffffff;
 }
 
-
 /* =========================
    VERTICAL INFORMATION CARDS
    ========================= */
@@ -4372,7 +4365,7 @@ main {
     linear-gradient(
       135deg,
       #062d58 0%,
-      #08477f 48%,
+      #08477f 55%,
       #0872b9 100%
     );
 
@@ -4496,7 +4489,6 @@ main {
   transform: translateY(-3px);
 }
 
-
 /* HERO DECORATION */
 
 .jign-hero-decoration {
@@ -4522,7 +4514,6 @@ main {
   right: 80px;
   bottom: -220px;
 }
-
 
 /* =========================
    STATISTICS
@@ -4594,7 +4585,6 @@ main {
   box-shadow:
     0 6px 20px rgba(8, 59, 115, 0.045);
 }
-
 
 /* =========================
    CARD SIDE
@@ -4680,7 +4670,6 @@ main {
   font-weight: 700;
 }
 
-
 /* =========================
    SECTION HEADING
    ========================= */
@@ -4740,7 +4729,6 @@ main {
 
   line-height: 1.85;
 }
-
 
 /* =========================
    SERVICES
@@ -4938,7 +4926,6 @@ main {
   transform: translateX(5px);
 }
 
-
 /* =========================
    NODES
    ========================= */
@@ -5042,7 +5029,6 @@ main {
 
   letter-spacing: 0;
 }
-
 
 /* =========================
    CARD BODY
@@ -6502,7 +6488,6 @@ main {
   font-weight: 600;
 }
 
-
 /* =========================================
    LOADING / ERROR
 ========================================= */
@@ -6528,7 +6513,6 @@ main {
     transform: rotate(360deg);
   }
 }
-
 
 /* =========================================
    RESPONSIVE
@@ -6571,7 +6555,6 @@ main {
   }
 
 }
-
 
 @media (max-width: 480px) {
 
@@ -7100,7 +7083,6 @@ main {
 /* =========================================================
    ADMIN DASHBOARD
    GEOPORTAL ACEH
-   DARK BLUE THEME
 ========================================================= */
 
 :root {
@@ -7252,7 +7234,6 @@ main {
     1px solid rgba(255, 255, 255, 0.08);
 }
 
-
 .admin-user-avatar {
   width: 42px;
   height: 42px;
@@ -7303,7 +7284,6 @@ main {
   color:
     rgba(255, 255, 255, 0.58);
 }
-
 
 /* =========================================================
    SIDEBAR NAV
@@ -7395,19 +7375,9 @@ main {
     inset 3px 0 0 #60a5fa;
 }
 
-
 /* =========================================================
    LOGOUT
 ========================================================= */
-
-/*
-   INI BAGIAN PENTING.
-
-   Logout tidak lagi berada di bawah konten sidebar.
-   Sidebar menggunakan flex column dan logout diberi
-   margin-top:auto sehingga selalu berada di bagian
-   bawah VIEWPORT sidebar, bukan setelah menu panjang.
-*/
 
 .admin-sidebar-logout {
   margin-top: auto;
@@ -7583,7 +7553,6 @@ main {
     all 0.2s ease;
 }
 
-
 /* Refresh */
 
 .admin-refresh-button {
@@ -7633,7 +7602,6 @@ main {
   transform:
     translateY(-1px);
 }
-
 
 /* =========================================================
    ALERT
@@ -8219,7 +8187,7 @@ main {
 }
 
 /* =========================================================
-   SESI 6: SEARCH BOX DENGAN IKON
+  SEARCH BOX DENGAN IcON
 ========================================================= */
 
 .search-box-wrap {
@@ -8248,7 +8216,7 @@ main {
 
 
 /* =========================================================
-   SESI 6: TOMBOL AKSI BERBASIS IKON + TOOLTIP
+  TOMBOL AKSI BERBASIS IKON + TOOLTIP
 ========================================================= */
 
 .icon-btn {
@@ -9326,7 +9294,6 @@ main {
   line-height: 1.7;
 }
 
-
 /* =====================================================
    LOGIN FEATURE SECTION
 ===================================================== */
@@ -9387,7 +9354,6 @@ main {
 
   line-height: 1.75;
 }
-
 
 /* =====================================================
    RESPONSIVE
@@ -10117,6 +10083,40 @@ main {
   margin-top: 50px;
 }
 
+.village-map-popup {
+  min-width: 180px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.village-popup-type {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.village-popup-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.village-popup-code {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-bottom: 5px;
+  border-radius: 10px;
+  background: #eef0ff;
+  font-size: 11px;
+}
+
+.village-popup-coordinate {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #555;
+}
+
 /* 
 ===========================
    SIDEBAR & SEARCH PANEL
@@ -10131,7 +10131,7 @@ main {
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* JARAK 20PX */
+  gap: 20px;
   width: 280px;
 }
 
@@ -10222,7 +10222,7 @@ main {
 }
 
 .res-name {
-  color: #2ecc71; /* Hijau neon */
+  color: #2ecc71;
   font-size: 12px;
   font-weight: bold;
   margin-bottom: 3px;
@@ -10232,6 +10232,30 @@ main {
   color: #aaa;
   font-size: 11px;
   line-height: 1.4;
+}
+
+.search-status,
+.search-no-result,
+.search-error {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.search-status {
+  color: #b7b7b7;
+}
+
+.search-no-result {
+  color: #b7b7b7;
+}
+
+.search-error {
+  color: #ff6b6b;
+}
+
+.btn-search-icon:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Custom scrollbar */
@@ -10270,7 +10294,6 @@ main {
 /* =====================================================
    JIGN
 ===================================================== */
-
 
 /* =====================================================
    MAIN CONTENT
@@ -10330,7 +10353,6 @@ main {
 
   line-height: 1.75;
 }
-
 
 /* =====================================================
    STATISTICS
@@ -10466,15 +10488,6 @@ main {
   letter-spacing: 0.04em;
 }
 
-
-/* =====================================================
-   SEARCH + FILTER
-   Diletakkan SETELAH statistik
-=======
-   SEARCH + FILTER
->>>>>>> d87b207169e711579f59909b64bd45f21824bbec
-===================================================== */
-
 .jign-toolbar-section {
   margin-top: 22px;
 
@@ -10501,7 +10514,7 @@ main {
 
 /* 
 ==========================================================================
-   LAYERS / GEOSERVIS PAGE - WORK BY THAHIRA
+   LAYERS / GEOSERVIS PAGE
 ========================================================================== 
 */
 
@@ -10527,7 +10540,7 @@ main {
 .sidebar-main-btn {
   width: 100%;
   padding: 12px;
-  background: #0b5cab; /* Warna kuning orange khas rujukan */
+  background: #0b5cab;
   border: none;
   border-radius: 4px;
   font-weight: 800;
@@ -10630,8 +10643,7 @@ main {
 }
 
 .layer-card-item {
-  border: 1px dashed #4da6df; /* Gaya border putus-putus rujukan */
-  padding: 15px;
+  border: 1px dashed #4da6df; 
   text-align: center;
   border-radius: 8px;
   transition: 0.3s;
@@ -10728,25 +10740,19 @@ main {
 
 /* 
 ==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   CSRT DASHBOARD PAGE - WORK BY THAHIRA RISKA
+   CSRT DASHBOARD PAGE
 ========================================================================== 
 */
 
 .csrt-main-container {
   display: grid;
-  grid-template-columns: 320px 1fr 320px; /* Layout 3 Kolom */
+  grid-template-columns: 320px 1fr 320px;
   gap: 2px;
-  background: #cbd5e1; /* Warna garis pemisah */
+  background: #cbd5e1;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   height: 70vh;
-  margin: 0 5% 50px; /* Jarak kanan kiri 5% agar seimbang dengan header */
+  margin: 0 5% 50px; 
   overflow: hidden;
   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
@@ -10808,13 +10814,13 @@ main {
 .csrt-search-btn {
   width: 100%;
   padding: 12px;
-  background: #0056b3; /* Biru khas Aceh */
+  background: #0056b3;
   color: white;
   border: none;
   border-radius: 4px;
   font-weight: 800;
   cursor: pointer;
-  margin-top: auto; /* Selalu di bawah panel */
+  margin-top: auto;
 }
 
 /* RESULT PANEL */
@@ -10857,13 +10863,7 @@ main {
 
 /* 
 ==========================================================================
-   AKHIR PEKERJAAN CSRT
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   KARTOGRAFI PAGE - WORK BY THAHIRA RISKA
+   KARTOGRAFI PAGE
 ========================================================================== 
 */
 /* Layout Kartografi */
@@ -10949,7 +10949,7 @@ main {
 
 .btn-cari-peta {
   padding: 0 30px;
-  background-color: #0056b3; /* Orange rujukan */
+  background-color: #0056b3;
   color: white;
   border: none;
   border-radius: 0 8px 8px 0;
@@ -11020,7 +11020,7 @@ main {
 
 .modal-header {
   padding: 15px 20px;
-  background: #dcfce7; /* Hijau muda rujukan */
+  background: #dcfce7;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -11321,8 +11321,6 @@ main {
 
 /* =====================================================
    OWNER HEADER
-   Avatar tetap kiri,
-   status diposisikan pojok kanan atas
 ===================================================== */
 
 .jign-owner-header {
@@ -11394,7 +11392,6 @@ main {
 
 /* =====================================================
    STATUS
-   Pojok kanan atas card
 ===================================================== */
 
 .jign-owner-status {
@@ -11633,8 +11630,6 @@ main {
   border: 1px solid #e2e8f0;
   border-radius: 20px;
   padding: 50px 55px;
-
-  /* SHADOW TIPIS */
   box-shadow:
     0 10px 30px rgba(15, 23, 42, 0.06);
 }
@@ -12119,11 +12114,10 @@ main {
 }
 /* 
 ==========================================================================
-   ADD LAYER MODAL - STYLE PERBAIKAN TAB & SIMPUL
+  ADD LAYER MODAL
 ========================================================================== 
 */
 
-/* Mengatur Tab agar tombol yang aktif terlihat berbeda */
 .modal-tabs .tab {
   cursor: pointer;
   padding: 10px 20px;
@@ -12134,7 +12128,7 @@ main {
 }
 
 .modal-tabs .tab.active {
-  background: #0b5cab; /* Warna biru Aceh */
+  background: #0b5cab;
   color: #fff;
   font-weight: bold;
 }
@@ -12142,7 +12136,7 @@ main {
 .simpul-container {
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Jarak antar baris lebih rapat */
+  gap: 12px;
   padding-top: 5px;
 }
 
@@ -12154,7 +12148,7 @@ main {
 
 .form-group-simpul label {
   width: 120px;
-  font-size: 13px; /* Ukuran keterangan luar */
+  font-size: 13px;
   color: #ccc;
   flex-shrink: 0;
 }
@@ -12165,10 +12159,10 @@ main {
   background: #1a1a1a;
   border: 1px solid #333;
   color: white;
-  padding: 6px 10px; /* Padding dikecilkan */
+  padding: 6px 10px;
   border-radius: 4px;
-  font-size: 13px; /* Ukuran tulisan dalam kotak disamakan dengan label luar */
-  height: 34px; /* Tinggi kotak seragam */
+  font-size: 13px; 
+  height: 34px;
   outline: none;
 }
 
@@ -12187,13 +12181,13 @@ main {
   cursor: pointer;
   font-weight: bold;
   font-size: 13px;
-  height: 34px; /* Tinggi disamakan persis dengan input di sampingnya */
+  height: 34px; 
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Warning Box Tanpa Ikon */
+/* Warning Box */
 .warning-box-simpul {
   background: #fff3cd;
   color: #856404;
@@ -12215,13 +12209,7 @@ main {
 
 /* 
 ==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   ADD LAYER MODAL - FILE TAB STYLE (THAHIRA)
+   ADD LAYER MODAL - FILE TAB STYLE
 ========================================================================== 
 */
 
@@ -12232,7 +12220,7 @@ main {
   padding-top: 10px;
 }
 
-/* Notice Box Kuning (ATM Gambar 2) */
+/* Notice Box Kuning */
 .notice-box-file {
   background: #fff3cd;
   color: #856404;
@@ -12346,13 +12334,7 @@ main {
 
 /* 
 ==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* 
-==========================================================================
-   ADD LAYER MODAL - URL TAB STYLE (THAHIRA)
+   ADD LAYER MODAL - URL TAB STYLE
 ========================================================================== 
 */
 
@@ -12387,7 +12369,7 @@ main {
 }
 
 .url-display-input {
-  color: #2ecc71; /* Hijau neon untuk URL sesuai rujukan */
+  color: #2ecc71;
   font-family: monospace;
 }
 
@@ -12408,7 +12390,6 @@ main {
   cursor: pointer;
 }
 
-/* Error Box ATM Gambar 8 */
 .url-error-box {
   background: #f8d7da;
   color: #721c24;
@@ -12419,7 +12400,6 @@ main {
   border: 1px solid #f5c6cb;
 }
 
-/* Metadata Card ATM Gambar 10 */
 .url-results-list {
   max-height: 200px;
   overflow-y: auto;
@@ -12448,7 +12428,7 @@ main {
 }
 
 .metadata-content h6 {
-  color: #f1c40f; /* Kuning rujukan */
+  color: #f1c40f;
   font-size: 12px;
   margin: 0 0 5px;
   line-height: 1.4;
@@ -12477,16 +12457,6 @@ main {
 .badge-link:nth-child(2) { background: #ffc107; color: black; }
 .badge-link:nth-child(3) { background: #28a745; }
 
-/* 
-==========================================================================
-   AKHIR PEKERJAAN THAHIRA
-========================================================================== 
-*/
-
-/* ========================================
-   FEATURE INFO PANEL-  by thahira
-======================================== */
-
 .feature-info-panel {
   position: absolute;
 
@@ -12503,14 +12473,6 @@ main {
   z-index: 1200;
 
   box-shadow: -3px 0 12px rgba(0, 0, 0, 0.2);
-
-/*
-==========================================================================
-   SESI 1 — TAMBAHAN: TOOLTIP ICON, COPY BUTTON, BACK BUTTON ATAS,
-   LOGO INSTANSI, GAMBAR LOKASI, TEMA BIRU HEADER DETAIL
-   (Tempelkan blok ini di PALING BAWAH file index.css)
-========================================================================== 
-*/
 
 /* -----------------------------------------
    TOOLTIP UNTUK TOMBOL BER-ICON
@@ -12592,13 +12554,14 @@ main {
 }
 
 .copy-icon-btn.on-dark {
-  background: rgba(255, 255, 255, 0.16);
+  background: transparent;
   color: #ffffff;
 }
 
 .copy-icon-btn.on-dark:hover {
-  background: #ffffff;
-  color: #0b5cab;
+  background: transparent;
+  color: #ffffff;
+  opacity: 0.7;
 }
 
 
@@ -12695,15 +12658,6 @@ main {
   display: block;
 }
 
-/* -----------------------------------------
-   SESI 7: LocationBoundsMap — pengganti gambar
-   statis yang domainnya rusak (ERR_NAME_NOT_
-   RESOLVED). Peta Leaflet sungguhan + kotak
-   Bounding Box + tanda "+" (crosshair) di
-   titik tengah, dipakai di tab Location halaman
-   detail Peta, Dataset, & Dokumen.
------------------------------------------ */
-
 .location-bounds-map {
   position: relative;
   z-index: 0;
@@ -12714,9 +12668,6 @@ main {
   font-family: inherit;
 }
 
-/* Peta bounding box statis — SELURUH interaksi mouse/touch
-   dimatikan (pointer-events: none) supaya benar-benar
-   berperilaku seperti gambar biasa, bukan peta interaktif. */
 .location-bounds-map-static {
   pointer-events: none;
 }
@@ -12762,7 +12713,7 @@ main {
 
 
 /* -----------------------------------------
-   JUDUL SEKSI BBOX / CENTER + TOMBOL SALIN
+   JUDUL SECTION BBOX / CENTER + TOMBOL SALIN
 ----------------------------------------- */
 
 .dataset-bbox h4,
@@ -13350,7 +13301,7 @@ main {
 }
 
 /* =========================================================
-   SESI 5 (lanjutan) — JADWAL AGENDA DI KARTU
+   JADWAL AGENDA DI KARTU
    ========================================================= */
 
 .katalog-card-agenda-schedule {
@@ -13374,12 +13325,7 @@ main {
 }
 
 /* =========================================================
-   SESI 7 (revisi besar): PETA HERO (GeoFeatureExplorer)
-   — dibuat semirip mungkin dengan tampilan iframe embed_url
-   data API lama: toolbar (basemap/search/gear/menu), kontrol
-   zoom custom (+/−/3D/⋯), mini peta ikhtisar, dan panel info
-   di kanan yang SEKARANG TINGGINYA PENUH (full height),
-   bukan cuma kartu kecil melayang setengah tinggi lagi.
+   PETA HERO (GeoFeatureExplorer)
 ========================================================= */
 
 .geo-explorer {
@@ -13395,7 +13341,7 @@ main {
   height: 100%;
 }
 
-/* ---------- TOOLBAR ATAS (layers / search / gear / menu) ---------- */
+/* TOOLBAR ATAS (layers / search / gear / menu) */
 
 .geo-explorer-toolbar {
   position: absolute;
@@ -13498,7 +13444,7 @@ main {
   border-top: 1px solid #eef2f7;
 }
 
-/* ---------- MINI PETA IKHTISAR (kiri bawah) ---------- */
+/* MINI PETA IKHTISAR (kiri bawah) */
 
 .geo-explorer-minimap {
   position: absolute;
@@ -13513,7 +13459,7 @@ main {
   z-index: 500;
 }
 
-/* ---------- KONTROL ZOOM CUSTOM (kanan bawah) ---------- */
+/* KONTROL ZOOM CUSTOM (kanan bawah) */
 
 .geo-explorer-zoom {
   position: absolute;
@@ -13554,7 +13500,7 @@ main {
   font-weight: 700;
 }
 
-/* ---------- PANEL INFO (SEKARANG FULL HEIGHT) ---------- */
+/* PANEL INFO */
 
 .geo-explorer-sidebar {
   flex: 0 0 min(360px, 40%);
@@ -13757,7 +13703,7 @@ main {
 }
 
 /* =========================================================
-   SESI 6: PENANDA TITIK YANG BISA DIGESER (edit geometri)
+   PENANDA TITIK YANG BISA DIGESER (edit geometri)
 ========================================================= */
 
 .vertex-edit-marker {
@@ -13775,23 +13721,12 @@ main {
 }
 
 /* ==========================================================================
-   SESI 10 — TOMBOL KEMBALI (jarak dari box kategori) & PREVIEW APLIKASI
+   TOMBOL KEMBALI & PREVIEW APLIKASI
 ========================================================================== */
 
-/* Poin 4: tombol kembali diberi jarak yang jelas dengan box kategori
-   di bawahnya, supaya tidak menempel. */
 .application-detail-top {
   margin-bottom: 24px;
 }
-
-/* Poin 3: PREVIEW APLIKASI — pengganti <iframe> langsung untuk resource
-   bertipe Aplikasi. Banyak situs Aplikasi eksternal mengirim header
-   X-Frame-Options/CSP yang menolak dirinya ditampilkan lewat iframe,
-   sehingga browser selalu menampilkan "refused to connect" — ini tidak
-   bisa diperbaiki dengan iframe biasa. Sebagai gantinya, area visualisasi
-   menampilkan SATU kotak bertema biru (sama seperti tema Dashboard)
-   berisi satu tombol besar & jelas "Buka Aplikasi" yang membuka link
-   aplikasi aslinya di TAB BARU (bukan iframe). */
 
 .application-preview-frame {
   width: 100%;
@@ -13893,7 +13828,7 @@ main {
 
 
 /* =========================================================
-   SESI 11 — HOME, FOOTER, HERO, WEBGIS PREVIEW, CARD HOVER
+    HOME, FOOTER, HERO, WEBGIS PREVIEW, CARD HOVER
    ========================================================= */
 
 .home-applications-section {
@@ -14098,9 +14033,7 @@ main {
 
 
 /* ---------------------------------------------------------
-   4) SEMUA CARD — HOVER SAJA (tanpa motion saat diklik),
-      warna biru sesuai warna utama site (#0b5cab) + efek
-      membesar (scale)
+   SEMUA CARD — HOVER SAJA
    --------------------------------------------------------- */
 
 .katalog-card,
@@ -14165,11 +14098,7 @@ main {
 
 
 /* =========================================================
-   PERBAIKAN GRID STATISTIK HOME — "11 Dashboard" & "29
-   Instansi" digeser ke kanan supaya pas di celah antar
-   kolom baris pertama (147|6 dan 6|17). Hanya berlaku di
-   layar >= 768px, di mobile tetap turun jadi 1 kolom
-   seperti sebelumnya (aturan lama tidak diubah).
+   GRID STATISTIK HOME
    ========================================================= */
 
 @media (min-width: 768px) {
@@ -14213,3 +14142,1003 @@ main {
   color: #ffffff !important;
 }
 .dataset-header-description { color: rgba(255, 255, 255, 0.86) !important; }
+
+
+/* =========================================================
+   Perbaikan icon & fungsi pada GeoFeatureExplorer
+   (peta hero halaman detail Dataset & Peta)
+========================================================= */
+
+.geo-sidebar-header-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.geo-sidebar-header-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.geo-sidebar-header-btn.active {
+  background: #f59e0b;
+  color: #16325c;
+}
+
+.geo-sidebar-header-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.geo-sidebar-header-btn:disabled:hover {
+  background: transparent;
+}
+
+.geo-sidebar-folder:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.geo-sidebar-folder:disabled:hover {
+  background: transparent;
+  color: #64748b;
+}
+
+.geo-sidebar-info-btn.active,
+.geo-sidebar-globe-btn.active {
+  background: #0b5cab;
+  color: #fff;
+}
+
+.geo-address-popover {
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12.5px;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.geo-address-popover div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.geo-address-popover span {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.geo-address-popover strong {
+  text-align: right;
+  color: #0f172a;
+}
+
+.geo-popover-error {
+  margin: 0;
+  color: #b91c1c;
+}
+
+.geo-coord-editor {
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.geo-coord-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.geo-coord-editor input {
+  width: 120px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 12.5px;
+}
+
+.geo-coord-editor button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  border: 0;
+  background: #0b5cab;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 31px;
+}
+
+.geo-coord-editor button:hover {
+  background: #094a8a;
+}
+
+.geo-zoom-btn.active {
+  background: #f59e0b;
+  color: #16325c;
+}
+
+.geo-explorer-map-area.query-mode .leaflet-container {
+  cursor: crosshair;
+}
+
+
+/* =========================================================
+   Tooltip
+========================================================= */
+
+.icon-tooltip-below::after {
+  bottom: auto;
+  top: calc(100% + 9px);
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.icon-tooltip-below::before {
+  bottom: auto;
+  top: calc(100% + 4px);
+  border-top-color: transparent;
+  border-bottom-color: #0f172a;
+}
+
+.icon-tooltip-below:hover::after,
+.icon-tooltip-below:hover::before,
+.icon-tooltip-below:focus-visible::after,
+.icon-tooltip-below:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Kontrol zoom kanan-bawah */
+
+.geo-explorer-zoom {
+  overflow: visible;
+}
+
+.geo-explorer-zoom .geo-zoom-btn:first-child {
+  border-radius: 10px 10px 0 0;
+}
+
+.geo-explorer-zoom .geo-zoom-btn:last-child {
+  border-radius: 0 0 10px 10px;
+}
+
+/* Header panel info */
+
+.geo-sidebar-header {
+  gap: 6px;
+}
+
+.geo-sidebar-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.geo-sidebar-header-actions .geo-sidebar-print {
+  margin-left: 0;
+}
+
+.geo-sidebar-header-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 3px 4px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Popover alamat & coordinate editor */
+
+.geo-address-popover {
+  border-left: 3px solid #0b5cab;
+}
+
+
+/* =========================================================
+  Icon Cetak + tooltip icon di ATAS PETA (toolbar & kontrol zoom)
+========================================================= */
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn,
+.geo-sidebar-header-actions .geo-sidebar-print {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn:hover,
+.geo-sidebar-header-actions .geo-sidebar-print:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn.active {
+  background: #f59e0b;
+  color: #16325c;
+}
+
+.geo-explorer-toolbar,
+.geo-explorer-zoom,
+.geo-explorer-minimap {
+  z-index: 900;
+}
+
+.geo-explorer .icon-tooltip-btn::after,
+.geo-explorer .icon-tooltip-btn::before {
+  z-index: 1200;
+}
+
+
+/* =========================================================
+   Tooltip + print
+========================================================= */
+
+.geo-iconbtn-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.geo-fixed-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 999999;
+}
+
+.geo-fixed-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+}
+
+.geo-fixed-tooltip.above::after {
+  top: 100%;
+  border-top-color: #0f172a;
+}
+
+.geo-fixed-tooltip.below {
+  transform: translate(-50%, 0);
+}
+
+.geo-fixed-tooltip.below::after {
+  bottom: 100%;
+  border-bottom-color: #0f172a;
+}
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn,
+.geo-sidebar-header-actions .geo-sidebar-print {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn:hover,
+.geo-sidebar-header-actions .geo-sidebar-print:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.geo-sidebar-header-actions .geo-sidebar-header-btn.active {
+  background: #f59e0b;
+  color: #16325c;
+}
+
+@media print {
+
+  body.geo-print-only * {
+    visibility: hidden !important;
+  }
+
+  body.geo-print-only .geo-explorer,
+  body.geo-print-only .geo-explorer * {
+    visibility: visible !important;
+  }
+
+  body.geo-print-only .geo-explorer {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+  }
+
+  body.geo-print-only .geo-explorer-toolbar,
+  body.geo-print-only .geo-explorer-minimap,
+  body.geo-print-only .geo-explorer-zoom,
+  body.geo-print-only .geo-fixed-tooltip {
+    display: none !important;
+  }
+
+}
+
+/* =========================================================
+   Validasi form (link/URL) + label Wajib/Opsional
+========================================================= */
+
+.field-required {
+  color: #dc2626;
+  font-weight: 700;
+  font-size: 11.5px;
+  margin-left: 6px;
+  text-transform: none;
+}
+
+.field-optional {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 11.5px;
+  margin-left: 6px;
+  text-transform: none;
+}
+
+.field-error-text {
+  display: block;
+  color: #dc2626;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.admin-form-group input.input-invalid,
+.admin-form-group textarea.input-invalid,
+.admin-form-group select.input-invalid {
+  border-color: #dc2626 !important;
+  background: #fef2f2;
+}
+
+.field-current-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 12.5px;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.field-current-value a {
+  color: #0b5cab;
+  font-weight: 600;
+}
+
+.field-required-mark {
+  color: #dc2626;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+
+/* =========================================
+   ISI ATRIBUT (ATTRIBUTE DATA TABLE)
+========================================= */
+
+.attr-table-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.attr-table-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  position: relative;
+}
+
+.attr-table-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.attr-table-icon-btn:hover {
+  background: #eef4fc;
+  color: #0b5cab;
+  border-color: #bcd6f2;
+}
+
+.attr-table-icon-btn.active {
+  background: #0b5cab;
+  color: #fff;
+  border-color: #0b5cab;
+}
+
+.attr-table-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.attr-table-toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.attr-table-count-badge {
+  font-size: 12.5px;
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.attr-table-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attr-table-add-row-btn,
+.attr-table-cancel-btn,
+.attr-table-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.attr-table-add-row-btn:hover,
+.attr-table-cancel-btn:hover {
+  background: #f1f5f9;
+}
+
+.attr-table-save-btn {
+  background: #0b5cab;
+  border-color: #0b5cab;
+  color: #fff;
+}
+
+.attr-table-save-btn:hover {
+  background: #083b73;
+}
+
+.attr-table-save-btn:disabled,
+.attr-table-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.attr-columns-wrap {
+  position: relative;
+}
+
+.attr-columns-popup {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+  padding: 12px;
+}
+
+.attr-columns-popup strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  color: #172033;
+}
+
+.attr-columns-popup label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 2px;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+}
+
+.attr-advanced-search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.attr-advanced-condition-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attr-advanced-condition-row select,
+.attr-advanced-condition-row input {
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  color: #172033;
+}
+
+.attr-advanced-search-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attr-advanced-search-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.attr-advanced-search-actions button.attr-primary-btn {
+  background: #0b5cab;
+  border-color: #0b5cab;
+  color: #fff;
+}
+
+.attr-table-wrapper {
+  width: 100%;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  max-height: 560px;
+}
+
+.attr-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.attr-table th,
+.attr-table td {
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.attr-table thead tr:first-child th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+}
+
+.attr-table-filter-row th {
+  background: #fff;
+  padding: 6px 10px;
+}
+
+.attr-filter-cell {
+  display: flex;
+  gap: 4px;
+}
+
+.attr-filter-cell select {
+  width: 62px;
+  padding: 4px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+}
+
+.attr-filter-cell input {
+  width: 90px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+}
+
+.attr-table td {
+  color: #334155;
+}
+
+.attr-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.attr-table input[type="text"] {
+  width: 100%;
+  min-width: 100px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+}
+
+.attr-table-zoom-col {
+  width: 36px;
+  text-align: center;
+}
+
+.attr-table-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #0b5cab;
+  cursor: pointer;
+}
+
+.attr-table-zoom-btn:hover:not(:disabled) {
+  background: #0b5cab;
+  color: #fff;
+}
+
+.attr-table-zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.attr-table-action-col {
+  width: 44px;
+  text-align: center;
+}
+
+.attr-table-delete-row-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.attr-table-delete-row-btn:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.attr-table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 13px;
+  color: #475569;
+}
+
+.attr-table-pagination button {
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.attr-table-pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.attr-table-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 50px 20px;
+  color: #64748b;
+}
+
+.attr-table-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .attr-table-toolbar {
+    justify-content: flex-start;
+  }
+  .attr-table-count-badge {
+    width: 100%;
+    order: 10;
+  }
+}
+
+
+/* =========================================
+   SELEKSI BARIS + HAPUS TERPILIH
+========================================= */
+
+.attr-table-select-col {
+  width: 34px;
+  text-align: center;
+}
+
+.attr-row-selected {
+  background: #eef4fc;
+}
+
+.attr-table-delete-selected-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.attr-table-delete-selected-btn:hover:not(:disabled) {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
+.attr-table-delete-selected-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   MODAL TAMBAH DATASET (LAYER PETA)
+========================================= */
+
+.layer-add-bar {
+  margin-bottom: 16px;
+}
+
+.layer-item-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  background: #fff;
+}
+
+.layer-item-missing {
+  display: block;
+  color: #dc2626;
+  font-size: 12.5px;
+  margin-top: 4px;
+}
+
+.layer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 16px;
+}
+
+.layer-modal-box {
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+.layer-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.layer-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #172033;
+}
+
+.layer-modal-close {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.layer-modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.layer-modal-search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.layer-modal-loading,
+.layer-modal-empty {
+  color: #64748b;
+  font-size: 13.5px;
+}
+
+.layer-modal-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.layer-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+}
+
+.layer-modal-item:last-child {
+  border-bottom: none;
+}
+
+.layer-modal-item.selected {
+  background: #eef4fc;
+}
+
+.layer-modal-item strong {
+  display: block;
+  font-size: 13.5px;
+  color: #172033;
+}
+
+.layer-modal-item small {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.layer-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.layer-modal-cancel-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layer-modal-add-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: #0b5cab;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.layer-modal-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   BADGE SUMBER LAYER (API / UPLOAD SENDIRI)
+========================================= */
+
+.layer-modal-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.layer-modal-badge.own {
+  background: #eaf5f1;
+  color: #0b5cab;
+}
+
+.layer-modal-badge.api {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.layer-item-card > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

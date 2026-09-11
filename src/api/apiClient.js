@@ -1,31 +1,9 @@
-// =====================================================
-// API BASE URL
-// =====================================================
-
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL
-
-
-// =====================================================
-// AUTH API URL
-// =====================================================
 
 const AUTH_API_URL =
   import.meta.env.VITE_AUTH_API_URL ||
   'http://localhost:5000/api'
-
-
-// =====================================================
-// BUILD GEO API URL
-// =====================================================
-//
-// PENTING: endpoint (datasets, geoapps, owners, dll)
-// sekarang diarahkan ke PROXY backend kita sendiri
-// (bukan langsung ke sig.acehprov.go.id), supaya tidak
-// diblokir CORS oleh browser. Backend kita yang akan
-// meneruskan permintaan ke API lama secara server-to-server.
-//
-// =====================================================
 
 function buildUrl(endpoint) {
 
@@ -33,7 +11,6 @@ function buildUrl(endpoint) {
     return `${AUTH_API_URL}/proxy`
   }
 
-
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -41,14 +18,8 @@ function buildUrl(endpoint) {
     return endpoint
   }
 
-
   return `${AUTH_API_URL}/proxy/${endpoint}`
 }
-
-
-// =====================================================
-// BUILD AUTH API URL
-// =====================================================
 
 function buildAuthUrl(endpoint) {
 
@@ -56,7 +27,6 @@ function buildAuthUrl(endpoint) {
     return AUTH_API_URL
   }
 
-
   if (
     endpoint.startsWith('http://') ||
     endpoint.startsWith('https://')
@@ -64,14 +34,8 @@ function buildAuthUrl(endpoint) {
     return endpoint
   }
 
-
   return `${AUTH_API_URL}${endpoint}`
 }
-
-
-// =====================================================
-// GET JWT TOKEN
-// =====================================================
 
 function getToken() {
 
@@ -80,24 +44,6 @@ function getToken() {
   )
 
 }
-
-
-// =====================================================
-// GET AUTH HEADERS UNTUK GEO API
-// =====================================================
-//
-// PERBAIKAN: sekarang endpoint geo (datasets, geoapps,
-// dll) ditembak lewat proxy backend kita sendiri, dan
-// beberapa di antaranya (/admin/datasets, /admin/geoapps,
-// /overrides) DILINDUNGI oleh authenticateToken +
-// requireAdmin di backend. Jadi token WAJIB disertakan
-// di sini, bukan dikosongkan seperti sebelumnya.
-//
-// Untuk endpoint publik (datasets, geoapps, owners biasa),
-// menyertakan token tetap aman karena backend tidak
-// mewajibkannya di situ.
-//
-// =====================================================
 
 function getGeoAuthHeaders() {
 
@@ -112,11 +58,6 @@ function getGeoAuthHeaders() {
   }
 
 }
-
-
-// =====================================================
-// GET - GEO API
-// =====================================================
 
 export async function apiGet(endpoint) {
 
@@ -135,7 +76,6 @@ export async function apiGet(endpoint) {
       }
     )
 
-
   if (!response.ok) {
 
     const errorText =
@@ -152,14 +92,8 @@ export async function apiGet(endpoint) {
     )
   }
 
-
   return response.json()
 }
-
-
-// =====================================================
-// POST - GEO API
-// =====================================================
 
 export async function apiPost(
   endpoint,
@@ -187,7 +121,6 @@ export async function apiPost(
       }
     )
 
-
   if (!response.ok) {
 
     const errorText =
@@ -204,15 +137,12 @@ export async function apiPost(
     )
   }
 
-
   const text =
     await response.text()
-
 
   if (!text) {
     return {}
   }
-
 
   try {
 
@@ -226,11 +156,6 @@ export async function apiPost(
 
   }
 }
-
-
-// =====================================================
-// POST FILE (MULTIPART) - GEO API
-// =====================================================
 
 export async function apiPostFile(
   endpoint,
@@ -254,7 +179,6 @@ export async function apiPostFile(
       }
     )
 
-
   if (!response.ok) {
 
     const errorText =
@@ -271,15 +195,12 @@ export async function apiPostFile(
     )
   }
 
-
   const text =
     await response.text()
-
 
   if (!text) {
     return {}
   }
-
 
   try {
 
@@ -293,11 +214,6 @@ export async function apiPostFile(
 
   }
 }
-
-
-// =====================================================
-// PATCH - GEO API
-// =====================================================
 
 export async function apiPatch(
   endpoint,
@@ -325,7 +241,6 @@ export async function apiPatch(
       }
     )
 
-
   if (!response.ok) {
 
     const errorText =
@@ -342,15 +257,12 @@ export async function apiPatch(
     )
   }
 
-
   const text =
     await response.text()
-
 
   if (!text) {
     return {}
   }
-
 
   try {
 
@@ -364,11 +276,6 @@ export async function apiPatch(
 
   }
 }
-
-
-// =====================================================
-// DELETE - GEO API
-// =====================================================
 
 export async function apiDelete(
   endpoint
@@ -389,7 +296,6 @@ export async function apiDelete(
       }
     )
 
-
   if (!response.ok) {
 
     const errorText =
@@ -406,14 +312,8 @@ export async function apiDelete(
     )
   }
 
-
   return true
 }
-
-
-// =====================================================
-// GET ALL - GEO API
-// =====================================================
 
 export async function apiGetAll(
   endpoint,
@@ -425,11 +325,9 @@ export async function apiGetAll(
     maxPages = 100,
   } = options
 
-
   let page = 1
 
   let allResults = []
-
 
   while (page <= maxPages) {
 
@@ -438,24 +336,10 @@ export async function apiGetAll(
         ? '&'
         : '?'
 
-
     const response =
       await apiGet(
         `${endpoint}${separator}page=${page}&page_size=${pageSize}`
       )
-
-
-    // ---------------------------------------------------
-    // BUG FIX (#8): sebelumnya key "maps" dan "documents"
-    // tidak ada di daftar fallback ini. Endpoint /maps dan
-    // /documents dari API Geoportal Aceh lama mengembalikan
-    // list-nya di bawah field "maps" / "documents" (bukan
-    // "results"), sehingga sebelumnya `results` selalu
-    // kosong dan halaman Peta & Dokumen (yang memakai
-    // getAllMaps()/getAllDocuments() -> apiGetAll) tidak
-    // pernah menampilkan card apa pun walau API sebenarnya
-    // mengembalikan data.
-    // ---------------------------------------------------
 
     const results =
       Array.isArray(response)
@@ -470,22 +354,18 @@ export async function apiGetAll(
           response?.data ||
           []
 
-
     allResults = [
       ...allResults,
       ...results,
     ]
 
-
     if (results.length === 0) {
       break
     }
 
-
     if (results.length < pageSize) {
       break
     }
-
 
     const total =
       Number(
@@ -494,7 +374,6 @@ export async function apiGetAll(
         0
       )
 
-
     if (
       total > 0 &&
       allResults.length >= total
@@ -502,18 +381,11 @@ export async function apiGetAll(
       break
     }
 
-
     page++
   }
 
-
   return allResults
 }
-
-
-// =====================================================
-// AUTH REQUEST
-// =====================================================
 
 async function authRequest(
   endpoint,
@@ -535,14 +407,12 @@ async function authRequest(
     ...(options.headers || {}),
   }
 
-
   if (token) {
 
     headers.Authorization =
       `Bearer ${token}`
 
   }
-
 
   const response =
     await fetch(
@@ -553,13 +423,10 @@ async function authRequest(
       }
     )
 
-
   const text =
     await response.text()
 
-
   let data = {}
-
 
   try {
 
@@ -576,7 +443,6 @@ async function authRequest(
 
   }
 
-
   if (!response.ok) {
 
     throw new Error(
@@ -587,14 +453,8 @@ async function authRequest(
 
   }
 
-
   return data
 }
-
-
-// =====================================================
-// AUTH GET
-// =====================================================
 
 export function authGet(
   endpoint
@@ -608,11 +468,6 @@ export function authGet(
   )
 
 }
-
-
-// =====================================================
-// AUTH POST
-// =====================================================
 
 export function authPost(
   endpoint,
@@ -631,11 +486,6 @@ export function authPost(
 
 }
 
-
-// =====================================================
-// AUTH PATCH
-// =====================================================
-
 export function authPatch(
   endpoint,
   body
@@ -653,11 +503,6 @@ export function authPatch(
 
 }
 
-
-// =====================================================
-// AUTH DELETE
-// =====================================================
-
 export function authDelete(
   endpoint
 ) {
@@ -670,11 +515,6 @@ export function authDelete(
   )
 
 }
-
-
-// =====================================================
-// AUTH POST FILE (MULTIPART) - BACKEND SENDIRI
-// =====================================================
 
 export async function authPostFile(
   endpoint,

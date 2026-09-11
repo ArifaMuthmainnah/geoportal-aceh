@@ -6,20 +6,6 @@ import {
 
 import { useAuth } from '../context/AuthContext'
 
-
-// =====================================================
-// PROTECTED ROUTE
-// =====================================================
-//
-// Digunakan untuk halaman yang hanya boleh diakses
-// oleh user yang sudah login.
-//
-// Contoh:
-//
-// <Route path="/dashboard" element={<ProtectedRoute />} />
-//
-// =====================================================
-
 function ProtectedRoute({
   adminOnly = false,
   children,
@@ -34,11 +20,6 @@ function ProtectedRoute({
 
   const location =
     useLocation()
-
-
-  // ===================================================
-  // CEK SESSION
-  // ===================================================
 
   if (loading) {
 
@@ -84,11 +65,6 @@ function ProtectedRoute({
     )
   }
 
-
-  // ===================================================
-  // BELUM LOGIN
-  // ===================================================
-
   if (!isAuthenticated) {
 
     return (
@@ -105,18 +81,6 @@ function ProtectedRoute({
     )
   }
 
-
-  // ===================================================
-  // ADMIN ONLY
-  // ===================================================
-  //
-  // Kalau halaman hanya untuk admin,
-  // cek role user.
-  //
-  // Operator tidak boleh masuk.
-  //
-  // ===================================================
-
   if (
     adminOnly &&
     !isAdmin
@@ -132,22 +96,12 @@ function ProtectedRoute({
     )
   }
 
-
-  // ===================================================
-  // RENDER CHILDREN
-  // ===================================================
-
   if (children) {
 
     return children
 
   }
-
-
-  // ===================================================
-  // RENDER OUTLET
-  // ===================================================
-
+  
   return <Outlet />
 
 }

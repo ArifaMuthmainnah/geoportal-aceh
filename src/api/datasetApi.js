@@ -5,33 +5,17 @@ import {
   authDelete,
 } from './apiClient'
 
-// =====================================================
-// DATASET LIST
-// =====================================================
-
 export function getDatasets(query = '') {
   return apiGet(`datasets${query}`)
 }
-
-// =====================================================
-// LATEST DATASET
-// =====================================================
 
 export function getLatestDatasets() {
   return apiGet('datasets?page=1&page_size=3')
 }
 
-// =====================================================
-// ALL DATASETS
-// =====================================================
-
 export function getAllDatasets() {
   return apiGetAll('datasets')
 }
-
-// =====================================================
-// TOTAL DATASET (untuk statistik, tidak dibatasi page_size kecil)
-// =====================================================
 
 export async function getDatasetTotal() {
 
@@ -50,26 +34,11 @@ export async function getDatasetTotal() {
   if (total > 0) {
     return total
   }
-
-  // Fallback: kalau API tidak memberi field total,
-  // hitung dari daftar lengkap (lebih lambat).
   const all = await getAllDatasets()
 
   return all.length
 
 }
-
-
-// =====================================================
-// TOTAL DATASET SEBENARNYA (PAKAI META DARI API LAMA)
-// =====================================================
-//
-// GeoNode API v2 biasanya mengembalikan field total di
-// beberapa kemungkinan nama. Fungsi ini mencoba semua
-// kemungkinan supaya statistik akurat, TANPA menarik
-// seluruh data (page_size=1 saja, jauh lebih cepat).
-//
-// =====================================================
 
 export async function getDatasetTotalCount() {
 
@@ -94,18 +63,16 @@ export async function getDatasetTotalCount() {
 
   } catch (err) {
 
-    console.error('Gagal mengambil total dataset:', err)
+    console.error(
+      'Gagal mengambil total dataset:',
+      err
+    )
 
   }
 
   return 0
 
 }
-
-
-// =====================================================
-// SEMUA DATASET UNTUK ADMIN (TERMASUK YANG DISEMBUNYIKAN)
-// =====================================================
 
 export async function getAdminDatasetsRaw() {
 
@@ -116,24 +83,17 @@ export async function getAdminDatasetsRaw() {
 
 }
 
-// =====================================================
-// DETAIL DATASET
-// =====================================================
+export async function getAdminDatasetDetailRaw(id) {
+
+  const response = await apiGet(`admin/datasets/${id}`)
+
+  return response?.dataset || response
+
+}
 
 export function getDatasetDetail(id) {
   return apiGet(`datasets/${id}`)
 }
-
-// =====================================================
-// EDIT TAMPILAN DATASET DARI API LAMA (LOKAL SAJA)
-// =====================================================
-//
-// PENTING: ini TIDAK mengubah data di server Geoportal
-// Aceh lama. Ini hanya menyimpan "override" tampilan di
-// web kita sendiri (judul/abstract/kategori atau
-// sembunyikan), disimpan di database kita.
-//
-// =====================================================
 
 export function updateDataset(pk, data) {
 
@@ -143,11 +103,10 @@ export function updateDataset(pk, data) {
     title_override: data.title,
     abstract_override: data.abstract,
     category_override: data.category,
+    keywords_override: data.keywords || null,
+    extra_metadata_override: data.extraMetadata || null,
   }
 
-  // is_hidden = kebalikan dari is_published, HANYA kalau
-  // is_published memang dikirim (jangan sentuh saat cuma
-  // edit title/abstract/category).
   if (data.is_published !== undefined) {
     payload.is_hidden = !data.is_published
   }
@@ -155,15 +114,6 @@ export function updateDataset(pk, data) {
   return authPost('/proxy/overrides', payload)
 
 }
-
-// =====================================================
-// SEMBUNYIKAN DATASET DARI API LAMA (LOKAL SAJA)
-// =====================================================
-//
-// "Hapus" di sini artinya disembunyikan dari web kita.
-// Data asli di Geoportal Aceh lama TIDAK terhapus.
-//
-// =====================================================
 
 export function deleteDataset(pk) {
 
@@ -175,10 +125,6 @@ export function deleteDataset(pk) {
 
 }
 
-// =====================================================
-// PULIHKAN DATASET API LAMA (batalkan override)
-// =====================================================
-
 export function restoreDataset(pk) {
 
   return authDelete(
@@ -187,16 +133,8 @@ export function restoreDataset(pk) {
 
 }
 
-// =====================================================
-// GEOSERVER
-// =====================================================
-
 const GEO_SERVER_URL =
   'https://sig.acehprov.go.id/geoserver/ows'
-
-// =====================================================
-// HELPER: REQUEST GEOSERVER
-// =====================================================
 
 async function fetchGeoServer(params) {
   const url =
@@ -210,19 +148,8 @@ async function fetchGeoServer(params) {
     )
   }
 
-  // PENTING (BUG FIX #7): sebelumnya fungsi ini tidak
-  // mengembalikan apa pun setelah fetch berhasil, sehingga
-  // setiap pemanggil selalu menerima `undefined`. Akibatnya
-  // getDatasetAttributes() selalu jatuh ke fallback [] tanpa
-  // pernah error (karena tidak ada exception yang dilempar),
-  // dan tab "Attributes" di halaman detail dataset selalu
-  // menampilkan "Atribut belum tersedia" walau GeoServer
-  // sebenarnya merespons dengan benar.
   return response.json()
 }
-
-// DATASET FEATURES / GEOJSON
-// =====================================================
 
 export async function getDatasetFeatures(
   alternate
@@ -259,10 +186,6 @@ export async function getDatasetFeatures(
 
   return response.json()
 }
-
-// =====================================================
-// ATTRIBUTES
-// =====================================================
 
 export async function getDatasetAttributes(alternate) {
   if (!alternate) {

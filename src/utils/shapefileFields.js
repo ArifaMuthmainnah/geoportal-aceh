@@ -1,24 +1,3 @@
-// =====================================================
-// BACA NAMA FIELD DARI FILE .DBF (SHAPEFILE)
-// =====================================================
-//
-// Format header DBF (dBASE):
-// - byte 0        : versi
-// - byte 4-7      : jumlah record (uint32 LE)
-// - byte 8-9      : ukuran header (uint16 LE)
-// - byte 10-11    : ukuran per record (uint16 LE)
-// - byte 32+      : deskriptor field, masing-masing 32 byte:
-//                   - byte 0-10 : nama field (ASCII, diakhiri \0)
-//                   - byte 11   : tipe field (C/N/D/L/F, dst)
-//                   - byte 16   : panjang field
-//                 diakhiri byte penanda 0x0D
-//
-// Fungsi ini HANYA menarik NAMA kolom (field name). Label
-// dan deskripsi tetap harus diisi manual oleh user, karena
-// shapefile memang tidak menyimpan informasi itu.
-//
-// =====================================================
-
 export async function extractDbfFieldNames(file) {
 
   const buffer = await file.arrayBuffer()
@@ -39,16 +18,12 @@ export async function extractDbfFieldNames(file) {
   while (offset + 32 <= headerSize) {
 
     const byte = view.getUint8(offset)
-
-    // 0x0D menandai akhir deskriptor field
     if (byte === 0x0d) {
       break
     }
 
     const nameBytes = new Uint8Array(buffer, offset, 11)
-
     const rawName = decoder.decode(nameBytes)
-
     const name = rawName.replace(/\0.*$/, '').trim()
 
     if (name) {
@@ -62,11 +37,6 @@ export async function extractDbfFieldNames(file) {
   return fields
 
 }
-
-
-// =====================================================
-// CARI FILE .DBF DI DALAM DAFTAR FILE YANG DIPILIH
-// =====================================================
 
 export function findDbfFile(files) {
 
@@ -82,23 +52,11 @@ export function findDbfFile(files) {
 
 }
 
-
-// =====================================================
-// SESI 6: PARSER LENGKAP METADATA SHAPEFILE
-// (.shp untuk bounding box + tipe geometri,
-//  .dbf untuk nama+tipe kolom + jumlah baris,
-//  .prj untuk sistem koordinat/CRS)
-// Semua dibaca langsung di browser, tanpa library
-// tambahan — cukup ArrayBuffer/DataView bawaan JS.
-// =====================================================
-
 function getExtension(file) {
   const name = file?.name || ''
   const dot = name.lastIndexOf('.')
   return dot === -1 ? '' : name.slice(dot + 1).toLowerCase()
 }
-
-// ---------- Kelompokkan 4 file inti shapefile ----------
 
 export function findShapefileParts(files) {
   const list = Array.isArray(files) ? files : []
@@ -114,17 +72,6 @@ export function hasAnyShapefilePart(files) {
   const { shp, shx, dbf, prj } = findShapefileParts(files)
   return Boolean(shp || shx || dbf || prj)
 }
-
-// ---------- .SHP: tipe geometri + bounding box (HEADER) ----------
-//
-// Header .shp (100 byte, format ESRI Shapefile):
-// - byte 0-3   : File Code = 9994 (big-endian)
-// - byte 24-27 : File Length dalam 16-bit word (big-endian)
-// - byte 32-35 : Shape Type (little-endian)
-// - byte 36-43 : Xmin (double, LE)   byte 44-51: Ymin
-// - byte 52-59 : Xmax (double, LE)   byte 60-67: Ymax
-//
-// =====================================================
 
 const SHAPE_TYPE_LABELS = {
   0: 'Null', 1: 'Titik (Point)', 3: 'Garis (PolyLine)', 5: 'Poligon (Polygon)',
@@ -143,7 +90,6 @@ export async function readShpHeader(file) {
   }
 
   const view = new DataView(buffer)
-
   const fileCode = view.getInt32(0, false) // big-endian
 
   if (fileCode !== 9994) {
@@ -164,16 +110,6 @@ export async function readShpHeader(file) {
 
 }
 
-// ---------- .SHP: BACA SEMUA GEOMETRI (bukan cuma header) ----------
-//
-// Tiap record: Record Number (4 byte, BE) + Content Length
-// dalam 16-bit word (4 byte, BE), lalu Shape Type (4 byte, LE)
-// + data geometri. Kita pakai Content Length untuk melompat ke
-// record berikutnya, jadi tetap aman walau ada tipe Z/M yang
-// tidak kita parsing detail.
-//
-// =====================================================
-
 function readPointPairs(view, start, numPoints) {
   const points = []
   let offset = start
@@ -190,28 +126,23 @@ function parseShapeRecordGeometry(view, start, shapeType) {
 
   if (shapeType === 0) return null // Null shape
 
-  // Point / PointZ / PointM
   if ([1, 11, 21].includes(shapeType)) {
     const x = view.getFloat64(start + 4, true)
     const y = view.getFloat64(start + 12, true)
     return { type: 'Point', coordinates: [x, y] }
   }
 
-  // MultiPoint / variants: bbox(32) NumPoints(4) Points(16*N)
   if ([8, 18, 28].includes(shapeType)) {
     const numPoints = view.getInt32(start + 36, true)
     const points = readPointPairs(view, start + 40, numPoints)
     return { type: 'MultiPoint', coordinates: points }
   }
 
-  // PolyLine / variants: bbox(32) NumParts(4) NumPoints(4)
-  // Parts[NumParts](4 tiap) Points[NumPoints](16 tiap)
   if ([3, 13, 23].includes(shapeType)) {
 
     const numParts = view.getInt32(start + 36, true)
     const numPoints = view.getInt32(start + 40, true)
     const partsStart = start + 44
-
     const parts = []
     for (let i = 0; i < numParts; i++) {
       parts.push(view.getInt32(partsStart + i * 4, true))
@@ -219,7 +150,6 @@ function parseShapeRecordGeometry(view, start, shapeType) {
 
     const pointsStart = partsStart + numParts * 4
     const allPoints = readPointPairs(view, pointsStart, numPoints)
-
     const lines = parts.map((startIdx, i) => {
       const endIdx = i + 1 < parts.length ? parts[i + 1] : numPoints
       return allPoints.slice(startIdx, endIdx)
@@ -231,17 +161,11 @@ function parseShapeRecordGeometry(view, start, shapeType) {
 
   }
 
-  // Polygon / variants: struktur SAMA seperti PolyLine (bbox,
-  // NumParts, NumPoints, Parts, Points) — tiap "part" adalah ring
-  // tertutup. Disederhanakan: tiap ring dianggap polygon terpisah
-  // (tidak deteksi lubang/hole) — cukup akurat untuk pratinjau
-  // visual batas wilayah.
   if ([5, 15, 25].includes(shapeType)) {
 
     const numParts = view.getInt32(start + 36, true)
     const numPoints = view.getInt32(start + 40, true)
     const partsStart = start + 44
-
     const parts = []
     for (let i = 0; i < numParts; i++) {
       parts.push(view.getInt32(partsStart + i * 4, true))
@@ -249,9 +173,8 @@ function parseShapeRecordGeometry(view, start, shapeType) {
 
     const pointsStart = partsStart + numParts * 4
     const allPoints = readPointPairs(view, pointsStart, numPoints)
-
     const rings = parts.map((startIdx, i) => {
-      const endIdx = i + 1 < parts.length ? parts[i + 1] : numPoints
+    const endIdx = i + 1 < parts.length ? parts[i + 1] : numPoints
       return allPoints.slice(startIdx, endIdx)
     })
 
@@ -268,7 +191,6 @@ function parseShapeRecordGeometry(view, start, shapeType) {
 export async function readShpGeometries(file, options = {}) {
 
   const maxFeatures = options.maxFeatures || 5000
-
   const buffer = await file.arrayBuffer()
   const view = new DataView(buffer)
 
@@ -283,7 +205,6 @@ export async function readShpGeometries(file, options = {}) {
 
   const fileLengthWords = view.getInt32(24, false)
   const fileLengthBytes = fileLengthWords * 2
-
   const features = []
   let offset = 100
   let recordIndex = 0
@@ -325,12 +246,9 @@ export async function readShpGeometries(file, options = {}) {
 
 }
 
-// ---------- .DBF: BACA ISI SEMUA RECORD (untuk popup atribut) ----------
-
 export async function readDbfRecords(file, options = {}) {
 
   const maxRecords = options.maxRecords || 5000
-
   const buffer = await file.arrayBuffer()
   const view = new DataView(buffer)
 
@@ -339,7 +257,6 @@ export async function readDbfRecords(file, options = {}) {
   const recordCount = view.getUint32(4, true)
   const headerSize = view.getUint16(8, true)
   const recordSize = view.getUint16(10, true)
-
   const decoder = new TextDecoder('ascii')
   const fields = []
   let offset = 32
@@ -382,8 +299,6 @@ export async function readDbfRecords(file, options = {}) {
 
 }
 
-// ---------- .DBF (header saja, dipakai untuk daftar Attributes) ----------
-
 export async function readDbfMeta(file) {
 
   const buffer = await file.arrayBuffer()
@@ -399,7 +314,6 @@ export async function readDbfMeta(file) {
 
   const recordCount = view.getUint32(4, true)
   const headerSize = view.getUint16(8, true)
-
   const decoder = new TextDecoder('ascii')
   const fields = []
   let offset = 32
@@ -427,8 +341,6 @@ export async function readDbfMeta(file) {
 
 }
 
-// ---------- .PRJ: sistem koordinat (CRS) ----------
-
 const KNOWN_GCS_EPSG = {
   'GCS_WGS_1984': 'EPSG:4326',
   'WGS_1984': 'EPSG:4326',
@@ -442,15 +354,11 @@ function parsePrjText(text) {
 
   const projMatch = trimmed.match(/PROJCS\["([^"]+)"/i)
   const geogMatch = trimmed.match(/GEOGCS\["([^"]+)"/i)
-
   const projName = projMatch?.[1] || null
   const geogName = geogMatch?.[1] || null
-
   const lookupKey = (projName || geogName || '').trim()
   const knownEpsg = KNOWN_GCS_EPSG[lookupKey] || null
-
   const utmMatch = lookupKey.match(/UTM[_ ]Zone[_ ](\d+)([NS])/i)
-
   let srid = knownEpsg
 
   if (!srid && utmMatch) {
@@ -474,15 +382,12 @@ export async function readPrjMeta(file) {
   return parsePrjText(text)
 }
 
-// ---------- GABUNGKAN .shp + .dbf JADI GEOJSON ----------
-
 export async function buildGeoJsonFromShapefile(files, options = {}) {
 
   const { shp, dbf } = findShapefileParts(files)
   if (!shp) return null
 
   const geometryCollection = await readShpGeometries(shp, options)
-
   let attributeRecords = []
 
   if (dbf) {
@@ -502,13 +407,7 @@ export async function buildGeoJsonFromShapefile(files, options = {}) {
 
 }
 
-// Batas ukuran .shp yang masih aman diparsing penuh & disimpan
-// sebagai GeoJSON (supaya tidak membebani browser & database).
-// Di atas batas ini, sistem tetap menampilkan bbox/CRS/attributes,
-// tapi peta pratinjau interaktif dilewati.
 const MAX_SHP_SIZE_FOR_GEOJSON = 3 * 1024 * 1024 // 3 MB
-
-// ---------- ORKESTRASI: gabungkan .shp + .dbf + .prj ----------
 
 export async function extractShapefileMetadata(files) {
 

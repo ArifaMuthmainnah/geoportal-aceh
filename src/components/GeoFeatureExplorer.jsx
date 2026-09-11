@@ -1,27 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { MapContainer, TileLayer, GeoJSON, Rectangle, useMap } from 'react-leaflet'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { MapContainer, TileLayer, GeoJSON, Rectangle, CircleMarker, useMap, useMapEvent } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-
-// =====================================================
-// SESI 7 (revisi besar): PETA "HERO" DI ATAS TAB INFO/
-// LOCATION/ATTRIBUTES/ASSETS.
-//
-// Dibuat SEMIRIP MUNGKIN dengan tampilan iframe data API
-// lama (lihat 06_peta_di_halaman_detail.jpeg):
-//  - toolbar atas: ganti basemap, kotak pencarian, gear,
-//    menu (hamburger)
-//  - kontrol zoom custom (+ / − / 3D / ⋯) pojok kanan bawah
-//  - mini peta ikhtisar pojok kiri bawah
-//  - panel info di kanan yang SEKARANG TINGGINYA PENUH
-//    (bukan cuma kartu kecil melayang setengah tinggi lagi)
-//
-// Dipakai untuk data upload sendiri (own-*) yang TIDAK
-// punya embed_url — baik itu shapefile lengkap (geojson
-// berisi fitur), maupun yang cuma py bounding box saja
-// (tanpa rincian geometri per-fitur, misalnya dataset yang
-// hanya menyimpan cakupan area).
-// =====================================================
 
 function IconPin({ size = 16 }) {
   return (
@@ -98,19 +78,121 @@ function IconInfo({ size = 15 }) {
   )
 }
 
-function IconGlobe({ size = 15 }) {
+function IconZoomFeature({ size = 15 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <circle cx="11" cy="11" r="7" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   )
 }
 
-// =====================================================
-// BASEMAP (2 pilihan, bisa ditoggle lewat ikon layers)
-// =====================================================
+function IconHighlight({ size = 15, active = false }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.5 13.5L15 8l1 1-5.5 5.5" fill={active ? 'currentColor' : 'none'} />
+      <path d="M14 9l1-3.5L18.5 8 15 9z" fill={active ? 'currentColor' : 'none'} />
+      <path d="M9.5 13.5L7 20l6.5-2.5" />
+    </svg>
+  )
+}
+
+function IconCoordEdit({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <line x1="12" y1="2" x2="12" y2="5" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="2" y1="12" x2="5" y2="12" />
+      <line x1="19" y1="12" x2="22" y2="12" />
+    </svg>
+  )
+}
+
+function IconMapQuery({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+      <line x1="9" y1="3" x2="9" y2="18" />
+      <line x1="15" y1="6" x2="15" y2="21" />
+    </svg>
+  )
+}
+
+function IconExpandArrows({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="8 3 3 3 3 8" />
+      <polyline points="21 8 21 3 16 3" />
+      <polyline points="16 21 21 21 21 16" />
+      <polyline points="3 16 3 21 8 21" />
+    </svg>
+  )
+}
+
+function IconBtn({
+  tooltip,
+  tooltipPosition = 'above',
+  onClick,
+  disabled = false,
+  active = false,
+  type = 'button',
+  className = '',
+  style,
+  ariaLabel,
+  children,
+}) {
+
+  const wrapRef = useRef(null)
+  const [tooltipPos, setTooltipPos] = useState(null)
+
+  function showTooltip() {
+    if (!tooltip || !wrapRef.current) return
+    const rect = wrapRef.current.getBoundingClientRect()
+    if (tooltipPosition === 'below') {
+      setTooltipPos({ left: rect.left + rect.width / 2, top: rect.bottom + 8 })
+    } else {
+      setTooltipPos({ left: rect.left + rect.width / 2, top: rect.top - 8 })
+    }
+  }
+
+  function hideTooltip() {
+    setTooltipPos(null)
+  }
+
+  return (
+    <span
+      ref={wrapRef}
+      className="geo-iconbtn-wrap"
+      onMouseEnter={showTooltip}
+      onMouseLeave={hideTooltip}
+      onFocus={showTooltip}
+      onBlur={hideTooltip}
+    >
+      <button
+        type={type}
+        className={`${className}${active ? ' active' : ''}`}
+        style={style}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={ariaLabel || tooltip}
+      >
+        {children}
+      </button>
+
+      {tooltip && tooltipPos && (
+        <span
+          className={`geo-fixed-tooltip ${tooltipPosition === 'below' ? 'below' : 'above'}`}
+          style={{ left: `${tooltipPos.left}px`, top: `${tooltipPos.top}px` }}
+        >
+          {tooltip}
+        </span>
+      )}
+    </span>
+  )
+}
 
 const BASEMAPS = {
   osm: {
@@ -123,21 +205,18 @@ const BASEMAPS = {
   },
 }
 
-// =====================================================
-// FIT KE GEOJSON / BBOX + TANGKAP INSTANCE PETA
-// =====================================================
-
 function MapReady({ onReady }) {
   const map = useMap()
   useEffect(() => { onReady(map) }, [map, onReady])
   return null
 }
 
-function FitBounds({ geojson, bbox }) {
+function FitBounds({ geojson, bbox, skip }) {
 
   const map = useMap()
 
   useEffect(() => {
+    if (skip) return
 
     try {
 
@@ -159,7 +238,63 @@ function FitBounds({ geojson, bbox }) {
       console.error('Gagal menyesuaikan tampilan peta:', err)
     }
 
-  }, [geojson, bbox, map])
+  }, [geojson, bbox, skip, map])
+
+  return null
+
+}
+
+function QueryClickHandler({ active, onQuery }) {
+  useMapEvent('click', (event) => {
+    if (active) onQuery(event.latlng)
+  })
+  return null
+}
+
+function FocusFeature({ focusFeature, onFocus }) {
+
+  const map = useMap()
+
+  useEffect(() => {
+
+    if (!focusFeature?.feature) return
+
+    try {
+
+      const layer = L.geoJSON(focusFeature.feature)
+      const bounds = layer.getBounds()
+
+      if (!bounds.isValid()) return
+
+      map.fitBounds(bounds, { maxZoom: 17, padding: [40, 40] })
+
+      const isSingleFeature =
+        focusFeature.feature.type === 'Feature' ||
+        (focusFeature.feature.type === 'FeatureCollection' &&
+          Array.isArray(focusFeature.feature.features) &&
+          focusFeature.feature.features.length === 1)
+
+      if (isSingleFeature) {
+
+        const feature =
+          focusFeature.feature.type === 'Feature'
+            ? focusFeature.feature
+            : focusFeature.feature.features[0]
+
+        onFocus({
+          properties: feature.properties || {},
+          latlng: bounds.getCenter(),
+          bounds,
+          layer: null,
+        })
+
+      }
+
+    } catch (err) {
+      console.error('Gagal fokus ke fitur:', err)
+    }
+
+  }, [focusFeature, map])
 
   return null
 
@@ -173,6 +308,7 @@ function labelFor(key, attributeMeta) {
 
 const featureStyle = { color: '#0b5cab', weight: 3, fillColor: '#3a6ea5', fillOpacity: 0.25 }
 const bboxOnlyStyle = { color: '#16325c', weight: 2, fillColor: '#16325c', fillOpacity: 0.05 }
+const highlightStyle = { color: '#f59e0b', weight: 4, fillColor: '#fbbf24', fillOpacity: 0.45 }
 
 function pointToLayer(feature, latlng) {
   return L.circleMarker(latlng, { radius: 6, color: '#0b5cab', weight: 2, fillColor: '#1677c8', fillOpacity: 0.9 })
@@ -194,22 +330,48 @@ function downloadGeojson(geojson, title) {
   }
 }
 
-function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
+function GeoFeatureExplorer({ geojson, bbox, title, attributes = [], focusFeature = null }) {
 
   const hasFeatures = Boolean(geojson && Array.isArray(geojson.features) && geojson.features.length > 0)
   const hasBboxOnly = !hasFeatures && Boolean(bbox)
-
-  const [selected, setSelected] = useState(null) // { properties, latlng }
+  const [selected, setSelected] = useState(null)
   const [panelOpen, setPanelOpen] = useState(true)
   const [basemap, setBasemap] = useState('osm')
   const [leafletMap, setLeafletMap] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [searchError, setSearchError] = useState('')
-  const [menuOpen, setMenuOpen] = useState(false)
-
+  const [topMenuOpen, setTopMenuOpen] = useState(false)
+  const [highlightOn, setHighlightOn] = useState(false)
+  const highlightedLayerRef = useRef(null)
+  const [showAddressPopup, setShowAddressPopup] = useState(false)
+  const [addressLoading, setAddressLoading] = useState(false)
+  const [addressError, setAddressError] = useState('')
+  const [addressInfo, setAddressInfo] = useState(null)
+  const [showCoordEditor, setShowCoordEditor] = useState(false)
+  const [coordLatInput, setCoordLatInput] = useState('')
+  const [coordLngInput, setCoordLngInput] = useState('')
+  const [manualPoint, setManualPoint] = useState(null)
+  const [zoomMenuOpen, setZoomMenuOpen] = useState(false)
+  const [queryMode, setQueryMode] = useState(false)
   const attributeMeta = Array.isArray(attributes) ? attributes : []
 
-  // Indeks fitur + bounds masing-masing, dipakai kotak pencarian
+  useEffect(() => {
+
+    function handleAfterPrint() {
+      document.body.classList.remove('geo-print-only')
+    }
+
+    window.addEventListener('afterprint', handleAfterPrint)
+
+    return () => window.removeEventListener('afterprint', handleAfterPrint)
+
+  }, [])
+
+  function handlePrintMap() {
+    document.body.classList.add('geo-print-only')
+    window.print()
+  }
+
   const featureIndex = useMemo(() => {
     if (!hasFeatures) return []
     return geojson.features.map((feature) => {
@@ -223,21 +385,54 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
     })
   }, [geojson, hasFeatures])
 
+  function resetPopovers() {
+    setShowAddressPopup(false)
+    setAddressInfo(null)
+    setAddressError('')
+    setShowCoordEditor(false)
+  }
+
   function onEachFeature(feature, layer) {
+
+    let bounds = null
+    try {
+      const b = layer.getBounds ? layer.getBounds() : null
+      if (b && b.isValid && b.isValid()) bounds = b
+    } catch { bounds = null }
+
     layer.on('click', (event) => {
-      setSelected({ properties: feature.properties || {}, latlng: event.latlng })
+      resetPopovers()
+      setSelected({ properties: feature.properties || {}, latlng: event.latlng, bounds, layer })
       setPanelOpen(true)
     })
   }
 
+  useEffect(() => {
+
+    if (highlightedLayerRef.current && highlightedLayerRef.current.setStyle) {
+      try { highlightedLayerRef.current.setStyle(featureStyle) } catch {}
+    }
+    highlightedLayerRef.current = null
+
+    if (highlightOn && selected?.layer && selected.layer.setStyle) {
+      try {
+        selected.layer.setStyle(highlightStyle)
+        if (selected.layer.bringToFront) selected.layer.bringToFront()
+      } catch {}
+      highlightedLayerRef.current = selected.layer
+    }
+
+  }, [selected, highlightOn])
+
   function handleBboxClick(event) {
-    setSelected({ properties: { Informasi: 'Area cakupan data (bounding box)' }, latlng: event.latlng })
+    resetPopovers()
+    setSelected({ properties: { Informasi: 'Area cakupan data (bounding box)' }, latlng: event.latlng, bounds: null, layer: null })
     setPanelOpen(true)
   }
 
   function handleSearchSubmit(event) {
     event.preventDefault()
-    setMenuOpen(false)
+    setTopMenuOpen(false)
 
     const term = searchTerm.trim().toLowerCase()
     if (!term) return
@@ -250,7 +445,8 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
     if (match && leafletMap) {
       if (match.bounds) leafletMap.fitBounds(match.bounds, { maxZoom: 15, padding: [40, 40] })
       const center = match.bounds ? match.bounds.getCenter() : leafletMap.getCenter()
-      setSelected({ properties: match.feature.properties || {}, latlng: center })
+      resetPopovers()
+      setSelected({ properties: match.feature.properties || {}, latlng: center, bounds: match.bounds, layer: null })
       setPanelOpen(true)
       setSearchError('')
     } else {
@@ -259,7 +455,7 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
   }
 
   function handleResetView() {
-    setMenuOpen(false)
+    setZoomMenuOpen(false)
     if (!leafletMap) return
     try {
       if (hasFeatures) {
@@ -275,6 +471,146 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
     }
   }
 
+  function handleZoomToFeature() {
+    if (!leafletMap || !selected) return
+    try {
+      if (selected.bounds && selected.bounds.isValid && selected.bounds.isValid()) {
+        leafletMap.fitBounds(selected.bounds, { maxZoom: 17, padding: [40, 40] })
+      } else if (selected.latlng) {
+        leafletMap.setView(selected.latlng, Math.max(leafletMap.getZoom(), 15))
+      }
+    } catch (err) {
+      console.error('Gagal zoom ke fitur:', err)
+    }
+  }
+
+  async function handleToggleAddressInfo() {
+
+    const next = !showAddressPopup
+    setShowCoordEditor(false)
+    setShowAddressPopup(next)
+
+    if (!next || !selected?.latlng) return
+
+    setAddressLoading(true)
+    setAddressError('')
+    setAddressInfo(null)
+
+    try {
+
+      const { lat, lng } = selected.latlng
+
+      const url =
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`
+
+      const response = await fetch(url, { headers: { 'Accept-Language': 'id' } })
+
+      if (!response.ok) {
+        throw new Error('Gagal mengambil data alamat.')
+      }
+
+      const data = await response.json()
+      const addr = data.address || {}
+
+      setAddressInfo({
+        gampong: addr.village || addr.hamlet || addr.suburb || addr.neighbourhood || '-',
+        kecamatan: addr.suburb || addr.city_district || addr.municipality || addr.town || '-',
+        kabKota: addr.city || addr.county || addr.regency || '-',
+        provinsi: addr.state || '-',
+      })
+
+    } catch (err) {
+
+      console.error('Gagal mengambil info alamat:', err)
+      setAddressError('Gagal mengambil info alamat dari titik ini. Coba lagi.')
+
+    } finally {
+
+      setAddressLoading(false)
+
+    }
+
+  }
+
+  function handleToggleCoordEditor() {
+    const next = !showCoordEditor
+    setShowAddressPopup(false)
+    setShowCoordEditor(next)
+    if (next) {
+      setCoordLatInput(selected?.latlng ? selected.latlng.lat.toFixed(6) : '')
+      setCoordLngInput(selected?.latlng ? selected.latlng.lng.toFixed(6) : '')
+    }
+  }
+
+  function handleApplyCoordEditor(event) {
+    event.preventDefault()
+
+    const lat = parseFloat(coordLatInput)
+    const lng = parseFloat(coordLngInput)
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return
+
+    const latlng = L.latLng(lat, lng)
+
+    setManualPoint(latlng)
+    setSelected({
+      properties: { Informasi: 'Titik hasil input manual (Coordinate Editor)' },
+      latlng,
+      bounds: null,
+      layer: null,
+    })
+    setPanelOpen(true)
+
+    if (leafletMap) {
+      leafletMap.setView(latlng, Math.max(leafletMap.getZoom(), 14))
+    }
+  }
+
+
+  function handleQueryClick(latlng) {
+
+    resetPopovers()
+
+    if (hasFeatures && featureIndex.length > 0) {
+
+      let closest = null
+      let closestDist = Infinity
+
+      featureIndex.forEach(({ feature, bounds }) => {
+        if (!bounds) return
+        const center = bounds.getCenter()
+        const dist = latlng.distanceTo(center)
+        if (dist < closestDist) {
+          closestDist = dist
+          closest = { feature, bounds }
+        }
+      })
+
+      if (closest) {
+        setSelected({
+          properties: closest.feature.properties || {},
+          latlng: closest.bounds.getCenter(),
+          bounds: closest.bounds,
+          layer: null,
+        })
+        setPanelOpen(true)
+      }
+
+    } else if (hasBboxOnly) {
+
+      setSelected({ properties: { Informasi: 'Area cakupan data (bounding box)' }, latlng, bounds: null, layer: null })
+      setPanelOpen(true)
+
+    }
+
+  }
+
+  function handleExternalFocus(sel) {
+    resetPopovers()
+    setSelected(sel)
+    setPanelOpen(true)
+  }
+
   if (!hasFeatures && !hasBboxOnly) return null
 
   const entries = selected
@@ -287,7 +623,7 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
 
     <div className="dataset-map-wrapper geo-explorer">
 
-      <div className="geo-explorer-map-area">
+      <div className={`geo-explorer-map-area${queryMode ? ' query-mode' : ''}`}>
 
         <MapContainer center={[4.5, 96.8]} zoom={7} zoomControl={false} style={{ height: '100%', width: '100%' }}>
 
@@ -310,22 +646,31 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
             />
           )}
 
-          <FitBounds geojson={geojson} bbox={bbox} />
+          {manualPoint && (
+            <CircleMarker
+              center={manualPoint}
+              radius={8}
+              pathOptions={{ color: '#e11d48', weight: 3, fillColor: '#fb7185', fillOpacity: 0.9 }}
+            />
+          )}
+
+          <FitBounds geojson={geojson} bbox={bbox} skip={Boolean(focusFeature)} />
           <MapReady onReady={setLeafletMap} />
+          <QueryClickHandler active={queryMode} onQuery={handleQueryClick} />
+          <FocusFeature focusFeature={focusFeature} onFocus={handleExternalFocus} />
 
         </MapContainer>
 
-        {/* ================= TOOLBAR ATAS ================= */}
         <div className="geo-explorer-toolbar">
 
-          <button
-            type="button"
-            className="geo-toolbar-icon icon-tooltip-btn"
-            data-tooltip="Ganti tampilan dasar peta"
+          <IconBtn
+            className="geo-toolbar-icon"
+            tooltip="Ganti tampilan dasar peta"
+            tooltipPosition="below"
             onClick={() => setBasemap((current) => (current === 'osm' ? 'topo' : 'osm'))}
           >
             <IconLayers />
-          </button>
+          </IconBtn>
 
           <form className="geo-explorer-search" onSubmit={handleSearchSubmit}>
             <input
@@ -335,29 +680,28 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
               placeholder="Search by location name"
               aria-label="Cari fitur pada peta"
             />
-            <button type="button" className="geo-toolbar-icon icon-tooltip-btn" data-tooltip="Pengaturan peta">
+            <IconBtn className="geo-toolbar-icon" tooltip="Pengaturan peta" tooltipPosition="below">
               <IconSettings />
-            </button>
-            <button type="submit" className="geo-toolbar-icon icon-tooltip-btn" data-tooltip="Cari fitur">
+            </IconBtn>
+            <IconBtn className="geo-toolbar-icon" tooltip="Cari fitur" tooltipPosition="below" type="submit">
               <IconSearch />
-            </button>
-            <button
-              type="button"
-              className="geo-toolbar-icon icon-tooltip-btn"
-              data-tooltip="Menu lainnya"
-              onClick={() => setMenuOpen((current) => !current)}
+            </IconBtn>
+            <IconBtn
+              className="geo-toolbar-icon"
+              tooltip="Menu lainnya"
+              tooltipPosition="below"
+              onClick={() => setTopMenuOpen((current) => !current)}
             >
               <IconMenu />
-            </button>
+            </IconBtn>
           </form>
 
           {searchError && <div className="geo-explorer-search-error">{searchError}</div>}
 
-          {menuOpen && (
+          {topMenuOpen && (
             <div className="geo-explorer-menu">
-              <button type="button" onClick={handleResetView}>Reset tampilan peta</button>
               {hasFeatures && (
-                <button type="button" onClick={() => { setMenuOpen(false); downloadGeojson(geojson, title) }}>
+                <button type="button" onClick={() => { setTopMenuOpen(false); downloadGeojson(geojson, title) }}>
                   Unduh GeoJSON
                 </button>
               )}
@@ -366,7 +710,6 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
 
         </div>
 
-        {/* ============ MINI PETA IKHTISAR (kiri bawah) ============ */}
         <div className="geo-explorer-minimap">
           <MapContainer
             center={[4.5, 96.9]}
@@ -385,37 +728,97 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
           </MapContainer>
         </div>
 
-        {/* ============ KONTROL ZOOM CUSTOM (kanan bawah) ============ */}
         <div className="geo-explorer-zoom">
+
           <button type="button" className="geo-zoom-btn" aria-label="Perbesar peta" onClick={() => leafletMap?.zoomIn()}>+</button>
           <button type="button" className="geo-zoom-btn" aria-label="Perkecil peta" onClick={() => leafletMap?.zoomOut()}>−</button>
-          <button type="button" className="geo-zoom-btn geo-zoom-3d icon-tooltip-btn" data-tooltip="Tampilan 3D segera hadir">3D</button>
-          <button type="button" className="geo-zoom-btn icon-tooltip-btn" data-tooltip="Opsi lainnya" onClick={() => setMenuOpen((c) => !c)}>⋯</button>
+
+          {zoomMenuOpen && (
+            <>
+              <IconBtn
+                className="geo-zoom-btn"
+                tooltip="Query objects on map"
+                active={queryMode}
+                onClick={() => setQueryMode((current) => !current)}
+              >
+                <IconMapQuery size={16} />
+              </IconBtn>
+              <IconBtn
+                className="geo-zoom-btn"
+                tooltip="Zoom to initial view"
+                onClick={handleResetView}
+              >
+                <IconExpandArrows size={14} />
+              </IconBtn>
+            </>
+          )}
+
+          <IconBtn className="geo-zoom-btn geo-zoom-3d" tooltip="Tampilan 3D segera hadir">3D</IconBtn>
+          <IconBtn className="geo-zoom-btn" tooltip="Opsi lainnya" onClick={() => setZoomMenuOpen((c) => !c)}>⋯</IconBtn>
+
         </div>
 
       </div>
-
-      {/* ================= PANEL INFO (FULL HEIGHT) ================= */}
 
       {panelOpen ? (
 
         <aside className="geo-explorer-sidebar">
 
           <div className="geo-sidebar-header">
+
             <span className="geo-sidebar-pin"><IconPin /></span>
-            <button type="button" className="geo-sidebar-print icon-tooltip-btn" data-tooltip="Cetak" onClick={() => window.print()}>
-              <IconPrinter />
-            </button>
-            <button type="button" className="geo-sidebar-close" onClick={() => setPanelOpen(false)} aria-label="Tutup panel">×</button>
+
+            <div className="geo-sidebar-header-actions">
+
+              <IconBtn
+                className="geo-sidebar-header-btn"
+                tooltip={highlightOn ? 'Matikan Highlight features' : 'Highlight features'}
+                tooltipPosition="below"
+                active={highlightOn}
+                onClick={() => setHighlightOn((current) => !current)}
+              >
+                <IconHighlight active={highlightOn} />
+              </IconBtn>
+
+              <IconBtn
+                className="geo-sidebar-header-btn"
+                tooltip="Zoom to feature"
+                tooltipPosition="below"
+                onClick={handleZoomToFeature}
+                disabled={!selected}
+              >
+                <IconZoomFeature />
+              </IconBtn>
+
+              <span className="geo-sidebar-header-divider" />
+
+              <IconBtn
+                className="geo-sidebar-print"
+                tooltip="Cetak"
+                tooltipPosition="below"
+                onClick={handlePrintMap}
+              >
+                <IconPrinter />
+              </IconBtn>
+
+              <button type="button" className="geo-sidebar-close" onClick={() => setPanelOpen(false)} aria-label="Tutup panel">×</button>
+
+            </div>
+
           </div>
 
           <div className="geo-sidebar-layer-row">
             <span className="geo-sidebar-layer-icon"><IconLayers size={14} /></span>
             <strong>{title}</strong>
             <span className="geo-sidebar-chevron">▾</span>
-            <button type="button" className="geo-sidebar-folder icon-tooltip-btn" data-tooltip="Buka folder layer">
+            <IconBtn
+              className="geo-sidebar-folder"
+              tooltip="Unduh GeoJSON layer ini"
+              onClick={() => downloadGeojson(geojson, title)}
+              disabled={!hasFeatures}
+            >
               <IconFolder />
-            </button>
+            </IconBtn>
           </div>
 
           <div className="geo-sidebar-coords-row">
@@ -427,13 +830,57 @@ function GeoFeatureExplorer({ geojson, bbox, title, attributes = [] }) {
                   ? 'Klik titik/garis/area pada peta untuk melihat detail'
                   : 'Klik area pada peta untuk melihat cakupan data'}
             </span>
-            <button type="button" className="geo-sidebar-info-btn icon-tooltip-btn" data-tooltip="Informasi fitur">
+            <IconBtn
+              className="geo-sidebar-info-btn"
+              tooltip="More info (alamat titik)"
+              active={showAddressPopup}
+              onClick={handleToggleAddressInfo}
+              disabled={!selected?.latlng}
+            >
               <IconInfo />
-            </button>
-            <button type="button" className="geo-sidebar-globe-btn icon-tooltip-btn" data-tooltip="Buka tampilan penuh">
-              <IconGlobe />
-            </button>
+            </IconBtn>
+            <IconBtn
+              className="geo-sidebar-globe-btn"
+              tooltip="Show Coordinate Editor"
+              active={showCoordEditor}
+              onClick={handleToggleCoordEditor}
+            >
+              <IconCoordEdit />
+            </IconBtn>
           </div>
+
+          {showAddressPopup && (
+            <div className="geo-address-popover">
+              {addressLoading ? (
+                <p>Memuat info alamat…</p>
+              ) : addressError ? (
+                <p className="geo-popover-error">{addressError}</p>
+              ) : addressInfo ? (
+                <>
+                  <div><span>Gampong</span><strong>{addressInfo.gampong}</strong></div>
+                  <div><span>Kecamatan</span><strong>{addressInfo.kecamatan}</strong></div>
+                  <div><span>Kab/Kota</span><strong>{addressInfo.kabKota}</strong></div>
+                  <div><span>Provinsi</span><strong>{addressInfo.provinsi}</strong></div>
+                </>
+              ) : (
+                <p>Klik salah satu titik/fitur pada peta dulu untuk melihat alamatnya.</p>
+              )}
+            </div>
+          )}
+
+          {showCoordEditor && (
+            <form className="geo-coord-editor" onSubmit={handleApplyCoordEditor}>
+              <label>
+                Lat
+                <input type="number" step="any" value={coordLatInput} onChange={(e) => setCoordLatInput(e.target.value)} />
+              </label>
+              <label>
+                Long
+                <input type="number" step="any" value={coordLngInput} onChange={(e) => setCoordLngInput(e.target.value)} />
+              </label>
+              <button type="submit">Terapkan</button>
+            </form>
+          )}
 
           <div className="geo-sidebar-body">
             {entries.length > 0 ? (

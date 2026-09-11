@@ -33,20 +33,7 @@ function GeoappCard({ application }) {
       ? new Date(application.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
       : '-'
 
-  // =====================================================
-  // #8 (Sesi 4): kategori badge SEKARANG disamakan dengan
-  // Dataset — dihitung lewat mapCategory(), bukan dihardcode
-  // jadi literal "Dashboard"/"Aplikasi" lagi. Kalau kategori
-  // yang diupload user tidak ada di daftar kategori baku,
-  // mapCategory() akan menampilkannya apa adanya (tidak
-  // dipaksa jadi "Umum").
-  // =====================================================
-
   const category = mapCategory(application.category?.identifier)
-
-  // Jenis resource (Dashboard/Aplikasi) ditampilkan terpisah,
-  // di baris meta bawah bersama tanggal — supaya listing yang
-  // menggabungkan Dashboard & Aplikasi tetap mudah dibedakan.
   const typeLabel =
     getResourceTypeLabel(application.resource_type === 'application' ? 'application' : 'dashboard')
 
@@ -81,7 +68,6 @@ function GeoappCard({ application }) {
           <div className="katalog-card-image-fallback"><span>GIS</span></div>
 
         </div>
-
 
         <div className="card-body katalog-card-body">
 

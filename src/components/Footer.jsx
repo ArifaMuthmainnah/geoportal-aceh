@@ -30,9 +30,6 @@ function Footer() {
 
           </div>
 
-
-          {/* DESCRIPTION */}
-
           <div className="footer-description">
 
             <p>
@@ -42,9 +39,6 @@ function Footer() {
             </p>
 
           </div>
-
-
-          {/* NAVIGATION */}
 
           <div className="footer-column">
 
@@ -78,9 +72,6 @@ function Footer() {
 
           </div>
 
-
-          {/* SERVICES */}
-
           <div className="footer-column">
 
             <h3>
@@ -106,9 +97,6 @@ function Footer() {
           </div>
 
         </div>
-
-
-        {/* BOTTOM */}
 
         <div className="footer-bottom">
 

@@ -39,16 +39,6 @@ import DatasetCard from '../components/DatasetCard'
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 
-
-// =========================================
-// BUCKET FILTER
-// =========================================
-//
-// #8/#9 (Sesi 4): sebelumnya cuma dibedakan dataset/dashboard.
-// Sekarang mencakup semua jenis resource: dataset, dashboard,
-// application (Aplikasi), map (Peta), document (Dokumen), dan
-// informasi.
-
 function getResourceBucket(item) {
   const type = item?.resource_type
   if (type === 'dashboard') return 'dashboard'
@@ -74,14 +64,11 @@ function JIGNDetail() {
 
   const { username } = useParams()
   const { isAdmin } = useAuth()
-
   const [owner, setOwner] = useState(null)
   const [resources, setResources] = useState([])
   const [typeFilter, setTypeFilter] = useState('Semua')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  // #10: profil instansi (deskripsi + link website resmi)
   const [agencyProfile, setAgencyProfile] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
@@ -119,15 +106,6 @@ function JIGNDetail() {
           console.error('Gagal mengambil dataset owner API lama:', err)
         }
 
-        // =====================================================
-        // FIX #2: tandai setiap geoapp dengan resource_type =
-        // 'dashboard' secara eksplisit. Data mentah dari API
-        // lama tidak selalu punya field ini, padahal DatasetCard
-        // memakainya untuk menentukan tujuan link (/aplikasi/:id
-        // vs /katalog/:id). Tanpa ini, klik dashboard di halaman
-        // JIGN salah diarahkan ke endpoint dataset dan gagal.
-        // =====================================================
-
         let oldGeoapps = []
         try {
           const response = await getAllGeoapps()
@@ -139,12 +117,6 @@ function JIGNDetail() {
         } catch (err) {
           console.error('Gagal mengambil geoapp owner API lama:', err)
         }
-
-        // =====================================================
-        // #8 (Sesi 4): Peta & Dokumen dari API lama sekarang
-        // juga ditampilkan di halaman detail JIGN, bukan cuma
-        // Dataset & Dashboard.
-        // =====================================================
 
         let oldMaps = []
         try {
@@ -208,16 +180,6 @@ function JIGNDetail() {
     return () => { mounted = false }
 
   }, [username])
-
-
-  // =====================================================
-  // #10: PROFIL INSTANSI (deskripsi + link website resmi)
-  // =====================================================
-  //
-  // Info ini tidak tersedia dari API Geoportal Aceh lama,
-  // jadi disimpan & dikelola sendiri (bisa dilengkapi
-  // langsung oleh admin di halaman ini).
-  // =====================================================
 
   useEffect(() => {
 
@@ -286,12 +248,10 @@ function JIGNDetail() {
 
   }
 
-
   const filteredResources = useMemo(() => {
     if (typeFilter === 'Semua') return resources
     return resources.filter((item) => getResourceBucket(item) === typeFilter)
   }, [resources, typeFilter])
-
 
   const displayName =
     owner
@@ -307,12 +267,6 @@ function JIGNDetail() {
 
       <section className="catalog-hero">
         <div className="container">
-
-          {/* =====================================================
-              #8: tombol kembali dipisah dari kolom badge/judul,
-              diberi jarak (marginBottom) yang jelas supaya tidak
-              lagi mepet dengan nama instansi di bawahnya.
-          ===================================================== */}
 
           <div style={{ marginBottom: '22px' }}>
             <BackToTopButton to="/jign" label="Kembali ke JIGN" />
@@ -359,14 +313,6 @@ function JIGNDetail() {
 
 
       <section className="container jign-content-section">
-
-        {/* =====================================================
-            #10: TENTANG INSTANSI — deskripsi singkat + link ke
-            situs resmi. Info ini tidak tersedia dari API lama,
-            jadi disimpan & dikelola sendiri, dan bisa dilengkapi
-            langsung oleh admin di sini.
-        ===================================================== */}
-
         <div
           style={{
             marginBottom: '32px',

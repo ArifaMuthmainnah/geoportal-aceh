@@ -16,9 +16,6 @@ function formatDate(date) {
   return parsed.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-// Tanggal acara Agenda (diisi manual user saat upload) —
-// ditampilkan lengkap dengan nama hari, beda dari tanggal
-// publish biasa.
 function formatEventDate(date) {
   if (!date) return null
   const parsed = new Date(date)
@@ -32,7 +29,6 @@ function Agenda() {
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-
   const [search, setSearch] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState('newest')
@@ -47,7 +43,6 @@ function Agenda() {
         setLoading(true)
 
         const allInformasi = await getPublishedByType('informasi')
-
         const agendaItems =
           allInformasi
             .filter((item) => item.sub_type === 'agenda')
@@ -198,9 +193,6 @@ function Agenda() {
 
               return (
                 <div className="col-md-6 col-lg-4" key={item.id}>
-
-                  {/* Kartu agenda TIDAK bisa diklik — hanya tombol
-                      "Tonton Sekarang" (jika ada link video) yang aktif. */}
                   <article className="card katalog-card h-100">
 
                     <div className="katalog-card-image">
@@ -237,9 +229,6 @@ function Agenda() {
                         {description.length > 150 ? '...' : ''}
                       </p>
 
-                      {/* SESI 5 (lanjutan): tanggal/waktu/tempat acara —
-                          diisi sendiri oleh user saat upload, bukan
-                          tanggal publish. */}
                       {(eventDateLabel || item.event_time || item.event_location) && (
                         <div className="katalog-card-agenda-schedule">
                           {eventDateLabel && <div><span>📅 {eventDateLabel}</span></div>}

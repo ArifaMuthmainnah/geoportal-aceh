@@ -21,11 +21,6 @@ const TOKEN_KEY =
 const USER_KEY =
   'geoportal_current_user'
 
-
-// =====================================================
-// PROVIDER
-// =====================================================
-
 export function AuthProvider({
   children,
 }) {
@@ -40,11 +35,6 @@ export function AuthProvider({
     loading,
     setLoading
   ] = useState(true)
-
-
-  // ===================================================
-  // RESTORE SESSION
-  // ===================================================
 
   useEffect(() => {
 
@@ -123,15 +113,9 @@ export function AuthProvider({
 
     }
 
-
     restoreSession()
 
   }, [])
-
-
-  // ===================================================
-  // LOGIN
-  // ===================================================
 
   async function login(
     username,
@@ -164,7 +148,6 @@ export function AuthProvider({
       response.token
     )
 
-
     sessionStorage.setItem(
       USER_KEY,
       JSON.stringify(
@@ -172,20 +155,13 @@ export function AuthProvider({
       )
     )
 
-
     setCurrentUser(
       response.user
     )
 
-
     return response.user
 
   }
-
-
-  // ===================================================
-  // LOGOUT
-  // ===================================================
 
   function logout() {
 
@@ -200,10 +176,6 @@ export function AuthProvider({
     setCurrentUser(null)
 
   }
-
-    // ===================================================
-  // REFRESH (setelah admin edit profil sendiri)
-  // ===================================================
 
   async function refreshCurrentUser() {
 
@@ -225,11 +197,6 @@ export function AuthProvider({
     }
 
   }
-
-
-  // ===================================================
-  // VALUE
-  // ===================================================
 
   const value = {
 
@@ -256,7 +223,6 @@ export function AuthProvider({
 
   }
 
-
   return (
 
     <AuthContext.Provider
@@ -270,11 +236,6 @@ export function AuthProvider({
   )
 
 }
-
-
-// =====================================================
-// HOOK
-// =====================================================
 
 export function useAuth() {
 

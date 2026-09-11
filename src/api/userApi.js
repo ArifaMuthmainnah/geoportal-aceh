@@ -7,19 +7,9 @@ import {
   authDelete,
 } from './apiClient'
 
-
-// =====================================================
-// GET TOKEN (dipakai untuk request multipart manual)
-// =====================================================
-
 function getToken() {
   return sessionStorage.getItem('geoportal_auth_token')
 }
-
-
-// =====================================================
-// GET ALL USERS (ADMIN ONLY)
-// =====================================================
 
 export async function getAllUsers() {
 
@@ -30,11 +20,6 @@ export async function getAllUsers() {
 
 }
 
-
-// =====================================================
-// GET PUBLIC OWNERS (UNTUK HALAMAN JIGN)
-// =====================================================
-
 export async function getPublicOwners() {
 
   const response =
@@ -43,11 +28,6 @@ export async function getPublicOwners() {
   return response?.users || []
 
 }
-
-
-// =====================================================
-// HELPER: BUILD FORM DATA USER (mendukung avatar)
-// =====================================================
 
 function buildUserFormData(userData) {
 
@@ -65,11 +45,6 @@ function buildUserFormData(userData) {
   return formData
 
 }
-
-
-// =====================================================
-// REQUEST MULTIPART KE BACKEND SENDIRI
-// =====================================================
 
 async function authRequestFormData(endpoint, method, formData) {
 
@@ -106,11 +81,6 @@ async function authRequestFormData(endpoint, method, formData) {
 
 }
 
-
-// =====================================================
-// CREATE USER (mendukung avatar)
-// =====================================================
-
 export async function createUser(userData) {
 
   const formData = buildUserFormData(userData)
@@ -119,12 +89,6 @@ export async function createUser(userData) {
 
 }
 
-
-// =====================================================
-// UPDATE USER (mendukung avatar) — INI YANG SEBELUMNYA
-// SELALU 404 KARENA ROUTE PATCH BELUM ADA DI BACKEND
-// =====================================================
-
 export async function updateUser(id, userData) {
 
   const formData = buildUserFormData(userData)
@@ -132,11 +96,6 @@ export async function updateUser(id, userData) {
   return authRequestFormData(`/users/${id}`, 'PATCH', formData)
 
 }
-
-
-// =====================================================
-// SESI 6: UPDATE PROFIL SENDIRI (operator maupun admin)
-// =====================================================
 
 export async function updateMyProfile({ username, email, password, currentPassword, avatarFile }) {
 
@@ -151,11 +110,6 @@ export async function updateMyProfile({ username, email, password, currentPasswo
   return authRequestFormData('/users/me', 'PATCH', formData)
 
 }
-
-
-// =====================================================
-// DELETE USER
-// =====================================================
 
 export async function deleteUser(id) {
 

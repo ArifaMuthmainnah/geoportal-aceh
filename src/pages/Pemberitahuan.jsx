@@ -20,7 +20,6 @@ function Pemberitahuan() {
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-
   const [search, setSearch] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState('newest')
@@ -35,14 +34,12 @@ function Pemberitahuan() {
         setLoading(true)
 
         const allInformasi = await getPublishedByType('informasi')
-
         const pemberitahuanItems =
           allInformasi
             .filter((item) => item.sub_type === 'pemberitahuan')
             .map(adaptOwnResource)
 
         setItems(pemberitahuanItems)
-
         markInformasiSeenNow('pemberitahuan')
 
       } catch (err) {

@@ -1,10 +1,5 @@
 const jwt = require('jsonwebtoken')
 
-
-// =====================================================
-// VERIFY TOKEN
-// =====================================================
-
 function authenticateToken(req, res, next) {
 
   const authHeader =
@@ -19,10 +14,8 @@ function authenticateToken(req, res, next) {
 
   }
 
-
   const parts =
     authHeader.split(' ')
-
 
   if (
     parts.length !== 2 ||
@@ -36,9 +29,7 @@ function authenticateToken(req, res, next) {
 
   }
 
-
   const token = parts[1]
-
 
   try {
 
@@ -47,7 +38,6 @@ function authenticateToken(req, res, next) {
         token,
         process.env.JWT_SECRET
       )
-
 
     req.user = decoded
 
@@ -64,11 +54,6 @@ function authenticateToken(req, res, next) {
 
 }
 
-
-// =====================================================
-// ADMIN ONLY
-// =====================================================
-
 function requireAdmin(req, res, next) {
 
   if (!req.user) {
@@ -80,7 +65,6 @@ function requireAdmin(req, res, next) {
 
   }
 
-
   if (req.user.role !== 'admin') {
 
     return res.status(403).json({
@@ -90,11 +74,9 @@ function requireAdmin(req, res, next) {
 
   }
 
-
   next()
 
 }
-
 
 module.exports = {
   authenticateToken,

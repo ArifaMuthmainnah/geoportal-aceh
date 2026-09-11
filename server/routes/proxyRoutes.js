@@ -1,7 +1,5 @@
 const express = require('express')
-
 const db = require('../config/database')
-
 const {
   authenticateToken,
   requireAdmin
@@ -9,19 +7,9 @@ const {
 
 const router = express.Router()
 
-
-// =====================================================
-// OLD API BASE URL
-// =====================================================
-
 const OLD_API_BASE_URL =
   process.env.OLD_API_BASE_URL ||
   'https://sig.acehprov.go.id/api/v2'
-
-
-// =====================================================
-// HELPER: FETCH OLD API
-// =====================================================
 
 async function fetchOldApi(path) {
 
@@ -40,11 +28,6 @@ async function fetchOldApi(path) {
   return response.json()
 
 }
-
-
-// =====================================================
-// HELPER: AMBIL OVERRIDES
-// =====================================================
 
 async function getOverridesMap(resourceType) {
 
@@ -66,11 +49,6 @@ async function getOverridesMap(resourceType) {
   return map
 
 }
-
-
-// =====================================================
-// HELPER: TERAPKAN OVERRIDES KE LIST
-// =====================================================
 
 function applyOverridesToList(items, overridesMap) {
 
@@ -125,18 +103,20 @@ function applyOverridesToList(items, overridesMap) {
               }
             : item.category,
 
+        keywords:
+          override.keywords_override ||
+          item.keywords,
+
         _hasOverride: true,
+
+        _override_extra_metadata:
+          override.extra_metadata_override || null,
 
       }
 
     })
 
 }
-
-
-// =====================================================
-// HELPER: TERAPKAN OVERRIDE KE SATU ITEM
-// =====================================================
 
 function applyOverrideToItem(item, override) {
 
@@ -165,16 +145,18 @@ function applyOverrideToItem(item, override) {
           }
         : item.category,
 
+    keywords:
+      override.keywords_override ||
+      item.keywords,
+
     _hasOverride: true,
+
+    _override_extra_metadata:
+      override.extra_metadata_override || null,
 
   }
 
 }
-
-
-// =====================================================
-// DATASETS - LIST
-// =====================================================
 
 router.get('/datasets', async (req, res) => {
 
@@ -198,11 +180,6 @@ router.get('/datasets', async (req, res) => {
         [],
         overridesMap
       )
-
-    // PENTING: timpa juga field ASLI-nya (datasets), bukan
-    // cuma menambahkan field "results". Kalau tidak, halaman
-    // yang membaca response.datasets akan tetap dapat data
-    // mentah yang belum difilter override.
     const responseBody = { ...data, results }
     if (data.datasets !== undefined) responseBody.datasets = results
 
@@ -224,11 +201,6 @@ router.get('/datasets', async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// DATASETS - DETAIL
-// =====================================================
 
 router.get('/datasets/:id', async (req, res) => {
 
@@ -283,11 +255,6 @@ router.get('/datasets/:id', async (req, res) => {
 
 })
 
-
-// =====================================================
-// GEOAPPS - LIST
-// =====================================================
-
 router.get('/geoapps', async (req, res) => {
 
   try {
@@ -332,11 +299,6 @@ router.get('/geoapps', async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// GEOAPPS - DETAIL
-// =====================================================
 
 router.get('/geoapps/:id', async (req, res) => {
 
@@ -391,11 +353,6 @@ router.get('/geoapps/:id', async (req, res) => {
 
 })
 
-
-// =====================================================
-// OWNERS
-// =====================================================
-
 router.get('/owners', async (req, res) => {
 
   try {
@@ -427,11 +384,6 @@ router.get('/owners', async (req, res) => {
 
 })
 
-
-// =====================================================
-// MAPS
-// =====================================================
-
 router.get('/maps', async (req, res) => {
 
   try {
@@ -444,7 +396,17 @@ router.get('/maps', async (req, res) => {
         `/maps${query ? '?' + query : ''}`
       )
 
-    return res.json(data)
+    const overridesMap = await getOverridesMap('map')
+
+    const results = applyOverridesToList(
+      data.results || data.maps || [],
+      overridesMap
+    )
+
+    const responseBody = { ...data, results }
+    if (data.maps !== undefined) responseBody.maps = results
+
+    return res.json(responseBody)
 
   } catch (error) {
 
@@ -463,11 +425,6 @@ router.get('/maps', async (req, res) => {
 
 })
 
-
-// =====================================================
-// DOCUMENTS
-// =====================================================
-
 router.get('/documents', async (req, res) => {
 
   try {
@@ -480,7 +437,17 @@ router.get('/documents', async (req, res) => {
         `/documents${query ? '?' + query : ''}`
       )
 
-    return res.json(data)
+    const overridesMap = await getOverridesMap('document')
+
+    const results = applyOverridesToList(
+      data.results || data.documents || [],
+      overridesMap
+    )
+
+    const responseBody = { ...data, results }
+    if (data.documents !== undefined) responseBody.documents = results
+
+    return res.json(responseBody)
 
   } catch (error) {
 
@@ -499,17 +466,22 @@ router.get('/documents', async (req, res) => {
 
 })
 
-// =====================================================
-// MAPS - DETAIL
-// =====================================================
-
 router.get('/maps/:id', async (req, res) => {
 
   try {
 
+    const overridesMap = await getOverridesMap('map')
+    const override = overridesMap.get(String(req.params.id))
+
+    if (override && override.is_hidden) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
+
     const data = await fetchOldApi(`/maps/${req.params.id}`)
 
-    return res.json(data)
+    const map = applyOverrideToItem(data.map || data, override)
+
+    return res.json({ ...data, map })
 
   } catch (error) {
 
@@ -524,17 +496,22 @@ router.get('/maps/:id', async (req, res) => {
 
 })
 
-// =====================================================
-// DOCUMENTS - DETAIL
-// =====================================================
-
 router.get('/documents/:id', async (req, res) => {
 
   try {
 
+    const overridesMap = await getOverridesMap('document')
+    const override = overridesMap.get(String(req.params.id))
+
+    if (override && override.is_hidden) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
+
     const data = await fetchOldApi(`/documents/${req.params.id}`)
 
-    return res.json(data)
+    const document = applyOverrideToItem(data.document || data, override)
+
+    return res.json({ ...data, document })
 
   } catch (error) {
 
@@ -549,15 +526,149 @@ router.get('/documents/:id', async (req, res) => {
 
 })
 
-// =====================================================
-// DATASETS - LIST UNTUK ADMIN (TERMASUK YANG DISEMBUNYIKAN)
-// =====================================================
-//
-// Beda dengan /datasets (publik): endpoint ini tidak
-// menyaring data is_hidden, supaya admin tetap bisa
-// melihat & mengelola data yang sudah di-unpublish.
-//
-// =====================================================
+router.get(
+  '/admin/maps',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const query = req.originalUrl.split('?')[1] || ''
+
+      const data = await fetchOldApi(`/maps${query ? '?' + query : ''}`)
+
+      const overridesMap = await getOverridesMap('map')
+
+      const results = (data.results || data.maps || []).map((item) => {
+        const key = String(item.pk ?? item.id ?? '')
+        const override = overridesMap.get(key)
+        if (!override) return { ...item, _is_hidden: false }
+        return { ...applyOverrideToItem(item, override), _is_hidden: Boolean(override.is_hidden) }
+      })
+
+      return res.json({ ...data, results })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN MAPS ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil data peta dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
+
+router.get(
+  '/admin/maps/:id',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const overridesMap = await getOverridesMap('map')
+      const override = overridesMap.get(String(req.params.id))
+
+      const data = await fetchOldApi(`/maps/${req.params.id}`)
+      const raw = data.map || data
+
+      const merged = applyOverrideToItem(raw, override)
+
+      return res.json({
+        ...data,
+        map: { ...merged, _is_hidden: Boolean(override?.is_hidden) },
+      })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN MAP DETAIL ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil detail peta dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
+
+router.get(
+  '/admin/documents',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const query = req.originalUrl.split('?')[1] || ''
+
+      const data = await fetchOldApi(`/documents${query ? '?' + query : ''}`)
+
+      const overridesMap = await getOverridesMap('document')
+
+      const results = (data.results || data.documents || []).map((item) => {
+        const key = String(item.pk ?? item.id ?? '')
+        const override = overridesMap.get(key)
+        if (!override) return { ...item, _is_hidden: false }
+        return { ...applyOverrideToItem(item, override), _is_hidden: Boolean(override.is_hidden) }
+      })
+
+      return res.json({ ...data, results })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN DOCUMENTS ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil dokumen dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
+
+router.get(
+  '/admin/documents/:id',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const overridesMap = await getOverridesMap('document')
+      const override = overridesMap.get(String(req.params.id))
+
+      const data = await fetchOldApi(`/documents/${req.params.id}`)
+      const raw = data.document || data
+
+      const merged = applyOverrideToItem(raw, override)
+
+      return res.json({
+        ...data,
+        document: { ...merged, _is_hidden: Boolean(override?.is_hidden) },
+      })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN DOCUMENT DETAIL ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil detail dokumen dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
 
 router.get(
   '/admin/datasets',
@@ -614,11 +725,6 @@ router.get(
   }
 )
 
-
-// =====================================================
-// GEOAPPS - LIST UNTUK ADMIN (TERMASUK YANG DISEMBUNYIKAN)
-// =====================================================
-
 router.get(
   '/admin/geoapps',
   authenticateToken,
@@ -674,20 +780,303 @@ router.get(
   }
 )
 
-// =====================================================
-// OVERRIDES - HANYA ADMIN
-// =====================================================
+router.get(
+  '/admin/datasets/:id',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const overridesMap =
+        await getOverridesMap('dataset')
+
+      const override =
+        overridesMap.get(String(req.params.id))
+
+      const data =
+        await fetchOldApi(
+          `/datasets/${req.params.id}`
+        )
+
+      const raw = data.dataset || data
+
+      const merged =
+        applyOverrideToItem(raw, override)
+
+      return res.json({
+        ...data,
+        dataset: {
+          ...merged,
+          _is_hidden: Boolean(override?.is_hidden),
+        },
+      })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN DATASET DETAIL ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil detail dataset dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
+
+router.get(
+  '/admin/geoapps/:id',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const overridesMap =
+        await getOverridesMap('geoapp')
+
+      const override =
+        overridesMap.get(String(req.params.id))
+
+      const data =
+        await fetchOldApi(
+          `/geoapps/${req.params.id}`
+        )
+
+      const raw = data.geoapp || data
+
+      const merged =
+        applyOverrideToItem(raw, override)
+
+      return res.json({
+        ...data,
+        ...merged,
+        _is_hidden: Boolean(override?.is_hidden),
+      })
+
+    } catch (error) {
+
+      console.error('PROXY ADMIN GEOAPP DETAIL ERROR:', error.message)
+
+      return res.status(502).json({
+        success: false,
+        message: 'Gagal mengambil detail aplikasi dari API Geoportal Aceh lama.',
+      })
+
+    }
+
+  }
+)
+
+router.use(
+  '/attribute-data',
+  authenticateToken,
+  requireAdmin
+)
+
+router.get(
+  '/attribute-data/:resourceType/:externalId',
+  async (req, res) => {
+
+    try {
+
+      const { resourceType, externalId } = req.params
+
+        if (!['dataset', 'geoapp', 'map', 'document'].includes(resource_type)) {
+
+          return res.status(400).json({
+            success: false,
+            message: 'resource_type tidak valid.',
+          })
+
+        }
+
+    const row =
+        await db
+          .prepare(`
+            SELECT attribute_data_override
+            FROM api_overrides
+            WHERE resource_type = $1 AND external_id = $2
+          `)
+          .get(resourceType, String(externalId))
+
+      return res.json({
+        success: true,
+        attribute_data: row?.attribute_data_override || null,
+      })
+
+    } catch (error) {
+
+      console.error('GET ATTRIBUTE DATA OVERRIDE ERROR:', error)
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mengambil isi atribut tersimpan.',
+      })
+
+    }
+
+  }
+)
+
+router.post(
+  '/attribute-data',
+  async (req, res) => {
+
+    try {
+
+      const { resource_type, external_id, attribute_data } = req.body
+
+      if (!resource_type || !external_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'resource_type dan external_id wajib diisi.',
+        })
+      }
+
+    if (!['dataset', 'geoapp', 'map', 'document'].includes(resource_type)) {
+
+      return res.status(400).json({
+        success: false,
+        message: 'resource_type tidak valid.',
+      })
+
+    }
+
+      await db
+        .prepare(`
+          INSERT INTO api_overrides
+          (resource_type, external_id, attribute_data_override, updated_at)
+          VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+          ON CONFLICT (resource_type, external_id)
+          DO UPDATE SET
+            attribute_data_override = EXCLUDED.attribute_data_override,
+            updated_at = CURRENT_TIMESTAMP
+        `)
+        .run(resource_type, String(external_id), attribute_data || null)
+
+      return res.json({
+        success: true,
+        message: 'Isi atribut berhasil disimpan.',
+      })
+
+    } catch (error) {
+
+      console.error('SAVE ATTRIBUTE DATA OVERRIDE ERROR:', error)
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal menyimpan isi atribut.',
+      })
+
+    }
+
+  }
+)
+
+router.use(
+  '/map-layers',
+  authenticateToken,
+  requireAdmin
+)
+
+router.get(
+  '/map-layers/:resourceType/:externalId',
+  async (req, res) => {
+
+    try {
+
+      const { resourceType, externalId } = req.params
+
+      if (!['dataset', 'geoapp', 'map', 'document'].includes(resourceType)) {
+        return res.status(400).json({ success: false, message: 'resource_type tidak valid.' })
+      }
+
+      const row =
+        await db
+          .prepare(`
+            SELECT map_layers_override
+            FROM api_overrides
+            WHERE resource_type = $1 AND external_id = $2
+          `)
+          .get(resourceType, String(externalId))
+
+      return res.json({
+        success: true,
+        map_layers: row?.map_layers_override || null,
+      })
+
+    } catch (error) {
+
+      console.error('GET MAP LAYERS OVERRIDE ERROR:', error)
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal mengambil layer peta tersimpan.',
+      })
+
+    }
+
+  }
+)
+
+router.post(
+  '/map-layers',
+  async (req, res) => {
+
+    try {
+
+      const { resource_type, external_id, map_layers } = req.body
+
+      if (!resource_type || !external_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'resource_type dan external_id wajib diisi.',
+        })
+      }
+
+      if (!['dataset', 'geoapp', 'map', 'document'].includes(resource_type)) {
+        return res.status(400).json({ success: false, message: 'resource_type tidak valid.' })
+      }
+
+      await db
+        .prepare(`
+          INSERT INTO api_overrides
+          (resource_type, external_id, map_layers_override, updated_at)
+          VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+          ON CONFLICT (resource_type, external_id)
+          DO UPDATE SET
+            map_layers_override = EXCLUDED.map_layers_override,
+            updated_at = CURRENT_TIMESTAMP
+        `)
+        .run(resource_type, String(external_id), map_layers || null)
+
+      return res.json({
+        success: true,
+        message: 'Layer peta berhasil disimpan.',
+      })
+
+    } catch (error) {
+
+      console.error('SAVE MAP LAYERS OVERRIDE ERROR:', error)
+
+      return res.status(500).json({
+        success: false,
+        message: 'Gagal menyimpan layer peta.',
+      })
+
+    }
+
+  }
+)
 
 router.use(
   '/overrides',
   authenticateToken,
   requireAdmin
 )
-
-
-// =====================================================
-// OVERRIDES - UPSERT (sembunyikan / edit tampilan)
-// =====================================================
 
 router.post('/overrides', async (req, res) => {
 
@@ -700,6 +1089,8 @@ router.post('/overrides', async (req, res) => {
       title_override,
       abstract_override,
       category_override,
+      keywords_override,
+      extra_metadata_override,
     } = req.body
 
     if (!resource_type || !external_id) {
@@ -711,7 +1102,7 @@ router.post('/overrides', async (req, res) => {
 
     }
 
-    if (!['dataset', 'geoapp'].includes(resource_type)) {
+    if (!['dataset', 'geoapp', 'map', 'document'].includes(resource_type)) {
 
       return res.status(400).json({
         success: false,
@@ -719,14 +1110,6 @@ router.post('/overrides', async (req, res) => {
       })
 
     }
-
-    // ---------------------------------------------------
-    // PENTING (#9): kalau is_hidden TIDAK dikirim (mis. saat
-    // hanya mengedit title/abstract), JANGAN reset status
-    // sembunyi ke 0. Ambil dulu nilai lama dari database dan
-    // pertahankan, supaya edit metadata tidak diam-diam
-    // "mempublikasikan ulang" data yang sudah di-unpublish.
-    // ---------------------------------------------------
 
     const existing =
       await db
@@ -745,14 +1128,16 @@ router.post('/overrides', async (req, res) => {
     await db
       .prepare(`
         INSERT INTO api_overrides
-        (resource_type, external_id, is_hidden, title_override, abstract_override, category_override, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+        (resource_type, external_id, is_hidden, title_override, abstract_override, category_override, keywords_override, extra_metadata_override, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
         ON CONFLICT (resource_type, external_id)
         DO UPDATE SET
           is_hidden = EXCLUDED.is_hidden,
           title_override = EXCLUDED.title_override,
           abstract_override = EXCLUDED.abstract_override,
           category_override = EXCLUDED.category_override,
+          keywords_override = EXCLUDED.keywords_override,
+          extra_metadata_override = EXCLUDED.extra_metadata_override,
           updated_at = CURRENT_TIMESTAMP
       `)
       .run(
@@ -761,7 +1146,9 @@ router.post('/overrides', async (req, res) => {
         nextIsHidden,
         title_override || null,
         abstract_override || null,
-        category_override || null
+        category_override || null,
+        keywords_override || null,
+        extra_metadata_override || null
       )
 
     return res.json({
@@ -781,11 +1168,6 @@ router.post('/overrides', async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// OVERRIDES - LIST (untuk ditampilkan di admin)
-// =====================================================
 
 router.get('/overrides', async (req, res) => {
 
@@ -821,11 +1203,6 @@ router.get('/overrides', async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// OVERRIDES - HAPUS (kembalikan ke tampilan asli)
-// =====================================================
 
 router.delete(
   '/overrides/:resourceType/:externalId',
@@ -872,6 +1249,5 @@ router.delete(
 
   }
 )
-
 
 module.exports = router

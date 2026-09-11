@@ -1,10 +1,6 @@
 const { Pool } = require('pg')
 require('dotenv').config()
 
-// =====================================================
-// POSTGRESQL SUPABASE
-// =====================================================
-
 const pool = new Pool({
   connectionString: process.env.SUPABASE_DATABASE_URL,
 
@@ -12,10 +8,6 @@ const pool = new Pool({
     rejectUnauthorized: false
   }
 })
-
-// =====================================================
-// DATABASE WRAPPER
-// =====================================================
 
 const db = {
 
@@ -83,11 +75,6 @@ const db = {
 
 }
 
-
-// =====================================================
-// TEST CONNECTION
-// =====================================================
-
 async function testDatabase() {
 
   try {
@@ -125,15 +112,7 @@ async function testDatabase() {
 }
 
 
-// =====================================================
-// CREATE TABLES
-// =====================================================
-
 async function initializeDatabase() {
-
-  // ---------------------------------------------------
-  // USERS
-  // ---------------------------------------------------
 
   await pool.query(`
 
@@ -163,11 +142,6 @@ async function initializeDatabase() {
     )
 
   `)
-
-
-  // ---------------------------------------------------
-  // DATASETS
-  // ---------------------------------------------------
 
   await pool.query(`
 
@@ -211,16 +185,6 @@ async function initializeDatabase() {
 
   `)
 
-
-  // ---------------------------------------------------
-  // MIGRASI KOLOM: file_path / file_name jadi NULLABLE
-  // ---------------------------------------------------
-  //
-  // Diperlukan karena sekarang resource bisa berupa
-  // LINK (dashboard/webgis eksternal), bukan cuma file.
-  //
-  // ---------------------------------------------------
-
   await pool.query(`
     ALTER TABLE datasets
     ALTER COLUMN file_path DROP NOT NULL
@@ -230,21 +194,6 @@ async function initializeDatabase() {
     ALTER TABLE datasets
     ALTER COLUMN file_name DROP NOT NULL
   `)
-
-
-  // ---------------------------------------------------
-  // MIGRASI KOLOM BARU
-  // ---------------------------------------------------
-  //
-  // content_type   : 'file' atau 'link'
-  // external_url   : dipakai kalau content_type = 'link'
-  // extra_metadata : JSON string berisi metadata tambahan
-  //                  (attributes, srid, bbox, region,
-  //                  language, attribution, purpose, dll)
-  //                  supaya halaman detail bisa menampilkan
-  //                  info selengkap data dari API lama.
-  //
-  // ---------------------------------------------------
 
   await pool.query(`
     ALTER TABLE datasets
@@ -266,36 +215,10 @@ async function initializeDatabase() {
     ADD COLUMN IF NOT EXISTS files_json TEXT
   `)
 
-  // ---------------------------------------------------
-  // MIGRASI KOLOM AVATAR USER
-  // ---------------------------------------------------
-
   await pool.query(`
     ALTER TABLE users
     ADD COLUMN IF NOT EXISTS avatar_url TEXT
   `)
-
-  // ---------------------------------------------------
-  // PERBAIKI CONSTRAINT resource_type
-  // ---------------------------------------------------
-  //
-  // BUG LAMA: constraint hanya mengizinkan
-  // ('dataset','application','webgis'), padahal seluruh
-  // kode aplikasi (routes & frontend) memakai 'dashboard'.
-  // Akibatnya SETIAP upload dashboard GAGAL karena
-  // melanggar CHECK constraint di database.
-  //
-  // #9 (Sesi 4): 'application' ditambahkan LAGI sebagai
-  // jenis resource resmi — kali ini untuk "Aplikasi" yang
-  // terpisah dari "Dashboard" (beda tampilan iframe: iframe
-  // aplikasi asli, bukan iframe dashboard), bukan sisa
-  // constraint lama yang salah.
-  //
-  // ---------------------------------------------------
-
-    // Kolom thumbnail (#1) dan sub_type (#11, untuk
-  // membedakan pemberitahuan/agenda/berita pada resource
-  // type 'informasi')
 
   await pool.query(`
     ALTER TABLE datasets
@@ -327,11 +250,6 @@ async function initializeDatabase() {
     )
   `)
 
-
-  // ---------------------------------------------------
-  // PERBAIKI CONSTRAINT content_type
-  // ---------------------------------------------------
-
   await pool.query(`
     ALTER TABLE datasets
     DROP CONSTRAINT IF EXISTS datasets_content_type_check
@@ -349,23 +267,6 @@ async function initializeDatabase() {
       )
     )
   `)
-
-
-  // ---------------------------------------------------
-  // API OVERRIDES
-  // ---------------------------------------------------
-  //
-  // Menyimpan "penyesuaian lokal" terhadap data dari API
-  // Geoportal Aceh lama, TANPA mengubah data aslinya:
-  // - is_hidden       : sembunyikan dari web kita
-  // - title_override  : ganti judul tampilan di web kita
-  // - abstract_override
-  // - category_override
-  //
-  // resource_type: 'dataset' atau 'geoapp'
-  // external_id  : pk/id resource di API lama
-  //
-  // ---------------------------------------------------
 
   await pool.query(`
 
@@ -394,7 +295,9 @@ async function initializeDatabase() {
       CHECK (
         resource_type IN (
           'dataset',
-          'geoapp'
+          'geoapp',
+          'map',
+          'document'
         )
       ),
 
@@ -409,19 +312,43 @@ async function initializeDatabase() {
 
   `)
 
+  await pool.query(`
+    ALTER TABLE api_overrides
+    ADD COLUMN IF NOT EXISTS keywords_override TEXT
+  `)
 
-  // ---------------------------------------------------
-  // AGENCY PROFILES (#10)
-  // ---------------------------------------------------
-  //
-  // Info instansi (deskripsi + link website resmi) TIDAK
-  // tersedia dari API Geoportal Aceh lama, jadi disimpan
-  // sendiri di sini. Dikunci per "username" instansi
-  // (bisa punya user lokal atau cuma owner dari API lama),
-  // supaya bisa dicocokkan langsung dengan halaman detail
-  // JIGN (/jign/:username).
-  //
-  // ---------------------------------------------------
+    await pool.query(`
+    ALTER TABLE api_overrides
+    ADD COLUMN IF NOT EXISTS extra_metadata_override TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE api_overrides
+    ADD COLUMN IF NOT EXISTS attribute_data_override TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE api_overrides
+    ADD COLUMN IF NOT EXISTS map_layers_override TEXT
+  `)
+
+  await pool.query(`
+    ALTER TABLE api_overrides
+    DROP CONSTRAINT IF EXISTS api_overrides_type_check
+  `)
+
+  await pool.query(`
+    ALTER TABLE api_overrides
+    ADD CONSTRAINT api_overrides_type_check
+    CHECK (
+      resource_type IN (
+        'dataset',
+        'geoapp',
+        'map',
+        'document'
+      )
+    )
+  `)
 
   await pool.query(`
 
@@ -443,17 +370,11 @@ async function initializeDatabase() {
 
   `)
 
-
   console.log(
     'Tabel users, datasets, api_overrides, dan agency_profiles siap.'
   )
 
 }
-
-
-// =====================================================
-// INITIALIZE DATABASE
-// =====================================================
 
 async function initialize() {
 
@@ -462,11 +383,6 @@ async function initialize() {
   await initializeDatabase()
 
 }
-
-
-// =====================================================
-// RUN INITIALIZATION
-// =====================================================
 
 initialize()
 
@@ -480,10 +396,5 @@ initialize()
     process.exit(1)
 
   })
-
-
-// =====================================================
-// EXPORT
-// =====================================================
 
 module.exports = db

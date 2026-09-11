@@ -3,11 +3,6 @@ import {
   authPatch,
 } from './apiClient'
 
-
-// =====================================================
-// GET PROFIL INSTANSI (PUBLIK)
-// =====================================================
-
 export async function getAgencyProfile(username) {
 
   if (!username) {
@@ -30,11 +25,6 @@ export async function getAgencyProfile(username) {
   }
 
 }
-
-
-// =====================================================
-// SIMPAN / PERBARUI PROFIL INSTANSI (ADMIN ONLY)
-// =====================================================
 
 export function updateAgencyProfile(username, data = {}) {
 

@@ -16,17 +16,13 @@ function CSRT() {
 
   return (
     <div className="login-content-page">
-      {/* HERO SECTION - KONSISTEN DENGAN LAYERS */}
       <section className="login-simple-hero">
         <span className="login-page-eyebrow">CSRT</span>
         <h1>Citra Satelit<br /><span>Resolusi Tinggi</span></h1>
         <p>Informasi dan layanan citra penginderaan jauh untuk mendukung kebutuhan geospasial di wilayah Aceh.</p>
       </section>
 
-      {/* DASHBOARD CONTAINER */}
       <section className="csrt-main-container">
-        
-        {/* PANEL KIRI: FILTER (SIDEBAR) */}
         <aside className="csrt-sidebar">
           <button className="csrt-draw-btn">
             <span className="icon">✎</span> Gambar Cakupan Area
@@ -62,7 +58,6 @@ function CSRT() {
           </button>
         </aside>
 
-        {/* PANEL TENGAH: PETA (MAP AREA) */}
         <main className="csrt-map-area">
           <MapContainer 
             center={acehPosition} 
@@ -78,7 +73,6 @@ function CSRT() {
           </MapContainer>
         </main>
 
-        {/* PANEL KANAN: HASIL (RESULT AREA) */}
         <aside className="csrt-result-panel">
           <h2 className="csrt-result-title">Hasil Pencarian</h2>
           

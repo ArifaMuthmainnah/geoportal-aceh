@@ -79,7 +79,26 @@ export async function getAdminGeoappsRaw() {
 }
 
 // =====================================================
+// SESI 11 (FIX): DETAIL APLIKASI API LAMA UNTUK ADMIN
+// =====================================================
+
+export async function getAdminGeoappDetailRaw(id) {
+
+  const response = await apiGet(`admin/geoapps/${id}`)
+
+  return response?.geoapp || response
+
+}
+
+// =====================================================
 // EDIT TAMPILAN APLIKASI DARI API LAMA (LOKAL SAJA)
+// =====================================================
+//
+// SESI 11: sekarang juga mengirim keywords & extraMetadata
+// (format SAMA seperti buildExtraMetadata() untuk data
+// upload-an), supaya form Edit Data untuk data API bisa
+// selengkap form Edit data upload-an.
+//
 // =====================================================
 
 export function updateGeoapp(pk, data) {
@@ -90,13 +109,11 @@ export function updateGeoapp(pk, data) {
     title_override: data.title,
     abstract_override: data.abstract,
     category_override: data.category,
+    keywords_override: data.keywords || null,
+    extra_metadata_override: data.extraMetadata || null,
   })
 
 }
-
-// =====================================================
-// SEMBUNYIKAN APLIKASI DARI API LAMA (LOKAL SAJA)
-// =====================================================
 
 export function hideGeoapp(pk) {
 
@@ -107,10 +124,6 @@ export function hideGeoapp(pk) {
   })
 
 }
-
-// =====================================================
-// PULIHKAN APLIKASI API LAMA
-// =====================================================
 
 export function restoreGeoapp(pk) {
 

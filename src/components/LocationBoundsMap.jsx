@@ -3,28 +3,6 @@ import { MapContainer, TileLayer, Rectangle, Marker, useMap } from 'react-leafle
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// =====================================================
-// PENGGANTI GAMBAR STATIS TAB LOCATION
-// =====================================================
-// Sebelumnya tab Location memakai <img> yang diambil dari
-// "https://staticmap.openstreetmap.de/..." — domain ini
-// TIDAK BISA di-resolve (ERR_NAME_NOT_RESOLVED), makanya
-// gambar + kotak bounding box + tanda (+) di tengah selalu
-// gagal muncul.
-//
-// Komponen ini memakai peta Leaflet sungguhan (tile
-// OpenStreetMap asli, PASTI berhasil dimuat) tapi SELURUH
-// interaksinya (drag/geser, scroll zoom, tombol zoom,
-// double-click zoom, dst) DIMATIKAN TOTAL — jadi perilakunya
-// persis seperti gambar statis biasa (tidak bisa digeser/
-// diperbesar sama sekali), bukan mode peta interaktif.
-// Ditambah:
-//  - kotak Bounding Box (Rectangle biru gelap)
-//  - tanda "+" (crosshair) tepat di titik tengah
-// dengan tile bersih tanpa arsiran/hatch apa pun, dipakai
-// SAMA PERSIS untuk data upload sendiri MAUPUN data dari API.
-// =====================================================
-
 const crosshairIcon = L.divIcon({
   className: 'location-crosshair-icon',
   html: '<span></span>',

@@ -1,12 +1,3 @@
-// =====================================================
-// KUMPULAN IKON AKSI (Sesi 6)
-// Dipakai di AdminDashboard, UserDashboard, MyDatasets,
-// dan halaman lain untuk tombol Lihat/Edit/Hapus/Publish
-// serta ikon kaca pembesar di kotak pencarian.
-// Semua pakai stroke="currentColor" supaya warnanya ikut
-// className tombol (icon-btn-view / icon-btn-edit / dst).
-// =====================================================
-
 export function IconSearch({ size = 16 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

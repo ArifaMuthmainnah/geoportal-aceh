@@ -3,16 +3,6 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// =====================================================
-// SESI 6: PETA PRATINJAU GEOJSON
-// Dipakai di halaman Upload (pratinjau langsung setelah
-// parsing shapefile) dan tab Location halaman detail
-// (Dataset/Peta) untuk menampilkan geometri asli hasil
-// upload — bukan cuma kotak bounding box statis.
-// Pakai react-leaflet + leaflet yang SUDAH terpasang di
-// project ini (dipakai juga oleh MapView.jsx/WebGIS).
-// =====================================================
-
 function FitToGeoJson({ geojson }) {
 
   const map = useMap()

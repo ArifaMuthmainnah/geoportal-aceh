@@ -28,14 +28,11 @@ import GeoappCard from '../components/ApplicationCard'
 function Aplikasi() {
 
   const [applications, setApplications] = useState([])
-
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('Semua')
   const [instansi, setInstansi] = useState('Semua')
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
 
   useEffect(() => {
 
@@ -62,11 +59,6 @@ function Aplikasi() {
         } catch (err) {
           console.error('Gagal mengambil dashboard upload sendiri:', err)
         }
-
-        // #9: "Aplikasi" upload sendiri (resource_type =
-        // 'application') ditambahkan sebagai sumber terpisah
-        // dari Dashboard, tapi ditampilkan di halaman & card
-        // yang sama.
 
         let ownApplications = []
 
@@ -102,23 +94,11 @@ function Aplikasi() {
 
   }, [])
 
-
-  // =====================================================
-  // #9: filter "kategori" di halaman ini adalah JENIS
-  // resource (Dashboard / Aplikasi), bukan kategori topik
-  // (Sosial/Ekonomi/dll — itu ditampilkan sebagai badge di
-  // tiap card lewat mapCategory). Sebelumnya cuma ada
-  // "Dashboard" karena semua data (API lama + upload sendiri)
-  // selalu ditandai resource_type: 'dashboard'. Sekarang
-  // dibedakan lewat resource_type sebenarnya.
-  // =====================================================
-
   function getApplicationTypeLabel(application) {
     return getResourceTypeLabel(
       application.resource_type === 'application' ? 'application' : 'dashboard'
     )
   }
-
 
   const categories = useMemo(() => {
 
@@ -135,8 +115,6 @@ function Aplikasi() {
 
   const instansiList = useMemo(() => {
 
-    // applications di sini tidak punya daftar owners terpisah,
-    // jadi kita tetap ambil dari data yang ada (sudah published)
     const nameSet = new Set()
 
     applications.forEach((application) => {
@@ -147,7 +125,6 @@ function Aplikasi() {
     return ['Semua', ...Array.from(nameSet).sort((a, b) => a.localeCompare(b, 'id'))]
 
   }, [applications])
-
 
   const filteredApplications = useMemo(() => {
 
@@ -173,7 +150,6 @@ function Aplikasi() {
 
   }, [applications, search, category, instansi])
 
-
   return (
 
     <main className="applications-page">
@@ -187,7 +163,6 @@ function Aplikasi() {
           </div>
         </div>
       </section>
-
 
       <section className="container information-toolbar-wrapper">
 
@@ -239,7 +214,6 @@ function Aplikasi() {
 
       </section>
 
-
       <section className="container information-content">
 
         <div className="catalog-heading-layout">
@@ -267,20 +241,17 @@ function Aplikasi() {
 
         </div>
 
-
         {loading && (
           <div className="information-empty">
             <p>Memuat aplikasi...</p>
           </div>
         )}
 
-
         {!loading && error && (
           <div className="information-empty">
             <p>{error}</p>
           </div>
         )}
-
 
         {!loading && !error && filteredApplications.length > 0 && (
           <div className="row g-4">
@@ -291,7 +262,6 @@ function Aplikasi() {
             ))}
           </div>
         )}
-
 
         {!loading && !error && filteredApplications.length === 0 && (
           <div className="information-empty">
@@ -307,6 +277,5 @@ function Aplikasi() {
   )
 
 }
-
 
 export default Aplikasi

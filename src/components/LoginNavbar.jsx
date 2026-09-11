@@ -8,11 +8,6 @@ function LoginNavbar() {
 
       <div className="login-navbar-inner">
 
-
-        {/* =================================================
-            BRAND
-        ================================================= */}
-
         <NavLink
           to="/"
           className="login-navbar-brand"
@@ -36,15 +31,7 @@ function LoginNavbar() {
 
         </NavLink>
 
-
-        {/* =================================================
-            NAVIGATION
-        ================================================= */}
-
         <nav className="login-navbar-menu">
-
-
-          {/* HOME */}
 
           <NavLink
             to="/"
@@ -52,9 +39,6 @@ function LoginNavbar() {
           >
             Home
           </NavLink>
-
-
-          {/* LAYERS */}
 
           <NavLink
             to="/login/layers"
@@ -67,9 +51,6 @@ function LoginNavbar() {
             Layers
           </NavLink>
 
-
-          {/* CSRT */}
-
           <NavLink
             to="/login/csrt"
             className={({ isActive }) =>
@@ -81,9 +62,6 @@ function LoginNavbar() {
             CSRT
           </NavLink>
 
-
-          {/* KARTOGRAFI */}
-
           <NavLink
             to="/login/kartografi"
             className={({ isActive }) =>
@@ -94,9 +72,6 @@ function LoginNavbar() {
           >
             Kartografi
           </NavLink>
-
-
-          {/* LOGIN */}
 
           <NavLink
             to="/login"
