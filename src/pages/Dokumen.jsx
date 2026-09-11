@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-
 import { getAllDocuments } from '../api/documentApi'
 import { getPublishedByType } from '../api/myDatasetApi'
 import { mergeResourceLists, sortByDateDesc, getResourceOwnerName } from '../utils/ownDataAdapter'
-
 import DatasetCard from '../components/DatasetCard'
 
 function Dokumen() {

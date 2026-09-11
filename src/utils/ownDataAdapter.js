@@ -16,7 +16,6 @@ export function buildOwnAvatarUrl(avatarPath) {
   return `${SERVER_BASE_URL}/uploads/${avatarPath}`
 }
 
-
 export function adaptOwnResource(item) {
 
   if (!item) return null
@@ -59,16 +58,8 @@ export function adaptOwnResource(item) {
       ? [{ name: 'Link Sumber', link_type: 'data', url: item.external_url, extension: 'LINK' }]
       : []
 
-  // #9: embed_url manual dari form (dataset/map/dashboard)
-  // diprioritaskan, baru fallback ke link eksternal — ini juga
-  // yang membuat resource "Aplikasi" (yang cuma punya link, tanpa
-  // embed_url tersimpan) otomatis memakai link aplikasinya sendiri
-  // sebagai sumber iframe.
   const embedUrl = metadata.embed_url || (hasLink ? item.external_url : null)
-
-  // detail_url: link kalau ada, kalau tidak file pertama
   const detailUrl = hasLink ? item.external_url : buildOwnFileUrl(fileList[0]?.file_path)
-
   const extent =
     metadata.bbox
       ? { coords: [metadata.bbox.minLon, metadata.bbox.minLat, metadata.bbox.maxLon, metadata.bbox.maxLat] }
@@ -79,36 +70,28 @@ export function adaptOwnResource(item) {
     pk: `own-${item.id}`,
     id: `own-${item.id}`,
     uuid: `own-${item.id}`,
-
     title: item.title || 'Tanpa judul',
     abstract: item.abstract || '',
     description: item.abstract || '',
-
     category: { identifier: item.category || 'lainnya' },
-
     keywords: keywordList,
     regions: metadata.region ? [{ name: metadata.region }] : [],
-
     owner: {
       username: item.owner_username || 'operator',
       first_name: item.owner_username || 'Operator',
       avatar: buildOwnAvatarUrl(item.owner_avatar_url),
     },
-
     date: item.created_at,
     created: item.created_at,
     last_updated: item.created_at,
-
     resource_type: item.resource_type || 'dataset',
     is_published: Boolean(item.is_published),
     published: Boolean(item.is_published),
-
     content_type: item.content_type || 'file',
     file_name: fileList[0]?.file_name,
     file_path: fileList[0]?.file_path,
     external_url: item.external_url,
-
-        srid: metadata.srid,
+    srid: metadata.srid,
     attribution: metadata.attribution,
     purpose: metadata.purpose,
     supplemental_information: metadata.supplemental_information,
@@ -118,40 +101,22 @@ export function adaptOwnResource(item) {
     license: metadata.license,
     group: metadata.group,
     date_type: metadata.date_type,
-
-    // SESI 6: tipe geometri hasil parsing shapefile (Titik/Garis/
-    // Poligon) — dipakai di field "Representation" tab Location.
     spatial_representation_type: metadata.geometry_type || null,
-
-    // SESI 6: GeoJSON geometri asli hasil parsing .shp+.dbf,
-    // dipakai untuk render peta interaktif beneran di tab Location
-    // (DatasetDetail.jsx & PetaDetail.jsx). null kalau tidak ada.
     _geojson: metadata.geojson || null,
-
     thumbnail_url: thumbnailUrl,
-
     download_url: hasFiles ? buildOwnFileUrl(fileList[0]?.file_path) : null,
-
     links: [...linkEntries, ...fileLinks],
-
-    // #8: untuk halaman detail Peta (tab Linked Resources)
     _linked_resources: Array.isArray(metadata.linked_resources) ? metadata.linked_resources : [],
-
     sub_type: item.sub_type || null,
-
-    // Sesi 5 (lanjutan): jadwal Agenda — diisi manual oleh
-    // user saat upload, beda dari tanggal publish (item.date).
     event_date: metadata.event_date || null,
     event_time: metadata.event_time || null,
     event_location: metadata.event_location || null,
-
     embed_url: embedUrl,
     detail_url: detailUrl,
-
     _attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
+    _map_layers: Array.isArray(metadata.map_layers) ? metadata.map_layers : [],
     _source: 'own',
     _rawId: item.id,
-
   }
 
 }
@@ -185,18 +150,12 @@ export function adaptOwnOwner(user) {
     first_name: fullName,
     last_name: '',
     count: Number(user.count || 0),
-
-    // #8 (Sesi 4): rincian jumlah data per jenis resource,
-    // supaya halaman JIGN & JIGNDetail bisa menampilkan
-    // Dataset/Dashboard/Aplikasi/Peta/Dokumen/Informasi
-    // secara terpisah, bukan cuma total gabungan.
     dataset_count: Number(user.dataset_count || 0),
     dashboard_count: Number(user.dashboard_count || 0),
     application_count: Number(user.application_count || 0),
     map_count: Number(user.map_count || 0),
     document_count: Number(user.document_count || 0),
     informasi_count: Number(user.informasi_count || 0),
-
     avatar: buildOwnAvatarUrl(user.avatar_url),
     _source: 'own',
   }
@@ -246,7 +205,6 @@ export function mergeOwnerLists(oldOwners = [], ownUsers = []) {
 
 export function isOwnResource(item) { return item?._source === 'own' }
 export function getOwnRawId(item) { return item?._rawId }
-
 export function getResourceOwnerName(item) {
   const owner = item?.owner
   if (!owner) return item?.owner_username || 'Tidak diketahui'

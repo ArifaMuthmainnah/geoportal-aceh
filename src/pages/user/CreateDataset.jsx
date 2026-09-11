@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-
 import { uploadMyDataset } from '../../api/myDatasetApi'
 import { useAuth } from '../../context/AuthContext'
-
 import {
   CATEGORY_OPTIONS,
   DATASET_BBOX_FIELDS,
@@ -26,7 +24,6 @@ import {
 import BoundingBoxPicker from '../../components/BoundingBoxPicker'
 import GeoJsonPreviewMap from '../../components/GeoJsonPreviewMap'
 
-
 const STEPS = [
   { id: 1, label: 'Basic Metadata' },
   { id: 2, label: 'Location & Licenses' },
@@ -34,15 +31,11 @@ const STEPS = [
   { id: 4, label: 'Dataset Attributes' },
 ]
 
-
 function CreateDataset() {
 
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
-
   const [step, setStep] = useState(1)
-
-  // ===== STEP 1: BASIC METADATA =====
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
@@ -52,14 +45,10 @@ function CreateDataset() {
   const [customCategory, setCustomCategory] = useState('')
   const [group, setGroup] = useState('registered_members')
   const [keywords, setKeywords] = useState('')
-
-  // ===== STEP 2: LOCATION & LICENSES =====
   const [region, setRegion] = useState('')
   const [bbox, setBbox] = useState({ minLon: '', minLat: '', maxLon: '', maxLat: '' })
   const [license, setLicense] = useState('')
   const [useMapPicker, setUseMapPicker] = useState(false)
-
-  // ===== STEP 3: OPTIONAL METADATA =====
   const [srid, setSrid] = useState('EPSG:4326')
   const [language, setLanguage] = useState('Indonesia')
   const [attribution, setAttribution] = useState('')
@@ -67,24 +56,15 @@ function CreateDataset() {
   const [supplementalInformation, setSupplementalInformation] = useState('')
   const [constraintsOther, setConstraintsOther] = useState('')
   const [embedUrl, setEmbedUrl] = useState('')
-
-  // ===== STEP 4: DATASET ATTRIBUTES + FILE =====
   const [files, setFiles] = useState([])
   const [externalUrl, setExternalUrl] = useState('')
   const [attributes, setAttributes] = useState([])
   const [attributeExcelError, setAttributeExcelError] = useState('')
-
-  // SESI 6: sama seperti halaman Upload — geometri hasil
-  // parsing .shp/.dbf/.prj, dipakai untuk mengisi otomatis
-  // Bounding Box (Step 2), Sistem Koordinat (Step 3), dan
-  // menampilkan peta pratinjau di Step 4.
   const [geometryType, setGeometryType] = useState('')
   const [geojson, setGeojson] = useState(null)
   const [shapefileNotice, setShapefileNotice] = useState('')
-
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
-
 
   function handleLogout() {
     logout()
@@ -152,15 +132,6 @@ function CreateDataset() {
 
   }
 
-
-  // ===================================================
-  // SESI 6: FILE DATA — sekarang pakai parser shapefile
-  // PENUH (sama seperti halaman Upload), bukan cuma nama
-  // kolom .dbf. Otomatis mengisi Bounding Box, Sistem
-  // Koordinat, Tipe Geometri, Attributes, DAN menampilkan
-  // peta pratinjau kalau file lengkap (.shp+.dbf+.prj).
-  // ===================================================
-
   async function handleFilesChange(event) {
 
     const selectedFiles = Array.from(event.target.files || [])
@@ -218,7 +189,6 @@ function CreateDataset() {
 
   }
 
-
   async function handleSubmit() {
 
     const hasFiles = files.length > 0
@@ -270,7 +240,6 @@ function CreateDataset() {
 
   }
 
-
   return (
 
     <main className="admin-page">
@@ -313,7 +282,6 @@ function CreateDataset() {
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
         </aside>
 
-
         <section className="admin-main">
 
           <header className="admin-header">
@@ -324,14 +292,13 @@ function CreateDataset() {
             </div>
           </header>
 
-
           {status === 'success' ? (
 
             <div className="admin-panel">
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✓</div>
                 <strong>Dataset berhasil dibuat</strong>
-                <p>Dataset akan berstatus "Belum Publish" hingga disetujui admin.</p>
+                                <p>Dataset akan berstatus "Unpublished" hingga disetujui admin.</p>
                 <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                   <Link to={currentUser?.role === 'admin' ? '/admin' : '/dashboard/datasets'} className="admin-secondary-button">
                     Lihat Data
@@ -343,10 +310,6 @@ function CreateDataset() {
           ) : (
 
             <>
-
-              {/* =========================================
-                  STEP INDICATOR
-              ========================================= */}
 
               <div
                 style={{
@@ -374,11 +337,6 @@ function CreateDataset() {
               </div>
 
               {errorMessage && <div className="admin-alert">{errorMessage}</div>}
-
-
-              {/* =========================================
-                  STEP 1: BASIC METADATA
-              ========================================= */}
 
               {step === 1 && (
 
@@ -471,11 +429,6 @@ function CreateDataset() {
                 </section>
 
               )}
-
-
-              {/* =========================================
-                  STEP 2: LOCATION & LICENSES
-              ========================================= */}
 
               {step === 2 && (
 
@@ -575,11 +528,6 @@ function CreateDataset() {
 
               )}
 
-
-              {/* =========================================
-                  STEP 3: OPTIONAL METADATA
-              ========================================= */}
-
               {step === 3 && (
 
                 <section className="admin-panel">
@@ -636,11 +584,6 @@ function CreateDataset() {
                 </section>
 
               )}
-
-
-              {/* =========================================
-                  STEP 4: DATASET ATTRIBUTES + FILE
-              ========================================= */}
 
               {step === 4 && (
 
@@ -766,11 +709,6 @@ function CreateDataset() {
                 </>
 
               )}
-
-
-              {/* =========================================
-                  NAVIGASI
-              ========================================= */}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0 30px' }}>
 

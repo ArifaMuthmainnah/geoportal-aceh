@@ -29,7 +29,6 @@ import {
 } from '../utils/datasetUtils'
 
 import { useAuth } from '../context/AuthContext'
-
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 import OwnerBadge from '../components/OwnerBadge'
@@ -37,17 +36,14 @@ import OwnerBadge from '../components/OwnerBadge'
 function ApplicationDetail() {
 
   const { id } = useParams()
-
   const isOwnId =
     typeof id === 'string' &&
     id.startsWith('own-')
 
   const { isAdmin, isAuthenticated } = useAuth()
-
   const [application, setApplication] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
 
   useEffect(() => {
 
@@ -80,10 +76,6 @@ function ApplicationDetail() {
             try { rawData = await getMyDatasetDetail(rawId) } catch {}
           }
 
-          // SESI 6: fallback terakhir — pengguna login mana pun (mis.
-          // operator lain, bukan pemilik & bukan admin) tetap bisa
-          // MELIHAT (read-only) aplikasi/dashboard ini walau belum
-          // dipublikasikan. Tidak ada hak edit/hapus lewat sini.
           if (!rawData && isAuthenticated) {
             try { rawData = await getDatasetViewDetail(rawId) } catch {}
           }
@@ -150,7 +142,6 @@ function ApplicationDetail() {
 
   }
 
-
   if (error || !application) {
 
     return (
@@ -166,7 +157,6 @@ function ApplicationDetail() {
     )
 
   }
-
 
   const title =
     application.title ||
@@ -192,25 +182,11 @@ function ApplicationDetail() {
     'Tidak diketahui'
 
   const ownerAvatar = owner?.avatar || null
-
-  // =====================================================
-  // #8 (Sesi 4): "category" sekarang SELALU dihitung lewat
-  // mapCategory() — sama persis seperti Dataset — bukan lagi
-  // dihardcode jadi literal "Dashboard". Kalau kategori dari
-  // API lama/upload user tidak ada di daftar baku, akan
-  // ditampilkan apa adanya (tidak dipaksa "Umum").
-  //
-  // "typeLabel" dipakai terpisah untuk menunjukkan JENIS
-  // resource-nya (Dashboard atau Aplikasi).
-  // =====================================================
-
   const category = mapCategory(application.category?.identifier)
-
   const typeLabel =
     getResourceTypeLabel(application.resource_type === 'application' ? 'application' : 'dashboard')
 
   const isApplicationType = application.resource_type === 'application'
-
   const date =
     application.date
       ? new Date(application.date).toLocaleDateString('id-ID', {
@@ -221,35 +197,11 @@ function ApplicationDetail() {
       : '-'
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
-
-
-  // ===================================================
-  // SUMBER DASHBOARD / APLIKASI
-  // ===================================================
-  //
-  // - Kalau dari API lama  : embed_url/detail_url berasal
-  //   dari respons API lama, jadi klik akan membuka
-  //   dashboard/detail di web Geoportal Aceh lama.
-  // - Kalau upload sendiri : embed_url/detail_url berasal
-  //   dari adaptOwnResource (link atau file yang di-upload
-  //   user), jadi klik akan membuka dashboard/aplikasi milik
-  //   user itu sendiri, BUKAN web lama. Khusus "Aplikasi",
-  //   embed_url otomatis memakai link aplikasi yang diupload
-  //   user (karena Aplikasi tidak punya file, cuma link).
-  //
-  // Halaman ini sendiri (/aplikasi/:id) selalu berada di
-  // web kita — hanya isi tombol/iframe yang berbeda sumber.
-  //
-  // ===================================================
-
   const embedUrl = application.embed_url || null
   const detailUrl = application.detail_url || null
-
   const sourceLabel =
     isOwnId ? 'Diunggah oleh pengguna' : 'Geoportal Aceh'
 
-  // #9: tombol buka penuh langsung mengarah ke link aplikasi
-  // yang diupload user (detailUrl), label disesuaikan jenisnya.
   const openButtonLabel =
     isApplicationType
       ? 'Buka Aplikasi'
@@ -266,7 +218,6 @@ function ApplicationDetail() {
       : (isOwnId
           ? 'Aplikasi ini diunggah sebagai file dan tidak dapat ditampilkan sebagai iframe. Gunakan tombol di atas untuk membukanya.'
           : 'Aplikasi ini belum memiliki alamat embed yang dapat ditampilkan.')
-
 
   return (
 
@@ -297,7 +248,6 @@ function ApplicationDetail() {
         </div>
       </section>
 
-
       <section className="container application-detail-content">
 
         <div className="application-detail-meta">
@@ -319,8 +269,6 @@ function ApplicationDetail() {
             <strong>{typeLabel}</strong>
           </div>
 
-          {/* #8: box kategori ditambahkan di samping box Sumber,
-              memakai mapCategory() supaya konsisten dengan Dataset. */}
           <div className="application-detail-meta-item">
             <span>Kategori</span>
             <strong>{category}</strong>
@@ -332,7 +280,6 @@ function ApplicationDetail() {
           </div>
 
         </div>
-
 
         <section className="application-dashboard-section">
 
@@ -356,29 +303,6 @@ function ApplicationDetail() {
             )}
 
           </div>
-
-
-          {/* =====================================================
-              PREVIEW APLIKASI
-              =====================================================
-              Banyak situs Aplikasi eksternal (mis. data.acehprov.go.id)
-              mengirim header X-Frame-Options/CSP yang MENOLAK dirinya
-              ditampilkan lewat <iframe> — browser akan selalu
-              menampilkan "refused to connect", apa pun yang kita
-              lakukan di sisi kode. Ini bukan bug yang bisa diperbaiki
-              dengan iframe biasa.
-
-              Makanya khusus Aplikasi, area visualisasi TIDAK mencoba
-              menampilkan iframe atau gambar sampul dengan overlay
-              (pendekatan lama itu yang bikin tampilan jadi kotak biru
-              polos dengan teks kecil bertumpuk). Sekarang cukup satu
-              kotak bertema biru (sama seperti tema Dashboard) berisi
-              SATU tombol besar & jelas "Buka Aplikasi" — begitu
-              ditekan, langsung membuka link aplikasi aslinya di TAB
-              BARU (bukan iframe).
-
-              Dashboard TIDAK diubah — tetap pakai iframe seperti
-              sebelumnya karena sudah berjalan dengan baik. */}
 
           {isApplicationType ? (
 
@@ -460,6 +384,5 @@ function ApplicationDetail() {
   )
 
 }
-
 
 export default ApplicationDetail

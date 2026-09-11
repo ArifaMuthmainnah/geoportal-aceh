@@ -63,23 +63,13 @@ import AnimatedCounter from '../components/AnimatedCounter'
 import HomeMapsSection from '../components/HomeMapsSection'
 import HomeDocumentsSection from '../components/HomeDocumentsSection'
 
-// =====================================================
-// SESI 13: PETA PREVIEW "JELAJAHI ACEH" -> GOOGLE MAPS
-// =====================================================
-// Koordinat & zoom disamakan dengan MapContainer di bawah
-// supaya lokasi yang dibuka di Google Maps konsisten
-// dengan preview yang ditampilkan.
-
 const ACEH_MAP_CENTER = [4.65, 96.7]
 const ACEH_MAP_ZOOM = 7
-
 const ACEH_GOOGLE_MAPS_URL =
   `https://www.google.com/maps/@${ACEH_MAP_CENTER[0]},${ACEH_MAP_CENTER[1]},${ACEH_MAP_ZOOM}z`
 
 function WebgisPreviewClickHandler() {
 
-  // Menangkap klik (bukan drag/geser) pada peta preview,
-  // lalu membuka Google Maps di tab baru.
   useMapEvents({
     click() {
       window.open(
@@ -96,20 +86,11 @@ function WebgisPreviewClickHandler() {
 
 function Home() {
 
-  // ===================================================
-  // DATASET
-  // ===================================================
-
   const [datasets, setDatasets] =
     useState([])
 
   const [datasetTotal, setDatasetTotal] =
     useState(0)
-
-
-  // ===================================================
-  // APPLICATION
-  // ===================================================
 
   const [applications, setApplications] =
     useState([])
@@ -118,11 +99,6 @@ function Home() {
     applicationLoading,
     setApplicationLoading,
   ] = useState(true)
-
-
-  // ===================================================
-  // STATISTICS
-  // ===================================================
 
   const [mapTotal, setMapTotal] =
     useState(0)
@@ -133,21 +109,11 @@ function Home() {
   const [geoappTotal, setGeoappTotal] =
     useState(0)
 
-
-  // ===================================================
-  // OWNERS
-  // ===================================================
-
   const [owners, setOwners] =
     useState([])
 
   const [ownerTotal, setOwnerTotal] =
     useState(0)
-
-
-  // ===================================================
-  // STATE
-  // ===================================================
 
   const [loading, setLoading] =
     useState(true)
@@ -160,30 +126,19 @@ function Home() {
     setApplicationError,
   ] = useState('')
 
-
-  // ===================================================
-  // LOAD HOME DATA
-  // ===================================================
-
   useEffect(() => {
 
     let mounted = true
-
 
     async function loadHomeData() {
 
       setLoading(true)
       setDatasetError('')
 
-
-      // ===============================================
-      // DATASET (API LAMA + UPLOAD SENDIRI)
-      // ===============================================
-
       let oldDatasetList = []
       let ownDatasetList = []
 
-            let oldDatasetTotal = 0
+      let oldDatasetTotal = 0
 
       try {
 
@@ -250,11 +205,6 @@ function Home() {
         )
 
       }
-
-
-      // ===============================================
-      // MAPS (API LAMA) + PETA UPLOAD SENDIRI (#1)
-      // ===============================================
       
       let ownMapTotal = 0
       try {
@@ -292,14 +242,6 @@ function Home() {
         }
       }
 
-
-      // ===============================================
-      // DOCUMENTS (API LAMA)
-      // ===============================================
-
-            // ===============================================
-      // DOCUMENTS (API LAMA) + DOKUMEN UPLOAD SENDIRI (#1)
-      // ===============================================
       let ownDocumentTotal = 0
       try {
         ownDocumentTotal =
@@ -336,11 +278,6 @@ function Home() {
         }
       }
 
-
-      // ===============================================
-      // GEOAPPS / DASHBOARD (API LAMA + SENDIRI)
-      // ===============================================
-
       let ownDashboardTotal = 0
 
       try {
@@ -357,7 +294,7 @@ function Home() {
 
       }
 
-            try {
+      try {
 
         const oldGeoappTotal =
           await getGeoappTotalCount()
@@ -382,11 +319,6 @@ function Home() {
         }
 
       }
-
-
-      // ===============================================
-      // OWNERS (API LAMA + PENGGUNA SENDIRI)
-      // ===============================================
 
       let oldOwnerList = []
       let ownUserList = []
@@ -447,16 +379,13 @@ function Home() {
 
       }
 
-
       if (mounted) {
         setLoading(false)
       }
 
     }
 
-
     loadHomeData()
-
 
     return () => {
       mounted = false
@@ -464,15 +393,9 @@ function Home() {
 
   }, [])
 
-
-  // ===================================================
-  // LOAD APPLICATIONS (API LAMA + DASHBOARD SENDIRI)
-  // ===================================================
-
   useEffect(() => {
 
     let mounted = true
-
 
     async function loadApplications() {
 
@@ -480,11 +403,8 @@ function Home() {
 
         setApplicationLoading(true)
         setApplicationError('')
-
-
         let oldGeoappList = []
         let ownDashboardList = []
-
 
         try {
 
@@ -508,7 +428,6 @@ function Home() {
 
         }
 
-
         try {
 
           ownDashboardList =
@@ -523,13 +442,11 @@ function Home() {
 
         }
 
-
         const mergedApplications =
           mergeResourceLists(
             oldGeoappList,
             ownDashboardList
           )
-
 
         const publishedApplications =
           mergedApplications.filter(
@@ -537,12 +454,10 @@ function Home() {
               application?.is_published === true
           )
 
-
         const sortedApplications =
           sortByDateDesc(
             publishedApplications
           )
-
 
         if (mounted) {
 
@@ -561,7 +476,6 @@ function Home() {
           'Gagal mengambil aplikasi:',
           err
         )
-
 
         if (mounted) {
 
@@ -583,20 +497,13 @@ function Home() {
 
     }
 
-
     loadApplications()
-
 
     return () => {
       mounted = false
     }
 
   }, [])
-
-
-  // ===================================================
-  // STATISTICS
-  // ===================================================
 
   const statistics = [
 
@@ -632,11 +539,6 @@ function Home() {
 
   ]
 
-
-  // ===================================================
-  // OWNER MAP
-  // ===================================================
-
   const ownerMap = useMemo(
     () =>
       new Map(
@@ -654,20 +556,9 @@ function Home() {
     [owners]
   )
 
-
-  // ===================================================
-  // RENDER
-  // ===================================================
-
   return (
 
     <div className="home-page">
-
-
-      {/* =================================================
-          HERO + STATISTIK
-          (dibungkus 1 wrapper biru penuh, Sesi 11)
-      ================================================= */}
 
       <div className="home-hero-wrapper">
 
@@ -683,7 +574,6 @@ function Home() {
                   GEOPORTAL ACEH
                 </span>
 
-
                 <h1>
 
                   Portal Informasi
@@ -696,14 +586,12 @@ function Home() {
 
                 </h1>
 
-
                 <p>
                   Menyediakan informasi dan data
                   geospasial untuk mendukung pembangunan
                   dan pengambilan keputusan berbasis data
                   di Aceh.
                 </p>
-
 
                 <div className="home-hero-actions">
 
@@ -715,7 +603,6 @@ function Home() {
                     <span>→</span>
                   </Link>
 
-
                   <Link
                     to="/katalog"
                     className="home-secondary-button"
@@ -726,7 +613,6 @@ function Home() {
                 </div>
 
               </div>
-
 
               <div className="home-hero-visual">
 
@@ -754,11 +640,6 @@ function Home() {
           </div>
 
         </section>
-
-
-        {/* =================================================
-            STATISTICS
-        ================================================= */}
 
         <section className="home-statistics">
 
@@ -818,11 +699,6 @@ function Home() {
 
       </div>
 
-
-      {/* =================================================
-          DATASET TERBARU
-      ================================================= */}
-
       <section className="home-section">
 
         <div className="container">
@@ -856,11 +732,6 @@ function Home() {
             </Link>
 
           </div>
-
-
-          {/* =============================================
-              LOADING
-          ============================================= */}
 
           {loading && (
 
@@ -896,11 +767,6 @@ function Home() {
             </div>
 
           )}
-
-
-          {/* =============================================
-              DATA
-          ============================================= */}
 
           {!loading &&
             datasets.length > 0 && (
@@ -948,11 +814,6 @@ function Home() {
 
             )}
 
-
-          {/* =============================================
-              EMPTY
-          ============================================= */}
-
           {!loading &&
             datasets.length === 0 && (
 
@@ -979,11 +840,6 @@ function Home() {
         </div>
 
       </section>
-
-
-      {/* =================================================
-          WEBGIS
-      ================================================= */}
 
       <section className="home-webgis">
 
@@ -1017,7 +873,6 @@ function Home() {
               </Link>
 
             </div>
-
 
             <div className="webgis-preview">
 
@@ -1060,19 +915,9 @@ function Home() {
 
         </div>
 
-            </section>
-
-
-      {/* =================================================
-          PETA
-      ================================================= */}
+      </section>
 
       <HomeMapsSection />
-
-
-      {/* =================================================
-          APPLICATION
-      ================================================= */}
 
       <section className="home-section home-applications-section">
 
@@ -1097,7 +942,6 @@ function Home() {
 
             </div>
 
-
             <Link
               to="/aplikasi"
               className="section-link"
@@ -1107,11 +951,6 @@ function Home() {
             </Link>
 
           </div>
-
-
-          {/* =============================================
-              LOADING
-          ============================================= */}
 
           {applicationLoading && (
 
@@ -1163,11 +1002,6 @@ function Home() {
 
           )}
 
-
-          {/* =============================================
-              ERROR
-          ============================================= */}
-
           {!applicationLoading &&
             applicationError && (
 
@@ -1180,11 +1014,6 @@ function Home() {
               </div>
 
             )}
-
-
-          {/* =============================================
-              APPLICATION
-          ============================================= */}
 
           {!applicationLoading &&
             !applicationError &&
@@ -1219,11 +1048,6 @@ function Home() {
 
             )}
 
-
-          {/* =============================================
-              EMPTY
-          ============================================= */}
-
           {!applicationLoading &&
             !applicationError &&
             applications.length === 0 && (
@@ -1246,19 +1070,10 @@ function Home() {
 
         </div>
 
-            </section>
-
-
-      {/* =================================================
-          DOKUMEN
-      ================================================= */}
+      </section>
 
       <HomeDocumentsSection />
 
-
-      {/* =================================================
-          AGENCY
-      ================================================= */}
       <section className="home-agency-section">
 
         <div className="container">
@@ -1283,7 +1098,6 @@ function Home() {
             </div>
 
           </div>
-
 
           {loading ? (
 
@@ -1310,7 +1124,6 @@ function Home() {
                     Number(
                       owner?.count || 0
                     )
-
 
                   return (
 
@@ -1342,7 +1155,6 @@ function Home() {
 
                       </div>
 
-
                       <div className="agency-card-content">
 
                         <h3
@@ -1351,13 +1163,11 @@ function Home() {
                           {ownerName}
                         </h3>
 
-
                         <strong>
                           <AnimatedCounter
                             value={datasetCount}
                           />
                         </strong>
-
 
                         <span>
                           Dataset
@@ -1399,11 +1209,6 @@ function Home() {
 
       </section>
 
-
-      {/* =================================================
-          INFORMATION
-      ================================================= */}
-
       <section className="home-information">
 
         <div className="container">
@@ -1428,7 +1233,6 @@ function Home() {
 
             </div>
 
-
             <Link
               to="/informasi/berita"
               className="home-primary-button"
@@ -1447,6 +1251,5 @@ function Home() {
 
   )
 }
-
 
 export default Home

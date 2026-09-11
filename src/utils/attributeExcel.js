@@ -1,16 +1,5 @@
 import * as XLSX from 'xlsx'
 
-// =====================================================
-// TEMPLATE EXCEL UNTUK ATTRIBUTES
-// =====================================================
-//
-// Kolom wajib: name, label, description
-// User tinggal isi baris-baris di bawah header, lalu
-// upload lagi file yang sama untuk otomatis mengisi
-// tabel Attributes di form upload/edit.
-//
-// =====================================================
-
 export function downloadAttributeTemplate() {
 
   const worksheetData = [
@@ -21,7 +10,6 @@ export function downloadAttributeTemplate() {
   const worksheet =
     XLSX.utils.aoa_to_sheet(worksheetData)
 
-  // Lebar kolom biar enak dibaca
   worksheet['!cols'] = [
     { wch: 20 },
     { wch: 25 },
@@ -42,17 +30,6 @@ export function downloadAttributeTemplate() {
   )
 
 }
-
-
-// =====================================================
-// BACA FILE EXCEL -> ARRAY ATTRIBUTES
-// =====================================================
-//
-// Menerima file .xlsx/.xls, membaca sheet pertama,
-// dan mengembalikan array { name, label, description }.
-// Baris tanpa "name" diabaikan (dianggap kosong).
-//
-// =====================================================
 
 export async function parseAttributeExcel(file) {
 

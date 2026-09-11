@@ -12,45 +12,21 @@ function CreateDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
-
-  // =====================================================
-  // #9: pilih dulu jenisnya Dashboard atau Aplikasi. Keduanya
-  // memakai halaman detail yang SAMA (/aplikasi/:id) — bedanya
-  // cuma resource_type yang disimpan, dan Aplikasi cuma bisa
-  // diisi LINK (tanpa widget dataset/peta, tanpa embed_url
-  // terpisah — link aplikasinya sendiri yang jadi sumber
-  // iframe di halaman detail).
-  // =====================================================
-
   const [resourceKind, setResourceKind] = useState('dashboard')
-
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [embedUrl, setEmbedUrl] = useState('')
   const [externalUrl, setExternalUrl] = useState('')
-
-  // #8: kategori disamakan seperti Dataset (pakai daftar
-  // kategori baku yang sama), supaya badge kategori di
-  // card & halaman detail konsisten.
   const [category, setCategory] = useState('')
   const [customCategory, setCustomCategory] = useState('')
-
   const [availableResources, setAvailableResources] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [search, setSearch] = useState('')
   const [loadingResources, setLoadingResources] = useState(true)
-
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
-
   const isApplication = resourceKind === 'application'
-
-
-  // ===================================================
-  // AMBIL DATASET + PETA YANG SUDAH ADA UNTUK JADI WIDGET
-  // (cuma relevan untuk Dashboard, Aplikasi tidak pakai widget)
-  // ===================================================
 
   useEffect(() => {
 
@@ -135,18 +111,15 @@ function CreateDashboard() {
     )
   }
 
-
   function handleLogout() {
     logout()
     navigate('/', { replace: true })
   }
 
-
   function handleChangeKind(nextKind) {
     setResourceKind(nextKind)
     setErrorMessage('')
   }
-
 
   async function handleSubmit(event) {
 
@@ -161,7 +134,6 @@ function CreateDashboard() {
 
     if (isApplication) {
 
-      // #9: Aplikasi WAJIB diisi link, tidak menerima file.
       if (!hasLink) {
         setErrorMessage('Link aplikasi wajib diisi. Aplikasi hanya bisa diisi dengan link, tidak menerima upload file.')
         return
@@ -227,7 +199,6 @@ function CreateDashboard() {
 
   }
 
-
   return (
 
     <main className="admin-page">
@@ -266,7 +237,7 @@ function CreateDashboard() {
             <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
             <Link to="/dashboard/create-map" className="admin-sidebar-link"><span>⌖</span>Create Map</Link>
             <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
-<Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
+            <Link to="/dashboard/profil" className="admin-sidebar-link"><span>◍</span>Profil</Link>
             <button type="button" className="active"><span>▥</span>Dashboard / Aplikasi</button>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
             <Link to="/katalog" className="admin-sidebar-link"><span>◉</span>Lihat Katalog</Link>
@@ -275,7 +246,6 @@ function CreateDashboard() {
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
 
         </aside>
-
 
         <section className="admin-main">
 
@@ -297,7 +267,7 @@ function CreateDashboard() {
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✓</div>
                 <strong>{isApplication ? 'Aplikasi' : 'Dashboard'} berhasil dibuat</strong>
-                <p>{isApplication ? 'Aplikasi' : 'Dashboard'} akan berstatus "Belum Publish" hingga disetujui admin.</p>
+                                <p>{isApplication ? 'Aplikasi' : 'Dashboard'} akan berstatus "Unpublished" hingga disetujui admin.</p>
                 <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                   <Link to={currentUser?.role === 'admin' ? '/admin' : '/dashboard/datasets'} className="admin-secondary-button">
                     Lihat Data
@@ -362,7 +332,6 @@ function CreateDashboard() {
 
               </section>
 
-
               <section className="admin-panel">
 
                 <div className="admin-panel-header"><div><h2>Informasi {isApplication ? 'Aplikasi' : 'Dashboard'}</h2></div></div>
@@ -385,8 +354,6 @@ function CreateDashboard() {
                     <label>Deskripsi</label>
                     <textarea rows={3} value={abstract} onChange={(e) => setAbstract(e.target.value)} />
                   </div>
-
-                  {/* #8/#9: kategori disamakan seperti Dataset */}
 
                   <div className="admin-form-group">
                     <label>Kategori</label>
@@ -529,7 +496,6 @@ function CreateDashboard() {
 
               )}
 
-
               <div style={{ padding: '0 0 30px' }}>
                 <button type="submit" className="admin-view-site" disabled={status === 'uploading'}>
                   {status === 'uploading' ? 'Menyimpan...' : `Simpan ${isApplication ? 'Aplikasi' : 'Dashboard'}`}
@@ -549,6 +515,5 @@ function CreateDashboard() {
   )
 
 }
-
 
 export default CreateDashboard

@@ -8,11 +8,9 @@ import {
 } from '../../api/datasetApi'
 
 function Layers() {
-  // State diatur ke null agar defaultnya semua list tertutup
+
   const [activeTab, setActiveTab] = useState(null); 
   const [activeChip, setActiveChip] = useState('POLA RUANG LAUT');
-
-  // Fungsi Toggle: Jika klik button yang sama, maka tutup (set null)
   const toggleTab = (cat) => {
     setActiveTab(activeTab === cat ? null : cat);
   };
@@ -129,7 +127,6 @@ function Layers() {
         </aside>
 
         <main className="geoservice-main">
-          {/* JUDUL BARU SESUAI RUJUKAN */}
           <h2 className="geoservice-title">Daftar Map Service</h2>
 
           <div className="geoservice-filter-top">
@@ -152,153 +149,151 @@ function Layers() {
           </div>
 
           <div className="geoservice-grid">
-          {loading && (
-  <p>
-    Memuat data layer...
-  </p>
-)}
+            {loading && (
+              <p>
+                Memuat data layer...
+              </p>
+            )}
 
-{error && (
-  <p>
-    {error}
-  </p>
-)}
+            {error && (
+              <p>
+                {error}
+              </p>
+            )}
 
-{!loading &&
-  !error &&
-  datasets.map(
-    (dataset) => (
+            {!loading &&
+              !error &&
+              datasets.map(
+                (dataset) => (
 
-      <div
-        key={
-          dataset.pk ??
-          dataset.id
-        }
-        className="layer-card-item"
-      >
+                  <div
+                    key={
+                      dataset.pk ??
+                      dataset.id
+                    }
+                    className="layer-card-item"
+                  >
 
-        <div className="card-header-icons">
+                    <div className="card-header-icons">
 
-          <button title="Peta">
-            🗺️
-          </button>
+                      <button title="Peta">
+                        🗺️
+                      </button>
 
-          <button title="Globe">
-            🌐
-          </button>
+                      <button title="Globe">
+                        🌐
+                      </button>
 
-          <button title="Info">
-            ℹ️
-          </button>
+                      <button title="Info">
+                        ℹ️
+                      </button>
 
-          <button title="Download">
-            📥
-          </button>
+                      <button title="Download">
+                        📥
+                      </button>
 
-        </div>
+                    </div>
 
+                    <div className="card-image-placeholder">
 
-        <div className="card-image-placeholder">
+                      {dataset.thumbnail_url ? (
 
-          {dataset.thumbnail_url ? (
+                        <img
+                          src={
+                            dataset.thumbnail_url
+                          }
+                          alt={
+                            dataset.title ||
+                            dataset.name
+                          }
+                          className="peta-thumb"
+                        />
 
-            <img
-              src={
-                dataset.thumbnail_url
-              }
-              alt={
-                dataset.title ||
-                dataset.name
-              }
-              className="peta-thumb"
-            />
+                      ) : (
 
-          ) : (
+                        <div className="skeleton-map" />
 
-            <div className="skeleton-map" />
+                      )}
 
-          )}
+                    </div>
 
-        </div>
+                    <div className="card-body-info">
 
+                      <h3>
+                        [
+                        {dataset.pk ??
+                        dataset.id}
+                        ]{' '}
+                        {dataset.title ||
+                        dataset.name ||
+                        'Dataset'}
+                      </h3>
 
-        <div className="card-body-info">
+                      <p className="card-date">
 
-          <h3>
-            [
-            {dataset.pk ??
-             dataset.id}
-            ]{' '}
-            {dataset.title ||
-             dataset.name ||
-             'Dataset'}
-          </h3>
+                        {dataset.date
+                          ? new Date(
+                              dataset.date
+                            ).toLocaleDateString(
+                              'id-ID'
+                            )
+                          : '-'}
 
-          <p className="card-date">
+                      </p>
 
-            {dataset.date
-              ? new Date(
-                  dataset.date
-                ).toLocaleDateString(
-                  'id-ID'
+                      <span className="status-badge">
+
+                        {dataset.is_published
+                          ? 'Publik'
+                          : 'Dibatasi'}
+
+                      </span>
+
+                    </div>
+
+                  </div>
+
                 )
-              : '-'}
-
-          </p>
-
-          <span className="status-badge">
-
-            {dataset.is_published
-              ? 'Publik'
-              : 'Dibatasi'}
-
-          </span>
-
-        </div>
-
-      </div>
-
-    )
-  )}
+              )}
           </div>
 
           <div className="pagination-actions">
 
-  {page > 1 && (
+            {page > 1 && (
 
-    <button
-      className="load-more-btn"
-      onClick={
-        () =>
-          setPage(
-            (previous) =>
-              previous - 1
-          )
-      }
-    >
-      ← Halaman Sebelumnya
-    </button>
+              <button
+                className="load-more-btn"
+                onClick={
+                  () =>
+                    setPage(
+                      (previous) =>
+                        previous - 1
+                    )
+                }
+              >
+                ← Halaman Sebelumnya
+              </button>
 
-  )}
+            )}
 
-  {hasNext && (
+            {hasNext && (
 
-    <button
-      className="load-more-btn"
-      onClick={
-        () =>
-          setPage(
-            (previous) =>
-              previous + 1
-          )
-      }
-    >
-      Halaman Selanjutnya →
-    </button>
+              <button
+                className="load-more-btn"
+                onClick={
+                  () =>
+                    setPage(
+                      (previous) =>
+                        previous + 1
+                    )
+                }
+              >
+                Halaman Selanjutnya →
+              </button>
 
-  )}
+            )}
 
-</div>
+          </div>
         </main>
       </section>
     </div>

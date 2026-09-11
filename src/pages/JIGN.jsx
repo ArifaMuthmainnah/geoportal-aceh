@@ -30,17 +30,6 @@ import {
 
 import { Link } from 'react-router'
 
-
-// =========================================
-// HITUNG JUMLAH RESOURCE PER OWNER
-// =========================================
-//
-// #8 (Sesi 4): endpoint "owners" API lama cuma kasih total
-// gabungan semua jenis resource ("count"), tanpa rincian per
-// jenis. Jadi di sini kita hitung sendiri dari daftar
-// geoapps/maps/documents lengkap, dikelompokkan per username
-// pemilik.
-
 function countByOwnerUsername(list) {
   const map = new Map()
   if (!Array.isArray(list)) return map
@@ -52,20 +41,10 @@ function countByOwnerUsername(list) {
   return map
 }
 
-
 function JIGN() {
-
-  // =========================================
-  // OWNERS / INSTANSI
-  // =========================================
 
   const [owners, setOwners] =
     useState([])
-
-
-  // =========================================
-  // FILTER
-  // =========================================
 
   const [search, setSearch] =
     useState('')
@@ -73,21 +52,11 @@ function JIGN() {
   const [sort, setSort] =
     useState('Terbanyak Data')
 
-
-  // =========================================
-  // STATE
-  // =========================================
-
   const [loading, setLoading] =
     useState(true)
 
   const [error, setError] =
     useState('')
-
-
-  // =========================================
-  // LOAD DATA JIGN
-  // =========================================
 
   useEffect(() => {
 
@@ -95,11 +64,6 @@ function JIGN() {
 
       setLoading(true)
       setError('')
-
-
-      // =======================================
-      // OWNERS / SIMPUL JARINGAN - API LAMA
-      // =======================================
 
       let oldOwnerList = []
 
@@ -112,7 +76,6 @@ function JIGN() {
           'JIGN Owners (API Lama):',
           ownerList
         )
-
 
         oldOwnerList =
           Array.isArray(ownerList)
@@ -131,12 +94,6 @@ function JIGN() {
         )
 
       }
-
-
-      // =======================================
-      // RINCIAN JENIS DATA (Dashboard/Peta/Dokumen)
-      // DARI API LAMA — #8
-      // =======================================
 
       let dashboardCountMap = new Map()
       let mapCountMap = new Map()
@@ -169,9 +126,6 @@ function JIGN() {
           const dashboardCount = dashboardCountMap.get(owner.username) || 0
           const mapCount = mapCountMap.get(owner.username) || 0
           const documentCount = documentCountMap.get(owner.username) || 0
-
-          // Sisa dari total dianggap Dataset, karena API lama
-          // tidak punya endpoint rincian per-owner untuk dataset.
           const datasetCount =
             Math.max(
               Number(owner.count || 0) - dashboardCount - mapCount - documentCount,
@@ -190,13 +144,7 @@ function JIGN() {
 
         })
 
-
-      // =======================================
-      // PENGGUNA SENDIRI (LOKAL)
-      // =======================================
-
       let ownUserList = []
-
       try {
 
         ownUserList =
@@ -216,36 +164,24 @@ function JIGN() {
 
       }
 
-
-      // =======================================
-      // GABUNGKAN
-      // =======================================
-
       const mergedOwners =
         mergeOwnerLists(
           enrichedOldOwners,
           ownUserList
         )
 
-
       setOwners(
         mergedOwners
       )
-
 
       setLoading(false)
 
     }
 
-
     fetchJIGNData()
 
   }, [])
 
-
-  // =========================================
-  // OWNER NAME
-  // =========================================
 
   function getOwnerName(owner) {
 
@@ -260,18 +196,12 @@ function JIGN() {
       return fullName
     }
 
-
     return (
       owner.username ||
       'Instansi'
     )
 
   }
-
-
-  // =========================================
-  // FILTER + SORT
-  // =========================================
 
   const filteredOwners =
     useMemo(() => {
@@ -280,7 +210,6 @@ function JIGN() {
         search
           .toLowerCase()
           .trim()
-
 
       const result =
         owners.filter((owner) => {
@@ -291,13 +220,11 @@ function JIGN() {
               ''
             ).toLowerCase()
 
-
           const firstName =
             (
               owner.first_name ||
               ''
             ).toLowerCase()
-
 
           const lastName =
             (
@@ -305,12 +232,10 @@ function JIGN() {
               ''
             ).toLowerCase()
 
-
           const fullName =
             `${firstName} ${lastName}`
               .trim()
               .toLowerCase()
-
 
           return (
             username.includes(keyword) ||
@@ -320,11 +245,6 @@ function JIGN() {
           )
 
         })
-
-
-      // =====================================
-      // SORT
-      // =====================================
 
       if (
         sort ===
@@ -339,7 +259,6 @@ function JIGN() {
 
       }
 
-
       if (
         sort ===
         'Tersedikit Data'
@@ -352,7 +271,6 @@ function JIGN() {
         )
 
       }
-
 
       if (
         sort ===
@@ -369,7 +287,6 @@ function JIGN() {
 
       }
 
-
       if (
         sort ===
         'Nama Z-A'
@@ -385,7 +302,6 @@ function JIGN() {
 
       }
 
-
       return result
 
     }, [
@@ -393,11 +309,6 @@ function JIGN() {
       search,
       sort,
     ])
-
-
-  // =========================================
-  // TOTAL DATASET DARI OWNER
-  // =========================================
 
   const totalOwnerDatasets =
     owners.reduce(
@@ -409,19 +320,9 @@ function JIGN() {
       0
     )
 
-
-  // =========================================
-  // RENDER
-  // =========================================
-
   return (
 
     <main className="jign-page">
-
-
-      {/* =====================================
-          HERO
-      ===================================== */}
 
       <section className="catalog-hero">
 
@@ -451,18 +352,7 @@ function JIGN() {
 
       </section>
 
-
-
-      {/* =====================================
-          MAIN CONTENT
-      ===================================== */}
-
       <section className="container jign-content-section">
-
-
-        {/* ===================================
-            HEADING
-        =================================== */}
 
         <div className="jign-heading">
 
@@ -472,11 +362,9 @@ function JIGN() {
               SIMPUL JARINGAN JIGN
             </span>
 
-
             <h2>
               Instansi Penyedia Data
             </h2>
-
 
             <p>
               Daftar instansi yang terhubung dalam
@@ -487,12 +375,6 @@ function JIGN() {
           </div>
 
         </div>
-
-
-
-        {/* ===================================
-            SEARCH + FILTER
-        =================================== */}
 
         <div className="jign-toolbar-section">
 
@@ -527,7 +409,6 @@ function JIGN() {
 
               </span>
 
-
               <input
                 type="text"
                 className="information-search"
@@ -541,10 +422,6 @@ function JIGN() {
               />
 
             </div>
-
-
-
-            {/* FILTER */}
 
             <div className="jign-filter-row">
 
@@ -565,7 +442,6 @@ function JIGN() {
                 {' '}instansi
 
               </small>
-
 
               <select
                 className="jign-sort-select"
@@ -602,12 +478,6 @@ function JIGN() {
 
         </div>
 
-
-
-        {/* ===================================
-            SUMMARY
-        =================================== */}
-
         <div className="jign-summary">
 
           <span>
@@ -619,7 +489,6 @@ function JIGN() {
             {' '}simpul jaringan
 
           </span>
-
 
           <span>
 
@@ -633,12 +502,6 @@ function JIGN() {
 
         </div>
 
-
-
-        {/* ===================================
-            LOADING
-        =================================== */}
-
         {loading && (
 
           <div className="information-empty">
@@ -650,12 +513,6 @@ function JIGN() {
           </div>
 
         )}
-
-
-
-        {/* ===================================
-            ERROR
-        =================================== */}
 
         {!loading &&
           error && (
@@ -674,12 +531,6 @@ function JIGN() {
 
           )}
 
-
-
-        {/* ===================================
-            OWNER GRID
-        =================================== */}
-
         {!loading &&
           !error &&
           filteredOwners.length > 0 && (
@@ -694,15 +545,11 @@ function JIGN() {
                       owner
                     )
 
-
                   const datasetCount =
                     Number(
                       owner.count || 0
                     )
 
-
-                  // #8: rincian jumlah data per jenis resource,
-                  // hanya ditampilkan untuk yang jumlahnya > 0.
                   const breakdown = [
                     { label: 'Dataset', value: Number(owner.dataset_count || 0) },
                     { label: 'Dashboard', value: Number(owner.dashboard_count || 0) },
@@ -711,7 +558,6 @@ function JIGN() {
                     { label: 'Dokumen', value: Number(owner.document_count || 0) },
                     { label: 'Informasi', value: Number(owner.informasi_count || 0) },
                   ].filter((entry) => entry.value > 0)
-
 
                   return (
 
@@ -725,9 +571,6 @@ function JIGN() {
                       }
                       style={{ textDecoration: 'none', color: 'inherit' }}
                     >
-
-
-                      {/* CARD HEADER */}
 
                       <div className="jign-owner-header">
 
@@ -754,9 +597,6 @@ function JIGN() {
 
                         </div>
 
-
-                        {/* STATUS */}
-
                         <span className="jign-owner-status">
 
                           <span className="jign-status-dot" />
@@ -766,10 +606,6 @@ function JIGN() {
                         </span>
 
                       </div>
-
-
-
-                      {/* CARD CONTENT */}
 
                       <div className="jign-owner-content">
 
@@ -786,7 +622,6 @@ function JIGN() {
                           {name}
                         </h3>
 
-
                         <p className="jign-owner-description">
 
                           Simpul Jaringan Informasi
@@ -794,12 +629,7 @@ function JIGN() {
 
                         </p>
 
-
-
-                        {/* CARD FOOTER */}
-
                         <div className="jign-owner-footer">
-
 
                           <div className="jign-owner-dataset">
 
@@ -812,8 +642,6 @@ function JIGN() {
                             </span>
 
                           </div>
-
-
 
                           <div className="jign-owner-type">
 
@@ -828,9 +656,6 @@ function JIGN() {
                           </div>
 
                         </div>
-
-
-                        {/* #8: RINCIAN PER JENIS DATA */}
 
                         {breakdown.length > 0 && (
 
@@ -878,12 +703,6 @@ function JIGN() {
 
           )}
 
-
-
-        {/* ===================================
-            EMPTY
-        =================================== */}
-
         {!loading &&
           !error &&
           filteredOwners.length === 0 && (
@@ -894,11 +713,9 @@ function JIGN() {
                 ⌂
               </div>
 
-
               <h5>
                 Instansi tidak ditemukan
               </h5>
-
 
               <p>
                 Coba gunakan kata kunci
@@ -910,12 +727,6 @@ function JIGN() {
           )}
 
       </section>
-
-
-
-      {/* =====================================
-          INFORMATION
-      ===================================== */}
 
       <section className="jign-info-section">
 
@@ -929,7 +740,6 @@ function JIGN() {
                 TENTANG JIGN
               </span>
 
-
               <h2 className="jign-info-title">
 
                 Menghubungkan informasi
@@ -938,7 +748,6 @@ function JIGN() {
               </h2>
 
             </div>
-
 
             <p>
 
@@ -956,12 +765,10 @@ function JIGN() {
 
       </section>
 
-
     </main>
 
   )
 
 }
-
 
 export default JIGN

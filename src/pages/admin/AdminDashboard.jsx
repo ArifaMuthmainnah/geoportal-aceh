@@ -24,6 +24,18 @@ import {
 } from '../../api/geoappApi'
 
 import {
+  getAdminMapsRaw,
+  hideMap,
+  restoreMap,
+} from '../../api/mapApi'
+
+import {
+  getAdminDocumentsRaw,
+  hideDocument,
+  restoreDocument,
+} from '../../api/documentApi'
+
+import {
   getAllOwnDatasets,
   updateMyDataset,
   deleteMyDataset,
@@ -92,6 +104,38 @@ function normalizeApiGeoappRow(geoapp) {
   }
 }
 
+function normalizeApiMapRow(map) {
+  return {
+    _source: 'api-map',
+    key: `api-map-${map.pk}`,
+    rawId: map.pk,
+    title: map.title || 'Tanpa judul',
+    ownerName: map.owner?.username || map.owner?.first_name || map.owner?.name || '-',
+    category: map.category?.identifier || 'Peta',
+    date: map.date,
+    published: !map._is_hidden,
+    typeLabel: 'Peta',
+    resourceType: 'map',
+    raw: map,
+  }
+}
+
+function normalizeApiDocumentRow(document) {
+  return {
+    _source: 'api-document',
+    key: `api-document-${document.pk}`,
+    rawId: document.pk,
+    title: document.title || 'Tanpa judul',
+    ownerName: document.owner?.username || document.owner?.first_name || document.owner?.name || '-',
+    category: document.category?.identifier || 'Dokumen',
+    date: document.date,
+    published: !document._is_hidden,
+    typeLabel: 'Dokumen',
+    resourceType: 'document',
+    raw: document,
+  }
+}
+
 function normalizeLocalRow(item) {
   return {
     _source: 'local',
@@ -119,34 +163,22 @@ function AdminDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout, isAdmin, refreshCurrentUser } = useAuth()
-
-  // ===================================================
-  // SESI 9 (Poin 10): dukung ?tab=users supaya link
-  // "Pengguna" dari sidebar halaman lain (mis. Data Saya)
-  // bisa langsung membuka tab Pengguna di sini, tanpa harus
-  // klik dua kali (buka Dashboard admin dulu, baru klik tab).
-  // ===================================================
-
   const [searchParams] = useSearchParams()
-
   const [apiDatasets, setApiDatasets] = useState([])
   const [apiGeoapps, setApiGeoapps] = useState([])
+  const [apiMaps, setApiMaps] = useState([])
+  const [apiDocuments, setApiDocuments] = useState([])
   const [localDatasets, setLocalDatasets] = useState([])
   const [users, setUsers] = useState([])
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [activeMenu, setActiveMenu] = useState('dashboard')
-
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
-
-  // #3: popover posisi FIXED terhadap tombol, supaya tidak
-  // terpotong ketika daftar hasil filter pendek/kosong.
   const filterButtonRef = useRef(null)
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 })
 
@@ -156,17 +188,12 @@ function AdminDashboard() {
       const rect = filterButtonRef.current.getBoundingClientRect()
       const popoverWidth = 320
       const estimatedHeight = 420
-
-      // #10: kalau ruang di bawah tombol tidak cukup, buka
-      // ke ATAS supaya popover tidak terpotong layar/footer.
       const spaceBelow = window.innerHeight - rect.bottom
       const openUpward = spaceBelow < estimatedHeight && rect.top > estimatedHeight
-
       const top = openUpward
         ? Math.max(8, rect.top - estimatedHeight - 8)
         : rect.bottom + 8
 
-      // Jangan sampai keluar sisi kanan layar
       const left = Math.min(rect.right - popoverWidth, window.innerWidth - popoverWidth - 16)
 
       setPopoverPos({ top, left: Math.max(8, left) })
@@ -176,7 +203,6 @@ function AdminDashboard() {
   }
 
   const [togglingKey, setTogglingKey] = useState(null)
-
   const [userModalMode, setUserModalMode] = useState(null)
   const [editingUser, setEditingUser] = useState(null)
   const [userForm, setUserForm] = useState({ username: '', email: '', password: '', role: 'operator' })
@@ -184,19 +210,23 @@ function AdminDashboard() {
   const [savingUser, setSavingUser] = useState(false)
   const [userFormError, setUserFormError] = useState('')
 
-  async function loadDashboard() {
+    async function loadDashboard() {
     try {
       setLoading(true)
       setError('')
-      const [datasetResult, geoappResult, userResult, localResult] =
+      const [datasetResult, geoappResult, mapResult, documentResult, userResult, localResult] =
         await Promise.allSettled([
           getAdminDatasetsRaw(),
           getAdminGeoappsRaw(),
+          getAdminMapsRaw(),
+          getAdminDocumentsRaw(),
           getAllUsers(),
           getAllOwnDatasets(),
         ])
       setApiDatasets(datasetResult.status === 'fulfilled' && Array.isArray(datasetResult.value) ? datasetResult.value : [])
       setApiGeoapps(geoappResult.status === 'fulfilled' && Array.isArray(geoappResult.value) ? geoappResult.value : [])
+      setApiMaps(mapResult.status === 'fulfilled' && Array.isArray(mapResult.value) ? mapResult.value : [])
+      setApiDocuments(documentResult.status === 'fulfilled' && Array.isArray(documentResult.value) ? documentResult.value : [])
       setUsers(userResult.status === 'fulfilled' && Array.isArray(userResult.value) ? userResult.value : [])
       setLocalDatasets(localResult.status === 'fulfilled' && Array.isArray(localResult.value) ? localResult.value : [])
     } catch (err) {
@@ -208,9 +238,6 @@ function AdminDashboard() {
   }
 
   useEffect(() => { loadDashboard() }, [])
-
-  // SESI 9 (Poin 10): buka tab "Pengguna" otomatis kalau
-  // halaman ini diakses lewat link "?tab=users".
   useEffect(() => {
     const tab = searchParams.get('tab')
     if (tab === 'users') {
@@ -223,8 +250,10 @@ function AdminDashboard() {
       ...localDatasets.map(normalizeLocalRow),
       ...apiDatasets.map(normalizeApiDatasetRow),
       ...apiGeoapps.map(normalizeApiGeoappRow),
+      ...apiMaps.map(normalizeApiMapRow),
+      ...apiDocuments.map(normalizeApiDocumentRow),
     ]
-  }, [apiDatasets, apiGeoapps, localDatasets])
+  }, [apiDatasets, apiGeoapps, apiMaps, apiDocuments, localDatasets])
 
   const categoryOptions = useMemo(() => {
     const set = new Set()
@@ -276,9 +305,15 @@ function AdminDashboard() {
       if (row._source === 'api-dataset') {
         await updateDataset(row.rawId, { is_published: nextValue })
         setApiDatasets((current) => current.map((item) => item.pk === row.rawId ? { ...item, _is_hidden: !nextValue } : item))
-      } else if (row._source === 'api-geoapp') {
+            } else if (row._source === 'api-geoapp') {
         if (nextValue) await restoreGeoapp(row.rawId); else await hideGeoapp(row.rawId)
         setApiGeoapps((current) => current.map((item) => item.pk === row.rawId ? { ...item, _is_hidden: !nextValue } : item))
+      } else if (row._source === 'api-map') {
+        if (nextValue) await restoreMap(row.rawId); else await hideMap(row.rawId)
+        setApiMaps((current) => current.map((item) => item.pk === row.rawId ? { ...item, _is_hidden: !nextValue } : item))
+      } else if (row._source === 'api-document') {
+        if (nextValue) await restoreDocument(row.rawId); else await hideDocument(row.rawId)
+        setApiDocuments((current) => current.map((item) => item.pk === row.rawId ? { ...item, _is_hidden: !nextValue } : item))
       } else {
         await updateMyDataset(row.rawId, { is_published: nextValue })
         setLocalDatasets((current) => current.map((item) => item.id === row.rawId ? { ...item, is_published: nextValue } : item))
@@ -290,13 +325,6 @@ function AdminDashboard() {
       setTogglingKey(null)
     }
   }
-
-  // ===================================================
-  // SESI 6 (FIX): "Hapus" HANYA untuk data lokal (upload-an
-  // user). Data dari API Geoportal Aceh lama TIDAK punya
-  // tombol Hapus — itu jadi pembeda: API cuma Publish/Unpublish,
-  // upload-an bisa dihapus permanen.
-  // ===================================================
 
   async function handleDelete(row) {
     if (row._source !== 'local') return
@@ -311,15 +339,6 @@ function AdminDashboard() {
       window.alert('Gagal menghapus data.')
     }
   }
-
-  // ===================================================
-  // SESI 8 (FIX Poin 6): Edit data SEKARANG membuka halaman
-  // penuh /admin/edit/:source/:id (EditDatasetAdmin.jsx),
-  // BUKAN modal/pop-up lagi — sama seperti pola halaman
-  // "Edit Data" di Data Saya (EditMyDataset.jsx). :source
-  // dipakai halaman tujuan untuk tahu cara mengambil &
-  // menyimpan datanya (data lokal vs data dari API lama).
-  // ===================================================
 
   function goToEditPage(row) {
     navigate(`/admin/edit/${row._source}/${row.rawId}`)
@@ -409,13 +428,6 @@ function AdminDashboard() {
         <aside className="admin-sidebar">
           <div className="admin-sidebar-brand"><span>GEOPORTAL</span><strong>ACEH</strong></div>
 
-          {/* =============================================
-              SESI 9 (Poin 10): nama/avatar admin sekarang
-              bisa DIKLIK dan langsung mengarah ke halaman
-              profil — menu "Profil" terpisah di bawah sudah
-              tidak diperlukan lagi.
-          ============================================= */}
-
           <Link
             to="/dashboard/profil"
             className="admin-sidebar-user"
@@ -438,15 +450,6 @@ function AdminDashboard() {
               <span>Administrator</span>
             </div>
           </Link>
-
-          {/* =============================================
-              SIDEBAR MINIMAL — SESI 9 (Poin 10): cukup
-              Dashboard, Data Saya, Pengguna, Lihat Katalog,
-              WebGIS, Logout. "Ambil dari API" & "Profil"
-              DIHAPUS — Ambil dari API sudah ada di tombol +
-              (pojok kanan bawah), Profil pindah ke klik nama
-              di atas.
-          ============================================= */}
 
           <nav className="admin-sidebar-nav">
             <button type="button" className={activeMenu === 'dashboard' ? 'active' : ''} onClick={() => setActiveMenu('dashboard')}>
@@ -505,11 +508,6 @@ function AdminDashboard() {
                 </div>
               </div>
 
-              {/* =============================================
-                  TOOLBAR — SESI 6: search di kiri (dengan ikon
-                  kaca pembesar), filter di PALING KANAN.
-                ============================================= */}
-
               <div
                 className="admin-toolbar"
                 style={{ display: 'flex', gap: '12px', alignItems: 'center', position: 'relative' }}
@@ -541,7 +539,7 @@ function AdminDashboard() {
                   >
                     <IconFilter />
                     Filter
-                    {/* #10: titik hijau kecil menandakan ada filter aktif */}
+                  
                     {activeFilterCount > 0 && (
                       <span style={{
                         position: 'absolute', top: '-3px', right: '-3px',
@@ -553,7 +551,7 @@ function AdminDashboard() {
 
                   {filterOpen && (
                     <>
-                      {/* SESI 6: klik di luar popover otomatis menutup filter */}
+              
                       <div onClick={() => setFilterOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 999 }} />
 
                       <div
@@ -660,7 +658,11 @@ function AdminDashboard() {
                                 to={
                                   row.resourceType === 'dashboard' || row.resourceType === 'application'
                                     ? `/aplikasi/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
-                                    : `/katalog/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
+                                    : row.resourceType === 'map'
+                                      ? `/peta/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
+                                      : row.resourceType === 'document'
+                                        ? `/dokumen/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
+                                        : `/katalog/${row._source === 'local' ? `own-${row.rawId}` : row.rawId}`
                                 }
                                 className="icon-btn icon-btn-view"
                                 data-tooltip="Lihat"
@@ -687,8 +689,6 @@ function AdminDashboard() {
                                 {row.published ? <IconEyeOff /> : <IconCheckCircle />}
                               </button>
 
-                              {/* SESI 6 (FIX): Hapus HANYA untuk data lokal —
-                                  ini pembeda antara data API vs upload-an user. */}
                               {row._source === 'local' && (
                                 <button
                                   type="button"
@@ -771,18 +771,7 @@ function AdminDashboard() {
 
       </div>
 
-
-      {/* =============================================
-          SESI 9 (Poin 8): FAB "+" lama yang cuma link
-          langsung ke /dashboard/upload sekarang diganti
-          dengan menu seperempat lingkaran yang sama seperti
-          di halaman "Data Saya" — jadi admin juga bisa
-          langsung pilih Dataset / Peta / Dashboard / Upload
-          / Ambil dari API dari satu tombol yang sama.
-      ============================================= */}
-
       <CreateChoiceMenu />
-
 
       {userModalMode && (
         <div className="admin-modal-overlay" onClick={closeUserModal}>

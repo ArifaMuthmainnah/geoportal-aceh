@@ -14,11 +14,6 @@ const {
 
 const router = express.Router()
 
-
-// =====================================================
-// FOLDER UPLOAD AVATAR
-// =====================================================
-
 const avatarDir = path.join(
   __dirname,
   '..',
@@ -45,19 +40,6 @@ const avatarStorage = multer.diskStorage({
 })
 
 const uploadAvatar = multer({ storage: avatarStorage })
-
-
-// =====================================================
-// DAFTAR PENGGUNA PUBLIK (UNTUK HALAMAN JIGN)
-// =====================================================
-//
-// #8 (Sesi 4): sebelumnya cuma kasih total gabungan semua
-// jenis resource ("count"). Sekarang dipecah per jenis
-// (dataset/dashboard/application/map/document/informasi)
-// supaya halaman JIGN & JIGNDetail bisa menampilkan rincian
-// Peta/Dokumen/Informasi per instansi, bukan cuma "Dataset".
-//
-// =====================================================
 
 router.get('/public', async (req, res) => {
 
@@ -116,14 +98,6 @@ router.get('/public', async (req, res) => {
   }
 
 })
-
-// =====================================================
-// SESI 6: UPDATE PROFIL SENDIRI (operator MAUPUN admin)
-// Beda dari PATCH /:id di bawah (khusus admin mengedit
-// SIAPA SAJA) — ini HANYA authenticateToken, tanpa
-// requireAdmin, dan cuma boleh mengubah akun MILIK SENDIRI
-// (req.user.id), TIDAK BISA ganti role sendiri.
-// =====================================================
 
 router.patch(
   '/me',
@@ -222,19 +196,10 @@ router.patch(
   }
 )
 
-// =====================================================
-// SEMUA ROUTE DI SINI WAJIB ADMIN
-// =====================================================
-
 router.use(
   authenticateToken,
   requireAdmin
 )
-
-
-// =====================================================
-// GET ALL USERS
-// =====================================================
 
 router.get('/', async (req, res) => {
 
@@ -272,11 +237,6 @@ router.get('/', async (req, res) => {
 
 })
 
-
-// =====================================================
-// CREATE USER (mendukung upload avatar)
-// =====================================================
-
 router.post(
   '/',
   uploadAvatar.single('avatar'),
@@ -303,7 +263,6 @@ router.post(
 
       }
 
-
       const cleanUsername = username.trim()
       const cleanEmail = email.trim().toLowerCase()
 
@@ -319,7 +278,6 @@ router.post(
 
       }
 
-
       if (password.length < 6) {
 
         if (req.file) fs.unlinkSync(req.file.path)
@@ -331,9 +289,7 @@ router.post(
 
       }
 
-
       const selectedRole = role === 'admin' ? 'admin' : 'operator'
-
 
       const existing =
         await db
@@ -343,7 +299,6 @@ router.post(
             WHERE username = $1 OR email = $2
           `)
           .get(cleanUsername, cleanEmail)
-
 
       if (existing) {
 
@@ -363,12 +318,10 @@ router.post(
 
       }
 
-
       const hashedPassword = bcrypt.hashSync(password, 12)
 
       const avatarUrl =
         req.file ? `avatars/${req.file.filename}` : null
-
 
       const result =
         await db
@@ -386,7 +339,6 @@ router.post(
             avatarUrl
           )
 
-
       res.status(201).json({
         success: true,
         message: 'User berhasil dibuat.',
@@ -398,7 +350,6 @@ router.post(
           avatar_url: avatarUrl
         }
       })
-
 
     } catch (error) {
 
@@ -417,12 +368,6 @@ router.post(
 
   }
 )
-
-
-// =====================================================
-// UPDATE USER (BARU — INI YANG SEBELUMNYA HILANG,
-// PENYEBAB ERROR 404 SAAT EDIT PENGGUNA)
-// =====================================================
 
 router.patch(
   '/:id',
@@ -462,7 +407,6 @@ router.patch(
 
       }
 
-
       const {
         username,
         email,
@@ -486,8 +430,6 @@ router.patch(
           ? (role === 'admin' ? 'admin' : 'operator')
           : existingUser.role
 
-
-      // cek bentrok username/email dengan user lain
       const conflict =
         await db
           .prepare(`
@@ -508,7 +450,6 @@ router.patch(
 
       }
 
-
       let nextPasswordHash = existingUser.password
 
       if (password && password.trim()) {
@@ -527,7 +468,6 @@ router.patch(
         nextPasswordHash = bcrypt.hashSync(password.trim(), 12)
 
       }
-
 
       let nextAvatarUrl = existingUser.avatar_url
 
@@ -549,7 +489,6 @@ router.patch(
 
       }
 
-
       await db
         .prepare(`
           UPDATE users
@@ -569,7 +508,6 @@ router.patch(
           nextAvatarUrl,
           id
         )
-
 
       res.json({
         success: true,
@@ -601,11 +539,6 @@ router.patch(
 
   }
 )
-
-
-// =====================================================
-// DELETE USER
-// =====================================================
 
 router.delete(
   '/:id',
@@ -665,6 +598,5 @@ router.delete(
 
   }
 )
-
 
 module.exports = router

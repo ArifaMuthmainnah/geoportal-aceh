@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-
 import { getAllDatasets, getDatasetTotalCount } from '../../api/datasetApi'
 import { getAllGeoapps, getGeoappTotalCount } from '../../api/geoappApi'
 import { getAllVisibleDatasets } from '../../api/myDatasetApi'
 import { getPublicOwners } from '../../api/userApi'
 import { useAuth } from '../../context/AuthContext'
-
 import { IconSearch, IconFilter, IconEye } from '../../components/ActionIcons'
-
 
 function buildAvatarUrl(path) {
   if (!path) return null
@@ -25,14 +22,6 @@ function getResourceTypeLabel(resourceType) {
   return 'Dataset'
 }
 
-// =====================================================
-// SESI 10 (Poin 2): "application" sebelumnya tidak dicek
-// di sini, jadi Aplikasi yang sudah dipublish selalu jatuh
-// ke fallback `/katalog/:id` (halaman detail Dataset) —
-// padahal seharusnya ke `/aplikasi/:id` sama seperti
-// Dashboard. Sekarang dicek juga.
-// =====================================================
-
 function buildDetailPath(row) {
   const idPart = row.source === 'local' ? `own-${row.rawId}` : row.rawId
   if (row.type === 'dashboard' || row.type === 'application') return `/aplikasi/${idPart}`
@@ -46,26 +35,18 @@ function UserDashboard() {
 
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
-
   const [apiRows, setApiRows] = useState([])
   const [localRows, setLocalRows] = useState([])
   const [ownerCount, setOwnerCount] = useState(0)
   const [apiTotal, setApiTotal] = useState(0)
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-
-  // ===================================================
-  // SESI 6: FILTER (sama seperti di Admin Dashboard)
-  // ===================================================
-
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterType, setFilterType] = useState({ dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
   const [filterCategory, setFilterCategory] = useState('Semua')
   const [filterInstansi, setFilterInstansi] = useState('Semua')
-
   const filterButtonRef = useRef(null)
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 })
 
@@ -75,10 +56,8 @@ function UserDashboard() {
       const rect = filterButtonRef.current.getBoundingClientRect()
       const popoverWidth = 320
       const estimatedHeight = 420
-
       const spaceBelow = window.innerHeight - rect.bottom
       const openUpward = spaceBelow < estimatedHeight && rect.top > estimatedHeight
-
       const top = openUpward
         ? Math.max(8, rect.top - estimatedHeight - 8)
         : rect.bottom + 8
@@ -91,7 +70,6 @@ function UserDashboard() {
     setFilterOpen((current) => !current)
   }
 
-
   async function loadData() {
 
     try {
@@ -99,7 +77,6 @@ function UserDashboard() {
       setLoading(true)
       setError('')
 
-      // Data API lama (publik, tetap bisa dilihat siapa saja)
       let datasetRows = []
       let geoappRows = []
       let apiTotalCount = 0
@@ -124,16 +101,6 @@ function UserDashboard() {
       } catch (err) {
         console.error('Gagal mengambil data API lama:', err)
       }
-
-      // =============================================
-      // SESI 6 — PERBAIKAN:
-      // Dulu operator hanya melihat data PUBLISH milik
-      // orang lain + data miliknya sendiri (semua status).
-      // Sekarang tarik SEMUA data lokal (semua owner, semua
-      // status) supaya operator bisa melihat data yang
-      // BELUM di-publish milik operator lain juga — mode
-      // lihat saja, tidak bisa edit/hapus.
-      // =============================================
 
       let allLocalDatasets = []
       try {
@@ -172,14 +139,11 @@ function UserDashboard() {
 
   }
 
-
   useEffect(() => {
     loadData()
   }, [])
 
-
   const allRows = useMemo(() => [...localRows, ...apiRows], [localRows, apiRows])
-
   const statistics = useMemo(() => {
 
     const totalData = apiTotal + localRows.length
@@ -190,8 +154,6 @@ function UserDashboard() {
       { label: 'Total Data', value: totalData, icon: '▦' },
       { label: 'Terpublikasi', value: publishedLocal + apiRows.length, icon: '✓' },
       { label: 'Pengguna', value: ownerCount, icon: '♙' },
-      // SESI 6: sekarang menghitung SEMUA data belum publish
-      // (bukan cuma milik sendiri seperti sebelumnya).
       { label: 'Belum Terpublikasi', value: unpublishedLocal, icon: '◷' },
     ]
 
@@ -233,12 +195,10 @@ function UserDashboard() {
 
   }, [allRows, search, filterType, filterStatus, filterCategory, filterInstansi])
 
-
   function handleLogout() {
     logout()
     navigate('/', { replace: true })
   }
-
 
   return (
 
@@ -249,13 +209,6 @@ function UserDashboard() {
         <aside className="admin-sidebar">
 
           <div className="admin-sidebar-brand"><span>GEOPORTAL</span><strong>ACEH</strong></div>
-
-          {/* =============================================
-              SESI 9 (Poin 10): nama/avatar operator sekarang
-              bisa DIKLIK dan langsung mengarah ke halaman
-              profil — menu "Profil" terpisah di bawah sudah
-              tidak diperlukan lagi.
-          ============================================= */}
 
           <Link
             to="/dashboard/profil"
@@ -279,15 +232,6 @@ function UserDashboard() {
               <span>Operator</span>
             </div>
           </Link>
-
-          {/* =============================================
-              SIDEBAR MINIMAL — SESI 9 (Poin 10): cukup
-              Dashboard, Data Saya, Lihat Katalog, WebGIS,
-              Logout. "Ambil dari API" & "Profil" DIHAPUS —
-              Ambil dari API sudah ada di tombol + pada
-              halaman Data Saya, Profil pindah ke klik nama
-              di atas.
-          ============================================= */}
 
           <nav className="admin-sidebar-nav">
 
@@ -318,7 +262,6 @@ function UserDashboard() {
           </button>
 
         </aside>
-
 
         <section className="admin-main">
 
@@ -499,7 +442,7 @@ function UserDashboard() {
                         <td>{row.date ? new Date(row.date).toLocaleDateString('id-ID') : '-'}</td>
                         <td>
                           <span className={row.published ? 'admin-status published' : 'admin-status pending'}>
-                            {row.published ? 'Published' : 'Belum Publish'}
+                            {row.published ? 'Published' : 'Unpublished'}
                           </span>
                         </td>
                         <td>
@@ -530,6 +473,5 @@ function UserDashboard() {
   )
 
 }
-
 
 export default UserDashboard

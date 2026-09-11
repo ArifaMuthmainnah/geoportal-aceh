@@ -13,33 +13,25 @@ function AddLayerModal({
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  // --- STATE SIMPUL ---
   const [serverCategory, setServerCategory] = useState('')
   const [selectedServer, setSelectedServer] = useState('')
   const [simpulKeyword, setSimpulKeyword] = useState('')
   const [showSimpulWarning, setShowSimpulWarning] = useState(false)
-
-  // --- STATE FILE ---
   const [selectedFiles, setSelectedFiles] = useState([])
   const [fileError, setFileError] = useState('')
   const [processingFile, setProcessingFile] = useState(false)
-
-  // --- STATE URL (NEW - ATM KALSEL) ---
   const [urlServerCat, setUrlServerCat] = useState('')
   const [urlSelectedServer, setUrlSelectedServer] = useState('')
   const [urlInput, setUrlInput] = useState('')
   const [urlType, setUrlType] = useState('Geoserver (OGC)')
   const [urlResults, setUrlResults] = useState([]) // Untuk menampung hasil metadata dummy
   const [urlError, setUrlError] = useState('')
-
   const simpulData = {
     'Kementerian/Lembaga': ['Badan Informasi Geospasial', 'Kementerian Dalam Negeri', 'BNPB', 'LAPAN'],
     'Pemerintah Provinsi': ['Provinsi Aceh', 'Provinsi Sumatera Utara', 'Provinsi DKI Jakarta'],
     'Pemerintah Kabupaten/Kota': ['Kota Banda Aceh', 'Kabupaten Aceh Besar', 'Kota Sabang', 'Kabupaten Pidie']
   }
 
-  // DATA DUMMY UNTUK TAB URL (ATM Gambar 2, 6, 10)
   const urlServerMapping = {
     'Kementerian/Lembaga': [
       { name: 'Lembaga Penerbangan dan Antariksa Nasional [FAIL]', url: 'http://spacemap.lapan.go.id/erdas-apollo/catalog/csw?version=2.0' },
@@ -71,7 +63,6 @@ function AddLayerModal({
     return () => { cancelled = true }
   }, [])
 
-  // HANDLERS
   const handleSimpulSearch = () => {
     if (simpulKeyword) setShowSimpulWarning(true)
   }
@@ -156,15 +147,10 @@ function AddLayerModal({
       return false
     }
   
-  
-    // Pastikan semua file berasal
-    // dari dataset yang sama
-  
     const getBaseName = (filename) =>
       filename
         .replace(/\.(shp|shx|dbf|prj)$/i, '')
         .toLowerCase()
-  
   
     const baseNames = [
       shpFile,
@@ -173,7 +159,6 @@ function AddLayerModal({
     ].map(
       file => getBaseName(file.name)
     )
-  
   
     if (
       !baseNames.every(
@@ -188,7 +173,6 @@ function AddLayerModal({
       return false
     }
   
-  
     return true
   }
 
@@ -198,12 +182,10 @@ function AddLayerModal({
       return
     }
   
-  
     try {
   
       setProcessingFile(true)
       setFileError('')
-  
   
       const shpFile =
         selectedFiles.find(
@@ -213,7 +195,6 @@ function AddLayerModal({
               .endsWith('.shp')
         )
   
-  
       const dbfFile =
         selectedFiles.find(
           file =>
@@ -221,7 +202,6 @@ function AddLayerModal({
               .toLowerCase()
               .endsWith('.dbf')
         )
-  
   
       const prjFile =
         selectedFiles.find(
@@ -231,16 +211,12 @@ function AddLayerModal({
               .endsWith('.prj')
         )
   
-  
-      // Baca file SHP dan DBF
       const shpBuffer =
         await shpFile.arrayBuffer()
   
       const dbfBuffer =
         await dbfFile.arrayBuffer()
   
-  
-      // PRJ berupa teks
       let prjText = null
   
       if (prjFile) {
@@ -248,15 +224,12 @@ function AddLayerModal({
           await prjFile.text()
       }
   
-  
-      // Konversi Shapefile menjadi GeoJSON
       const geojson =
         await shp({
           shp: shpBuffer,
           dbf: dbfBuffer,
           prj: prjText || undefined
         })
-  
   
       if (!geojson) {
   
@@ -265,15 +238,12 @@ function AddLayerModal({
         )
   
       }
-  
-  
-      // Nama layer diambil dari nama .shp
+
       const layerName =
         shpFile.name.replace(
           /\.shp$/i,
           ''
         )
-  
   
       const fileLayer = {
   
@@ -295,12 +265,9 @@ function AddLayerModal({
           null,
   
       }
-  
-  
-      onAddFile(fileLayer)
-  
+
+      onAddFile(fileLayer)  
       onClose()
-  
   
     } catch (error) {
   
@@ -314,14 +281,11 @@ function AddLayerModal({
       )
   
     } finally {
-  
       setProcessingFile(false)
-  
     }
   
   }
 
-  // HANDLER URL (GET DATA SIMULATION)
   const handleGetUrlData = () => {
     setUrlError('');
     setUrlResults([]);
@@ -329,7 +293,7 @@ function AddLayerModal({
     if (urlSelectedServer.includes('[FAIL]')) {
       setUrlError('Gagal memuat data, time out!'); // ATM Gambar 8
     } else if (urlSelectedServer.includes('[OK]')) {
-      // Dummy data metadata (ATM Gambar 10)
+
       setUrlResults([
         {
           id: 1,
@@ -342,7 +306,6 @@ function AddLayerModal({
   }
 
   const getID = (item) => (item?.id || item?.pk || null);
-
   const getInstitution = (dataset) => {
     const owner = dataset?.owner;
     if (!owner) return '-';
@@ -373,7 +336,6 @@ function AddLayerModal({
 
         <div className="modal-body">
           
-          {/* TAB DATASET */}
           {activeTab === 'DATASET' && (
             <>
               <div className="search-box-container">
@@ -405,7 +367,6 @@ function AddLayerModal({
             </>
           )}
 
-          {/* TAB SIMPUL */}
           {activeTab === 'SIMPUL' && (
             <div className="simpul-container">
               <div className="form-group-simpul">
@@ -434,7 +395,6 @@ function AddLayerModal({
             </div>
           )}
 
-          {/* TAB FILE */}
 {activeTab === 'FILE' && (
 
 <div className="file-upload-container">
@@ -468,7 +428,6 @@ function AddLayerModal({
       readOnly
     />
 
-
     <label className="btn-browse">
 
       Browse
@@ -486,9 +445,6 @@ function AddLayerModal({
     </label>
 
   </div>
-
-
-  {/* DAFTAR FILE TERPILIH */}
 
   {selectedFiles.length > 0 && (
 
@@ -520,9 +476,6 @@ function AddLayerModal({
 
   )}
 
-
-  {/* ERROR */}
-
   {fileError && (
 
     <div className="file-error-message">
@@ -537,7 +490,6 @@ function AddLayerModal({
 
 )}
 
-          {/* TAB URL (ATM KALSEL - Gambar 2 s/d 10) */}
           {activeTab === 'URL' && (
             <div className="url-tab-container">
               <div className="form-group-url">
@@ -582,10 +534,8 @@ function AddLayerModal({
                 </div>
               </div>
 
-              {/* ERROR MESSAGE (ATM Gambar 8) */}
               {urlError && <div className="url-error-box">{urlError}</div>}
 
-              {/* RESULTS LIST (ATM Gambar 10) */}
               <div className="url-results-list">
                 {urlResults.map(res => (
                   <div key={res.id} className="metadata-card">

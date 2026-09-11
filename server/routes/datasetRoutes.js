@@ -12,23 +12,6 @@ const {
 
 const router = express.Router()
 
-// =====================================================
-// SESI 10 (FIX): 'application' sebelumnya TIDAK ADA di
-// daftar ini. Akibatnya:
-// 1. Endpoint /public/:resourceType, /mine/:resourceType,
-//    dan /admin/:resourceType menolak (400 "Resource type
-//    tidak valid") setiap kali frontend minta data dengan
-//    resourceType='application' (mis. halaman Aplikasi.jsx).
-// 2. Saat upload BARU dengan resource_type='application',
-//    baris ~350 di bawah otomatis JATUH KE FALLBACK 'dataset'
-//    (lihat normalizedResourceType) — jadi data Aplikasi yang
-//    diupload sebelum fix ini SEBENARNYA tersimpan di database
-//    sebagai resource_type='dataset', bukan 'application'.
-//    Data lama yang sudah kadung tersimpan salah itu perlu
-//    diedit ulang (ganti Jenis Resource ke Aplikasi lewat
-//    halaman Edit) atau diupload ulang setelah fix ini aktif.
-// =====================================================
-
 const ALLOWED_RESOURCE_TYPES = [
   'dataset',
   'dashboard',
@@ -98,10 +81,6 @@ function deleteOldNonThumbnailFiles(dataset) {
   if (dataset.file_path) deleteFileByName(dataset.file_path)
 }
 
-// =====================================================
-// DATASET PUBLIK
-// =====================================================
-
 router.get('/published', async (req, res) => {
 
   try {
@@ -125,7 +104,6 @@ router.get('/published', async (req, res) => {
   }
 
 })
-
 
 router.get('/public/:resourceType', async (req, res) => {
 
@@ -158,7 +136,6 @@ router.get('/public/:resourceType', async (req, res) => {
   }
 
 })
-
 
 router.get('/public/detail/:id', async (req, res) => {
 
@@ -193,13 +170,7 @@ router.get('/public/detail/:id', async (req, res) => {
 
 })
 
-
 router.use(authenticateToken)
-
-
-// =====================================================
-// SESI 6: VISIBILITAS BERSAMA (ADMIN + OPERATOR)
-// =====================================================
 
 router.get('/all-visible', async (req, res) => {
 
@@ -223,7 +194,6 @@ router.get('/all-visible', async (req, res) => {
   }
 
 })
-
 
 router.get('/view/:id', async (req, res) => {
 
@@ -257,7 +227,6 @@ router.get('/view/:id', async (req, res) => {
   }
 
 })
-
 
 router.get('/mine/detail/:id', async (req, res) => {
 
@@ -299,7 +268,6 @@ router.get('/mine/detail/:id', async (req, res) => {
 
 })
 
-
 router.get('/admin/detail/:id', requireAdmin, async (req, res) => {
 
   try {
@@ -332,11 +300,6 @@ router.get('/admin/detail/:id', requireAdmin, async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// UPLOAD RESOURCE
-// =====================================================
 
 router.post('/', uploadWithThumbnail, async (req, res) => {
 
@@ -422,7 +385,6 @@ router.post('/', uploadWithThumbnail, async (req, res) => {
 
 })
 
-
 router.get('/mine', async (req, res) => {
 
   try {
@@ -445,7 +407,6 @@ router.get('/mine', async (req, res) => {
   }
 
 })
-
 
 router.get('/mine/:resourceType', async (req, res) => {
 
@@ -477,7 +438,6 @@ router.get('/mine/:resourceType', async (req, res) => {
 
 })
 
-
 router.get('/', requireAdmin, async (req, res) => {
 
   try {
@@ -500,7 +460,6 @@ router.get('/', requireAdmin, async (req, res) => {
   }
 
 })
-
 
 router.get('/admin/:resourceType', requireAdmin, async (req, res) => {
 
@@ -531,20 +490,6 @@ router.get('/admin/:resourceType', requireAdmin, async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// SESI 6: PATCH SEKARANG MENDUKUNG GANTI FILE
-// Route ini pakai `uploadWithThumbnail` (multer). Kalau
-// request datang sebagai JSON biasa (Content-Type:
-// application/json — dipakai toggle publish, edit modal
-// admin, dll), multer otomatis membiarkannya (tidak
-// memodifikasi req.body) karena bukan multipart/form-data,
-// jadi perilaku LAMA tetap sama persis. Kalau request
-// datang sebagai multipart/form-data (dari EditMyDataset.jsx
-// saat user ganti file), req.files terisi dan file lama
-// diganti otomatis.
-// =====================================================
 
 router.patch('/:id', uploadWithThumbnail, async (req, res) => {
 
@@ -598,7 +543,6 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
     const nextExternalUrl =
       remove_link ? null : (external_url !== undefined ? external_url : dataset.external_url)
 
-    // ---- GANTI FILE (kalau ada file baru dikirim) ----
     const newFiles = req.files?.base_file || []
     let nextFilePath = dataset.file_path
     let nextFileName = dataset.file_name
@@ -621,7 +565,6 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
 
     }
 
-    // ---- GANTI THUMBNAIL (opsional) ----
     const newThumbnail = req.files?.thumbnail?.[0] || null
     let nextThumbnailPath = dataset.thumbnail_path
 
@@ -638,14 +581,6 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
 
     let nextResourceType = dataset.resource_type || 'dataset'
 
-    // SESI 10 (FIX): dulu HANYA admin yang boleh mengubah
-    // Jenis Resource lewat sini (`isAdmin && ...`). Sekarang
-    // pemilik data (operator) juga boleh — aman, karena baris
-    // di atas (isOwner && !isAdmin && dataset.is_published)
-    // sudah memblokir operator mengedit APA PUN begitu datanya
-    // published, jadi operator hanya bisa ganti Jenis Resource
-    // selama datanya belum dipublikasikan. Admin tetap boleh
-    // kapan saja seperti sebelumnya.
     if ((isAdmin || isOwner) && resource_type !== undefined) {
       nextResourceType = String(resource_type).trim().toLowerCase()
     }
@@ -673,7 +608,7 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
       nextSubType, nextFilePath, nextFileName, nextFilesJson, nextThumbnailPath, id
     )
 
-    return res.json({ success: true, message: 'Data berhasil diperbarui.' })
+        return res.json({ success: true, message: 'Data berhasil diperbarui.' })
 
   } catch (error) {
 
@@ -683,6 +618,105 @@ router.patch('/:id', uploadWithThumbnail, async (req, res) => {
     if (req.files?.thumbnail?.[0]) deleteFileByName(req.files.thumbnail[0].filename)
 
     return res.status(500).json({ success: false, message: 'Gagal memperbarui data.' })
+
+  }
+
+})
+
+router.patch('/:id/attribute-data', requireAdmin, async (req, res) => {
+
+  try {
+
+    const id = Number(req.params.id)
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
+
+    const dataset = await db.prepare(`SELECT * FROM datasets WHERE id = $1`).get(id)
+
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
+
+    const { features } = req.body
+
+    if (!Array.isArray(features)) {
+      return res.status(400).json({ success: false, message: 'Data isi atribut tidak valid.' })
+    }
+
+    let metadata = {}
+
+    if (dataset.extra_metadata) {
+      try { metadata = JSON.parse(dataset.extra_metadata) } catch { metadata = {} }
+    }
+
+    metadata.geojson = {
+      type: 'FeatureCollection',
+      features,
+    }
+
+    await db.prepare(`
+      UPDATE datasets
+      SET extra_metadata = $1
+      WHERE id = $2
+    `).run(JSON.stringify(metadata), id)
+
+        return res.json({ success: true, message: 'Isi atribut berhasil disimpan.' })
+
+  } catch (error) {
+
+    console.error('UPDATE ATTRIBUTE DATA ERROR:', error)
+
+    return res.status(500).json({ success: false, message: 'Gagal menyimpan isi atribut.' })
+
+  }
+
+})
+
+router.patch('/:id/map-layers', async (req, res) => {
+
+  try {
+
+    const id = Number(req.params.id)
+
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ success: false, message: 'ID data tidak valid.' })
+    }
+
+    const dataset = await db.prepare(`SELECT * FROM datasets WHERE id = $1`).get(id)
+
+    if (!dataset) {
+      return res.status(404).json({ success: false, message: 'Data tidak ditemukan.' })
+    }
+
+    const { layers } = req.body
+
+    if (!Array.isArray(layers)) {
+      return res.status(400).json({ success: false, message: 'Data layer tidak valid.' })
+    }
+
+    let metadata = {}
+
+    if (dataset.extra_metadata) {
+      try { metadata = JSON.parse(dataset.extra_metadata) } catch { metadata = {} }
+    }
+
+    metadata.map_layers = layers
+
+    await db.prepare(`
+      UPDATE datasets
+      SET extra_metadata = $1
+      WHERE id = $2
+    `).run(JSON.stringify(metadata), id)
+
+    return res.json({ success: true, message: 'Layer peta berhasil disimpan.' })
+
+  } catch (error) {
+
+    console.error('UPDATE MAP LAYERS ERROR:', error)
+
+    return res.status(500).json({ success: false, message: 'Gagal menyimpan layer peta.' })
 
   }
 

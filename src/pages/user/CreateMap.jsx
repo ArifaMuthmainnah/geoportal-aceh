@@ -9,28 +9,23 @@ import {
 
 import { useAuth } from '../../context/AuthContext'
 import { buildExtraMetadata } from '../../utils/resourceFields'
-
 import BoundingBoxPicker from '../../components/BoundingBoxPicker'
 
 function CreateMap() {
 
   const navigate = useNavigate()
   const { currentUser, logout } = useAuth()
-
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [thumbnailFile, setThumbnailFile] = useState(null)
   const [embedUrl, setEmbedUrl] = useState('')
-
   const [availableDatasets, setAvailableDatasets] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [bbox, setBbox] = useState({ minLon: '', minLat: '', maxLon: '', maxLat: '' })
   const [search, setSearch] = useState('')
   const [loadingDatasets, setLoadingDatasets] = useState(true)
-
   const [status, setStatus] = useState('idle')
   const [errorMessage, setErrorMessage] = useState('')
-
 
   useEffect(() => {
 
@@ -55,7 +50,6 @@ function CreateMap() {
           console.error('Gagal mengambil dataset publik:', err)
         }
 
-        // Gabungkan tanpa duplikat (berdasarkan id)
         const map = new Map()
 
         ;[...ownDatasets, ...publicDatasets].forEach((item) => {
@@ -181,7 +175,6 @@ function CreateMap() {
 
   }
 
-
   return (
 
     <main className="admin-page">
@@ -214,7 +207,7 @@ function CreateMap() {
             {currentUser?.role !== 'admin' && (
               <Link to="/dashboard/datasets" className="admin-sidebar-link"><span>◈</span>Data Saya</Link>
             )}
-                        <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
+            <Link to="/dashboard/create-dataset" className="admin-sidebar-link"><span>◈</span>Create Dataset</Link>
             <button type="button" className="active"><span>⌖</span>Create Map</button>
             <Link to="/dashboard/upload" className="admin-sidebar-link"><span>⬆</span>Upload Lainnya</Link>
             <Link to="/dashboard/ambil-api" className="admin-sidebar-link"><span>⇩</span>Ambil dari API</Link>
@@ -223,7 +216,6 @@ function CreateMap() {
           </nav>
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
         </aside>
-
 
         <section className="admin-main">
 
@@ -235,14 +227,13 @@ function CreateMap() {
             </div>
           </header>
 
-
           {status === 'success' ? (
 
             <div className="admin-panel">
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✓</div>
                 <strong>Peta berhasil dibuat</strong>
-                <p>Peta akan berstatus "Belum Publish" hingga disetujui admin.</p>
+                <p>Peta akan berstatus "Unpublished" hingga disetujui admin.</p>
                 <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                   <Link to={currentUser?.role === 'admin' ? '/admin' : '/dashboard/datasets'} className="admin-secondary-button">
                     Lihat Data
@@ -289,7 +280,6 @@ function CreateMap() {
                 </div>
 
               </section>
-
 
               <section className="admin-panel">
 
@@ -351,13 +341,12 @@ function CreateMap() {
 
                   )}
 
-                                    <small style={{ display: 'block', marginTop: '10px' }}>
+                  <small style={{ display: 'block', marginTop: '10px' }}>
                     {selectedIds.length} dataset dipilih sebagai layer.
                   </small>
 
                 </div>
               </section>
-
 
               {selectedIds.length > 0 && (
 
@@ -432,11 +421,6 @@ function CreateMap() {
 
               )}
 
-
-              {/* =========================================
-                  PREVIEW CAKUPAN PETA
-              ========================================= */}
-
               <section className="admin-panel">
 
                 <div className="admin-panel-header">
@@ -454,7 +438,6 @@ function CreateMap() {
                 </div>
 
               </section>
-
 
               <div style={{ padding: '0 0 30px' }}>
                 <button type="submit" className="admin-view-site" disabled={status === 'uploading'}>

@@ -1,15 +1,3 @@
-// =====================================================
-// SESI 6: UTILITAS EDIT TITIK PADA GEOJSON
-// Dipakai EditMyDataset.jsx supaya user bisa menggeser
-// titik yang salah langsung di peta, tanpa perlu upload
-// ulang seluruh file shapefile.
-// =====================================================
-
-// Ubah semua koordinat di dalam GeoJSON jadi daftar "vertex"
-// yang bisa digeser satu-satu di peta. Setiap vertex punya
-// "path" — alamat persis di dalam struktur GeoJSON supaya bisa
-// ditulis kembali lewat applyVertexMove().
-
 export function flattenVertices(geojson) {
 
   const vertices = []
@@ -99,9 +87,6 @@ export function flattenVertices(geojson) {
 export function countVertices(geojson) {
   return flattenVertices(geojson).length
 }
-
-// Tulis posisi vertex baru kembali ke GeoJSON (tidak mengubah
-// objek asli — mengembalikan salinan baru).
 
 export function applyVertexMove(geojson, path, newLat, newLng) {
 

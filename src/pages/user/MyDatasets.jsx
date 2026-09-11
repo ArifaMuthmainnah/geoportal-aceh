@@ -32,31 +32,25 @@ import {
   IconEyeOff,
 } from '../../components/ActionIcons'
 
-
 function buildAvatarUrl(path) {
   if (!path) return null
   return `${(import.meta.env.VITE_AUTH_API_URL || 'http://localhost:5000/api').replace(/\/api\/?$/, '')}/uploads/${path}`
 }
 
-
 function MyDatasets() {
 
   const navigate = useNavigate()
   const { currentUser, logout, isAdmin } = useAuth()
-
   const [datasets, setDatasets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-
   const [filterOpen, setFilterOpen] = useState(false)
   const [filterType, setFilterType] = useState({
     dataset: true, dashboard: true, application: true, map: true, document: true, informasi: true,
   })
   const [filterStatus, setFilterStatus] = useState({ published: true, unpublished: true })
-
   const [togglingKey, setTogglingKey] = useState(null)
-
   const filterButtonRef = useRef(null)
   const [popoverPos, setPopoverPos] = useState({ top: 0, left: 0 })
 
@@ -67,10 +61,8 @@ function MyDatasets() {
       const rect = filterButtonRef.current.getBoundingClientRect()
       const popoverWidth = 280
       const estimatedHeight = 380
-
       const spaceBelow = window.innerHeight - rect.bottom
       const openUpward = spaceBelow < estimatedHeight && rect.top > estimatedHeight
-
       const top = openUpward
         ? Math.max(8, rect.top - estimatedHeight - 8)
         : rect.bottom + 8
@@ -111,15 +103,9 @@ function MyDatasets() {
 
   }
 
-
   useEffect(() => {
     loadDatasets()
   }, [])
-
-
-  // ===================================================
-  // STATISTIK PERSONAL (dipindahkan dari Dashboard)
-  // ===================================================
 
   const statistics = useMemo(() => {
 
@@ -133,7 +119,6 @@ function MyDatasets() {
 
   }, [datasets])
 
-
   const filteredDatasets = useMemo(() => {
 
     const keyword = search.trim().toLowerCase()
@@ -142,10 +127,8 @@ function MyDatasets() {
 
       const title = String(dataset.title || '').toLowerCase()
       const matchSearch = !keyword || title.includes(keyword)
-
       const resourceType = String(dataset.resource_type || 'dataset').toLowerCase()
       const matchType = filterType[resourceType] !== false
-
       const published = Boolean(dataset.is_published)
       const matchStatus =
         (published && filterStatus.published) ||
@@ -156,7 +139,6 @@ function MyDatasets() {
     })
 
   }, [datasets, search, filterType, filterStatus])
-
 
   function getResourceTypeLabel(resourceType) {
 
@@ -172,16 +154,6 @@ function MyDatasets() {
     return 'Dataset'
 
   }
-
-
-  // ===================================================
-  // SESI 6: Publish/Unpublish & Hapus — HANYA untuk admin.
-  // "di halaman admin pada bagian data saya, tombolnya
-  // disamakan seperti di dashboard utama (ada Unpublish
-  // & Hapus)". Operator tidak melihat 2 tombol ini karena
-  // backend memang membatasi publish & hapus permanen
-  // hanya untuk role admin.
-  // ===================================================
 
   async function handleTogglePublish(dataset) {
     const nextValue = !dataset.is_published
@@ -210,12 +182,10 @@ function MyDatasets() {
     }
   }
 
-
   function handleLogout() {
     logout()
     navigate('/', { replace: true })
   }
-
 
   return (
 
@@ -229,13 +199,6 @@ function MyDatasets() {
             <span>GEOPORTAL</span>
             <strong>ACEH</strong>
           </div>
-
-          {/* =============================================
-              SESI 9 (Poin 10): nama/avatar pengguna sekarang
-              bisa DIKLIK dan langsung mengarah ke halaman
-              profil — menu "Profil" terpisah di bawah sudah
-              tidak diperlukan lagi.
-          ============================================= */}
 
           <Link
             to="/dashboard/profil"
@@ -259,17 +222,6 @@ function MyDatasets() {
               <span>{isAdmin ? 'Administrator' : 'Operator'}</span>
             </div>
           </Link>
-
-          {/* =============================================
-              SIDEBAR MINIMAL — SESI 9 (Poin 10):
-              Admin  : Dashboard, Data Saya, Pengguna, Lihat
-                       Katalog, WebGIS, Logout.
-              Operator: Dashboard, Data Saya, Lihat Katalog,
-                        WebGIS, Logout.
-              "Ambil dari API" & "Profil" DIHAPUS dari sini —
-              Ambil dari API sudah ada di tombol + (pojok
-              kanan bawah), Profil pindah ke klik nama di atas.
-          ============================================= */}
 
           <nav className="admin-sidebar-nav">
 
@@ -308,7 +260,6 @@ function MyDatasets() {
 
         </aside>
 
-
         <section className="admin-main">
 
           <header className="admin-header">
@@ -323,11 +274,6 @@ function MyDatasets() {
 
           {error && <div className="admin-alert">{error}</div>}
 
-
-          {/* =============================================
-              STATISTIK PERSONAL
-          ============================================= */}
-
           <section className="admin-stat-grid">
             {statistics.map((stat) => (
               <article className="admin-stat-card" key={stat.label}>
@@ -339,7 +285,6 @@ function MyDatasets() {
               </article>
             ))}
           </section>
-
 
           <section className="admin-panel">
 
@@ -522,7 +467,7 @@ function MyDatasets() {
 
                           <td>
                             <span className={published ? 'admin-status published' : 'admin-status pending'}>
-                              {published ? 'Published' : 'Belum Publish'}
+                                                            {published ? 'Published' : 'Unpublished'}
                             </span>
                           </td>
 
@@ -533,16 +478,12 @@ function MyDatasets() {
                                 <IconEye />
                               </Link>
 
-                              {/* Operator hanya bisa edit selama BELUM publish
-                                  (dibatasi backend). Admin selalu boleh edit. */}
                               {(isAdmin || !published) && (
                                 <Link to={`/dashboard/edit/${dataset.id}`} className="icon-btn icon-btn-edit" data-tooltip="Edit">
                                   <IconPencil />
                                 </Link>
                               )}
 
-                              {/* SESI 6: Publish/Unpublish & Hapus khusus admin,
-                                  disamakan dengan tombol di Dashboard utama. */}
                               {isAdmin && (
                                 <>
                                   <button
@@ -589,13 +530,6 @@ function MyDatasets() {
 
       </div>
 
-      {/* =============================================
-          SESI 9 (Poin 8): tombol + bulat mengambang, satu
-          instance saja per halaman (posisinya fixed, jadi
-          selalu tampak di pojok kanan bawah tidak peduli
-          tabel kosong atau berisi).
-      ============================================= */}
-
       <CreateChoiceMenu />
 
     </main>
@@ -603,6 +537,5 @@ function MyDatasets() {
   )
 
 }
-
 
 export default MyDatasets

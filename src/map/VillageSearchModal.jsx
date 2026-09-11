@@ -9,7 +9,6 @@ function VillageSearchModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
-
   const handleSearch = async () => {
     const trimmedKeyword = keyword.trim()
 

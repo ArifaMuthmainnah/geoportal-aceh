@@ -9,15 +9,6 @@ const router = express.Router()
 const FETCH_TIMEOUT_MS = 10000
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024 // 5 MB
 
-
-// =====================================================
-// KEAMANAN: CEGAH SSRF (Server-Side Request Forgery)
-// URL yang diinput user bisa saja mengarah ke jaringan
-// internal server (mis. http://localhost, 169.254.169.254
-// metadata cloud, dll). Endpoint ini menolak URL semacam itu
-// sebelum benar-benar melakukan fetch.
-// =====================================================
-
 function isPrivateIp(ip) {
 
   if (net.isIPv4(ip)) {
@@ -81,17 +72,7 @@ async function assertSafeExternalUrl(urlString) {
 
 }
 
-
 router.use(authenticateToken)
-
-
-// =====================================================
-// SESI 6: AMBIL DATA DARI API EKSTERNAL
-// Server yang melakukan fetch (bukan browser) supaya tidak
-// diblokir CORS. Operator maupun admin boleh memakai endpoint
-// ini — data yang nanti dibuat dari sini tetap lewat proses
-// upload biasa (is_published = false, menunggu admin).
-// =====================================================
 
 router.post('/fetch', async (req, res) => {
 
@@ -162,6 +143,5 @@ router.post('/fetch', async (req, res) => {
   }
 
 })
-
 
 module.exports = router

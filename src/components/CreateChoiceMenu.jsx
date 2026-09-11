@@ -1,19 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 
-// ===================================================
-// SESI 9 (Poin 8): Tombol "+" bulat mengambang di pojok
-// kanan bawah. Saat ditekan, pilihan-pilihannya TIDAK lagi
-// berbentuk kotak dropdown biasa, tapi "melingkari" tombol +
-// itu sendiri membentuk SEPEREMPAT LINGKARAN — persis seperti
-// menu pilih mode (Rank / Classic / dst) di game mobile yang
-// muncul menempel di pojok kanan bawah layar.
-//
-// Opsi tetap sama seperti sebelumnya (Dataset, Peta,
-// Dashboard/Aplikasi, Upload File, Ambil dari API) — cuma
-// tampilannya yang diubah total.
-// ===================================================
-
 const OPTIONS = [
   { label: 'Dataset', fullLabel: 'Tambah Dataset', icon: '◈', path: '/dashboard/create-dataset' },
   { label: 'Peta', fullLabel: 'Tambah Peta', icon: '⌖', path: '/dashboard/create-map' },
@@ -22,15 +9,8 @@ const OPTIONS = [
   { label: 'API', fullLabel: 'Ambil dari API', icon: '⇩', path: '/dashboard/ambil-api' },
 ]
 
-// Jarak (radius) tiap tombol pilihan dari pusat tombol utama.
 const RADIUS = 148
 
-// Sudut mulai (menempel ke arah KIRI tombol utama) sampai
-// sudut akhir (menempel ke arah ATAS tombol utama). Dengan
-// begitu seluruh opsi tersebar di kuadran kiri-atas tombol —
-// membentuk SEPEREMPAT LINGKARAN, bukan lingkaran penuh,
-// supaya tidak ada opsi yang "kepotong" keluar layar di
-// pojok kanan bawah.
 const START_ANGLE = 180
 const END_ANGLE = 90
 
@@ -97,8 +77,6 @@ function CreateChoiceMenu() {
         />
       )}
 
-      {/* Latar "irisan" seperempat lingkaran — dekorasi supaya
-          benar-benar terlihat seperti menu mode di game mobile */}
       <div
         aria-hidden="true"
         style={{
@@ -121,7 +99,6 @@ function CreateChoiceMenu() {
         }}
       />
 
-      {/* Tombol-tombol pilihan, tersebar di seperempat lingkaran */}
       <div role="menu" aria-label="Pilihan tambah data">
         {OPTIONS.map((option, index) => {
 
@@ -182,7 +159,6 @@ function CreateChoiceMenu() {
         })}
       </div>
 
-      {/* Tombol utama "+" */}
       <button
         type="button"
         title="Buat / Tambah Data"

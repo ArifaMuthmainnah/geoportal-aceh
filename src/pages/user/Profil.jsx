@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-
 import { updateMyProfile } from '../../api/userApi'
 import { useAuth } from '../../context/AuthContext'
 
@@ -13,16 +12,13 @@ function Profil() {
 
   const navigate = useNavigate()
   const { currentUser, isAdmin, logout, refreshCurrentUser } = useAuth()
-
   const [username, setUsername] = useState(currentUser?.username || '')
   const [email, setEmail] = useState(currentUser?.email || '')
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
-
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -138,7 +134,6 @@ function Profil() {
           <button type="button" className="admin-sidebar-logout" onClick={handleLogout}>← Logout</button>
 
         </aside>
-
 
         <section className="admin-main">
 

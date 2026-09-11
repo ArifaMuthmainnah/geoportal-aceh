@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-
 import { getDocumentDetail } from '../api/documentApi'
 import { getPublishedDetail, getDatasetViewDetail } from '../api/myDatasetApi'
 import { adaptOwnResource } from '../utils/ownDataAdapter'
 import { mapCategory, getOwnerName, getOwnerAvatar, stripHtml } from '../utils/datasetUtils'
 import { useAuth } from '../context/AuthContext'
-
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 import OwnerBadge from '../components/OwnerBadge'
 import LocationBoundsMap from '../components/LocationBoundsMap'
-
-// =====================================================
-// FORMAT DATE (tanggal + jam)
-// =====================================================
 
 function formatDate(date) {
   if (!date) return '-'
@@ -29,10 +23,6 @@ function formatDate(date) {
   })
 }
 
-// =====================================================
-// FORMAT DATE ONLY (tanggal saja, tanpa jam)
-// =====================================================
-
 function formatDateOnly(date) {
   if (!date) return '-'
   const parsedDate = new Date(date)
@@ -44,19 +34,11 @@ function formatDateOnly(date) {
   })
 }
 
-// =====================================================
-// BOUNDING BOX
-// =====================================================
-
 function getBoundingBox(coords) {
   if (!Array.isArray(coords) || coords.length < 4) return null
   const [minLon, minLat, maxLon, maxLat] = coords
   return { minLon, minLat, maxLon, maxLat }
 }
-
-// =====================================================
-// CENTER
-// =====================================================
 
 function getCenter(bbox) {
   if (!bbox) return null
@@ -66,11 +48,6 @@ function getCenter(bbox) {
   }
 }
 
-// =========================================
-// WKT (Well Known Text) — dipakai untuk tombol
-// copy di Bounding Box & Center, mengikuti format
-// yang sama dengan halaman detail Peta & Dataset.
-// =========================================
 
 function toBboxWKT(bbox) {
   if (!bbox) return ''
@@ -83,25 +60,12 @@ function toPointWKT(center) {
   return `POINT (${center.lon} ${center.lat})`
 }
 
-// =========================================
-// SESI 7: Gambar lokasi statis (static map OSM) SUDAH
-// DIHAPUS — domain "staticmap.openstreetmap.de" tidak
-// bisa di-resolve (ERR_NAME_NOT_RESOLVED) sehingga gambar
-// tab Location selalu gagal muncul. Diganti dengan
-// <LocationBoundsMap /> (peta Leaflet sungguhan, lihat
-// src/components/LocationBoundsMap.jsx) yang PASTI
-// berhasil dimuat karena memakai tile OpenStreetMap asli.
-// =========================================
+function getDocumentViewUrl(doc, links) {
+  if (doc?.embed_url) return doc.embed_url
+  return getDocumentDownloadUrl(doc, links)
+}
 
-// =========================================
-// CARI FILE DOKUMEN UNTUK IFRAME & DOWNLOAD
-// Prioritas: link "uploaded" (file asli hasil
-// upload admin/operator), lalu link "data"
-// (Hosted Document dari GeoNode), baru fallback
-// ke field download_url / doc_url / detail_url.
-// =========================================
-
-function getDocumentFileUrl(doc, links) {
+function getDocumentDownloadUrl(doc, links) {
   const uploadedLink = links.find((link) => link?.link_type === 'uploaded')
   if (uploadedLink) {
     return uploadedLink.extras?.content?.download_url || uploadedLink.url || null
@@ -110,12 +74,8 @@ function getDocumentFileUrl(doc, links) {
   const dataLink = links.find((link) => link?.link_type === 'data' && link?.url)
   if (dataLink) return dataLink.url
 
-  return doc?.download_url || doc?.doc_url || doc?.detail_url || doc?.embed_url || null
+  return doc?.download_url || doc?.doc_url || doc?.detail_url || null
 }
-
-// =========================================
-// NAMA FILE DOKUMEN (untuk tab Assets & fallback)
-// =========================================
 
 function getDocumentFileName(doc, links) {
   const uploadedLink = links.find((link) => link?.link_type === 'uploaded')
@@ -126,10 +86,6 @@ function getDocumentFileName(doc, links) {
 
   return doc?.file_name || doc?.title || 'Dokumen'
 }
-
-// =========================================
-// CARI METADATA URL (untuk "View full metadata")
-// =========================================
 
 function findMetadataUrl(doc, links) {
   const directUrl = doc?.metadata_detail_url || doc?.metadata_url || doc?.metadata_detail
@@ -158,15 +114,10 @@ function DokumenDetail() {
   const { id } = useParams()
   const isOwnId = typeof id === 'string' && id.startsWith('own-')
   const { isAuthenticated } = useAuth()
-
   const [doc, setDoc] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [activeTab, setActiveTab] = useState('info')
-
-  // SESI 7: 'primary' = coba thumbnail_url asli dulu.
-  // 'fallback' = tidak ada / gagal dimuat -> pakai
-  // <LocationBoundsMap /> (peta Leaflet, selalu berhasil).
   const [locationImageStage, setLocationImageStage] = useState('primary')
 
   useEffect(() => {
@@ -187,8 +138,6 @@ function DokumenDetail() {
           let rawData = null
           try { rawData = await getPublishedDetail(rawId) } catch { rawData = null }
 
-          // SESI 6: fallback read-only — pemilik/operator lain yang
-          // sudah login tetap bisa lihat dokumen ini walau belum publish.
           if (!rawData && isAuthenticated) {
             try { rawData = await getDatasetViewDetail(rawId) } catch {}
           }
@@ -244,11 +193,9 @@ function DokumenDetail() {
   const ownerName = getOwnerName(doc.owner)
   const ownerAvatar = getOwnerAvatar(doc.owner)
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
-
   const links = Array.isArray(doc.links) ? doc.links : []
   const keywords = Array.isArray(doc.keywords) ? doc.keywords : []
   const regions = Array.isArray(doc.regions) ? doc.regions : []
-
   const category = mapCategory(doc?.category?.identifier)
 
   const pointOfContact =
@@ -260,19 +207,12 @@ function DokumenDetail() {
   const center = getCenter(bbox)
   const bboxWKT = toBboxWKT(bbox)
   const pointWKT = toPointWKT(center)
-
-  // GAMBAR LOKASI (SESI 7): prioritaskan thumbnail_url ASLI
-  // dari GeoNode (screenshot render dokumen/peta sesungguhnya).
-  // Kalau tidak tersedia ATAU gagal dimuat di browser, pakai
-  // <LocationBoundsMap /> (peta Leaflet, selalu berhasil).
   const primaryLocationImageUrl = doc.thumbnail_url || doc.thumbnail || doc.thumbnailUrl || null
   const showPrimaryLocationImage = Boolean(primaryLocationImageUrl) && locationImageStage === 'primary'
-
   const fullMetadataUrl = findMetadataUrl(doc, links)
-
-  const documentFileUrl = getDocumentFileUrl(doc, links)
+  const documentViewUrl = getDocumentViewUrl(doc, links)
+  const documentDownloadUrl = getDocumentDownloadUrl(doc, links)
   const documentFileName = getDocumentFileName(doc, links)
-
   const uploadedAssetLinks = links.filter((link) => link?.link_type === 'uploaded')
   const documentAssets =
     uploadedAssetLinks.length > 0
@@ -317,26 +257,19 @@ function DokumenDetail() {
 
       <section className="container dataset-detail-content">
 
-        {/* =================================================
-            IFRAME DOKUMEN — bisa dilihat penuh & diunduh
-        ================================================= */}
-
-        {documentFileUrl && (
-
+        {documentViewUrl && (
           <>
-
             <div className="dataset-map-wrapper">
               <iframe
-                src={documentFileUrl}
+                src={documentViewUrl}
                 title={`Dokumen ${doc.title}`}
                 className="dataset-map-iframe"
               />
             </div>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '34px' }}>
-
               <a
-                href={documentFileUrl}
+                href={documentViewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-outline-primary"
@@ -348,29 +281,24 @@ function DokumenDetail() {
                 Lihat Halaman Penuh
               </a>
 
-              <a
-                href={documentFileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-                className="btn btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" />
-                </svg>
-                Unduh Dokumen
-              </a>
-
+              {documentDownloadUrl && (
+                <a
+                  href={documentDownloadUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                  className="btn btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" />
+                  </svg>
+                  Unduh Dokumen
+                </a>
+              )}
             </div>
-
           </>
-
         )}
-
-        {/* =================================================
-            TABS
-        ================================================= */}
 
         <div className="dataset-tabs">
 
@@ -399,10 +327,6 @@ function DokumenDetail() {
           </button>
 
         </div>
-
-        {/* =================================================
-            INFO
-        ================================================= */}
 
         {activeTab === 'info' && (
 
@@ -532,10 +456,6 @@ function DokumenDetail() {
 
         )}
 
-        {/* =================================================
-            LOCATION
-        ================================================= */}
-
         {activeTab === 'location' && (
 
           <section className="dataset-location-section">
@@ -617,10 +537,6 @@ function DokumenDetail() {
           </section>
 
         )}
-
-        {/* =================================================
-            ASSETS
-        ================================================= */}
 
         {activeTab === 'assets' && (
 

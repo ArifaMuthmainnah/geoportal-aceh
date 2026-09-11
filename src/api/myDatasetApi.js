@@ -6,11 +6,6 @@ import {
   authPatchFile,
 } from './apiClient'
 
-
-// =====================================================
-// UPLOAD RESOURCE (MENDUKUNG BANYAK FILE)
-// =====================================================
-
 export function uploadMyDataset({
   files,
   thumbnailFile,
@@ -56,14 +51,6 @@ export function uploadMyDataset({
 
 }
 
-
-// =====================================================
-// SESI 6: EDIT + GANTI FILE SEKALIGUS
-// Dipakai EditMyDataset.jsx ketika user memilih file baru
-// (shapefile atau assets) saat mengedit data — file lama
-// otomatis dihapus & diganti yang baru di backend.
-// =====================================================
-
 export function updateMyDatasetWithFiles(id, {
   title,
   abstract,
@@ -75,14 +62,6 @@ export function updateMyDatasetWithFiles(id, {
   files,
   thumbnailFile,
   removeFiles,
-  // SESI 10 (FIX): resourceType sekarang juga boleh diubah oleh
-  // PEMILIK data (operator), bukan admin saja — backend hanya
-  // mengizinkannya selama data belum dipublikasikan (lihat
-  // EditMyDataset.jsx). isPublished tetap HANYA berlaku untuk
-  // admin (backend mengabaikannya untuk operator biasa) — dipakai
-  // halaman Edit Data admin (EditDatasetAdmin.jsx) supaya status
-  // publish bisa diubah sekalian saat mengganti file, tanpa perlu
-  // request terpisah.
   resourceType,
   isPublished,
 }) {
@@ -112,11 +91,6 @@ export function updateMyDatasetWithFiles(id, {
 
 }
 
-
-// =====================================================
-// DATA MILIK USER
-// =====================================================
-
 export async function getMyDatasets() {
   const response = await authGet('/datasets/mine')
   return response?.datasets || []
@@ -127,20 +101,10 @@ export async function getMyDatasetsByType(resourceType) {
   return response?.datasets || []
 }
 
-
-// =====================================================
-// DETAIL MILIK SENDIRI (TIDAK PERLU PUBLISHED) — #15
-// =====================================================
-
 export async function getMyDatasetDetail(id) {
   const response = await authGet(`/datasets/mine/detail/${id}`)
   return response?.dataset || null
 }
-
-
-// =====================================================
-// SEMUA DATASET ADMIN
-// =====================================================
 
 export async function getAllOwnDatasets() {
   const response = await authGet('/datasets')
@@ -152,20 +116,10 @@ export async function getAdminDatasetsByType(resourceType) {
   return response?.datasets || []
 }
 
-
-// =====================================================
-// DETAIL UNTUK ADMIN (TIDAK PERLU PUBLISHED) — #15
-// =====================================================
-
 export async function getAdminDatasetDetail(id) {
   const response = await authGet(`/datasets/admin/detail/${id}`)
   return response?.dataset || null
 }
-
-
-// =====================================================
-// SESI 6: SEMUA DATA (ADMIN + OPERATOR, MODE LIHAT SAJA)
-// =====================================================
 
 export async function getAllVisibleDatasets() {
   const response = await authGet('/datasets/all-visible')
@@ -177,11 +131,6 @@ export async function getDatasetViewDetail(id) {
   return response?.dataset || null
 }
 
-
-// =====================================================
-// UPDATE / DELETE
-// =====================================================
-
 export function updateMyDataset(id, data) {
   return authPatch(`/datasets/${id}`, data)
 }
@@ -189,11 +138,6 @@ export function updateMyDataset(id, data) {
 export function deleteMyDataset(id) {
   return authDelete(`/datasets/${id}`)
 }
-
-
-// =====================================================
-// DATASET PUBLIK
-// =====================================================
 
 export async function getPublishedDatasets() {
   const response = await authGet('/datasets/published')

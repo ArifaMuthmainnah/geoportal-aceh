@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
-
 import { getPublishedDetail } from '../api/myDatasetApi'
 import { adaptOwnResource } from '../utils/ownDataAdapter'
 import { getOwnerName, getOwnerAvatar, stripHtml } from '../utils/datasetUtils'
-
 import CopyLinkButton from '../components/CopyLinkButton'
 import BackToTopButton from '../components/BackToTopButton'
 
@@ -18,7 +16,6 @@ function formatDateOnly(date) {
 function BeritaDetail() {
 
   const { id } = useParams()
-
   const [item, setItem] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -83,18 +80,12 @@ function BeritaDetail() {
   const ownerName = getOwnerName(item.owner)
   const ownerAvatar = getOwnerAvatar(item.owner)
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
-
   const fullDescription = stripHtml(item.abstract || '')
   const teaserDescription =
     fullDescription.length > 220 ? `${fullDescription.slice(0, 220)}...` : fullDescription
 
   return (
     <main className="dataset-detail-page">
-
-      {/* =================================================
-          HEADER — tema biru sama seperti halaman detail
-          Dataset / Peta / Dokumen / Dashboard-Aplikasi
-      ================================================= */}
 
       <section className="dataset-detail-header">
         <div className="container">
@@ -130,10 +121,6 @@ function BeritaDetail() {
         </div>
       </section>
 
-      {/* =================================================
-          ISI BERITA
-      ================================================= */}
-
       <section className="container dataset-detail-content informasi-detail-content">
 
         {item.thumbnail_url && (
@@ -142,27 +129,9 @@ function BeritaDetail() {
           </div>
         )}
 
-        <div className="informasi-detail-owner">
-          {ownerAvatar ? (
-            <img src={ownerAvatar} alt={ownerName} className="dataset-owner-logo" />
-          ) : (
-            <span className="katalog-card-owner-avatar-placeholder">👤</span>
-          )}
-          <div>
-            <strong>{ownerName}</strong>
-            <span>Diterbitkan {formatDateOnly(item.date)}</span>
-          </div>
-        </div>
-
         <article className="informasi-detail-body">
           {fullDescription || 'Belum ada isi berita.'}
         </article>
-
-        <div className="informasi-detail-back">
-          <Link to="/informasi/berita" className="btn btn-outline-primary">
-            ← Kembali ke daftar Berita
-          </Link>
-        </div>
 
       </section>
 

@@ -1,11 +1,3 @@
-// =====================================================
-// SESI 6: PEMETAAN OTOMATIS RESPON API EKSTERNAL
-// Best-effort — mencoba beberapa kemungkinan nama field
-// (GeoNode-style, Indonesia, generik) supaya form "Ambil
-// dari API" bisa terisi otomatis sebisa mungkin. Field yang
-// tidak ketemu akan kosong dan wajib diisi manual oleh user.
-// =====================================================
-
 function firstNonEmpty(...values) {
   for (const v of values) {
     if (v !== undefined && v !== null && String(v).trim() !== '') return v
@@ -35,9 +27,6 @@ function extractBbox(data) {
 
 export function mapExternalApiResponse(json) {
 
-  // Beberapa API membungkus objek utamanya di dalam field
-  // seperti "dataset"/"map"/"data"/"results[0]". Coba beberapa
-  // kemungkinan umum sebelum menyerah dan memakai objek mentah.
   const data =
     json?.dataset || json?.map || json?.document || json?.geoapp ||
     json?.data ||

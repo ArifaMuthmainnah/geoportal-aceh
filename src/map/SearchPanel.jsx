@@ -6,7 +6,6 @@ function SearchPanel({ onSelectLocation }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasSearched, setHasSearched] = useState(false)
-
   const handleSearch = async () => {
     const keyword = query.trim()
 
@@ -28,16 +27,8 @@ function SearchPanel({ onSelectLocation }) {
         format: 'jsonv2',
         addressdetails: '1',
         limit: '5',
-
-        // Batasi hasil ke Indonesia
         countrycodes: 'id',
-
-        // Prioritaskan bahasa Indonesia
         'accept-language': 'id',
-
-        // Bias pencarian ke wilayah Aceh.
-        // bounded=0 artinya lokasi di luar kotak ini
-        // masih boleh muncul jika memang paling cocok.
         viewbox: '94.9,6.7,98.7,1.8',
         bounded: '0',
       })
@@ -53,7 +44,6 @@ function SearchPanel({ onSelectLocation }) {
       }
 
       const data = await response.json()
-
       const formattedResults = data.map((item) => {
         const lat = Number(item.lat)
         const lon = Number(item.lon)
@@ -61,8 +51,6 @@ function SearchPanel({ onSelectLocation }) {
         const displayName =
           item.display_name || 'Lokasi'
 
-        // Ambil bagian pertama dari display_name
-        // sebagai nama utama jika field name tidak tersedia.
         const locationName =
           item.name ||
           displayName.split(',')[0] ||
@@ -95,7 +83,6 @@ function SearchPanel({ onSelectLocation }) {
     }
   }
 
-
   const clearSearch = () => {
     setQuery('')
     setResults([])
@@ -103,34 +90,20 @@ function SearchPanel({ onSelectLocation }) {
     setHasSearched(false)
   }
 
-
   const handleSelectLocation = (location) => {
     onSelectLocation(location.coords)
-  
-    // Tampilkan nama lokasi yang dipilih di input
     setQuery(location.name)
-  
-    // Tutup daftar hasil
     setResults([])
-  
-    // Pencarian sudah berhasil dipilih,
-    // jadi jangan tampilkan "Lokasi tidak ditemukan"
     setHasSearched(false)
-  
     setError('')
   }
 
-
   return (
     <div className="search-panel">
-
       <div className="search-panel-header">
         <h6>Pencarian</h6>
       </div>
-
-
       <div className="search-input-group">
-
         <input
           type="text"
           placeholder="Cari Lokasi..."
@@ -145,7 +118,6 @@ function SearchPanel({ onSelectLocation }) {
           }}
         />
 
-
         {query && (
           <button
             type="button"
@@ -156,7 +128,6 @@ function SearchPanel({ onSelectLocation }) {
             ✖
           </button>
         )}
-
 
         <button
           type="button"
@@ -170,24 +141,18 @@ function SearchPanel({ onSelectLocation }) {
 
       </div>
 
-
-      {/* LOADING */}
       {loading && (
         <div className="search-status">
           Mencari lokasi...
         </div>
       )}
 
-
-      {/* ERROR */}
       {error && (
         <div className="search-error">
           {error}
         </div>
       )}
 
-
-      {/* TIDAK DITEMUKAN */}
       {!loading &&
         !error &&
         hasSearched &&
@@ -197,8 +162,6 @@ function SearchPanel({ onSelectLocation }) {
           </div>
         )}
 
-
-      {/* HASIL PENCARIAN */}
       {results.length > 0 && (
 
         <div className="search-results-list">

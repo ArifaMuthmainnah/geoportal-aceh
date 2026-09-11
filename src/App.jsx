@@ -75,7 +75,6 @@ import PemberitahuanDetail
 import EditMyDataset from './pages/user/EditMyDataset'
 import CreateDataset from './pages/user/CreateDataset'
 import CreateMap from './pages/user/CreateMap'
-
 import CreateDashboard from './pages/user/CreateDashboard'
 
 // =====================================================
@@ -89,7 +88,6 @@ import {
 import Login
   from './pages/login/Login'
 
-
 // =====================================================
 // USER
 // =====================================================
@@ -100,12 +98,11 @@ import UserDashboard
 import UploadDataset
   from './pages/user/UploadDataset'
 
-  import AmbilApi from './pages/user/AmbilApi'
+import AmbilApi from './pages/user/AmbilApi'
 import Profil from './pages/user/Profil'
 
 import MyDatasets
   from './pages/user/MyDatasets'
-
 
 // =====================================================
 // ADMIN
@@ -116,7 +113,6 @@ import AdminDashboard
 
 import EditDatasetAdmin
   from './pages/admin/EditDatasetAdmin'
-
 
 // =====================================================
 // LOGIN AREA
@@ -130,7 +126,6 @@ import CSRT
 
 import Kartografi
   from './pages/login/Kartografi'
-
 
 // =====================================================
 // PUBLIC WRAPPER
@@ -158,7 +153,6 @@ function PublicPage({
   )
 }
 
-
 // =====================================================
 // LOGIN WRAPPER
 // =====================================================
@@ -180,7 +174,6 @@ function LoginArea({
     </div>
   )
 }
-
 
 // =====================================================
 // APP
@@ -311,7 +304,7 @@ function App() {
             }
           />
 
-                    <Route
+          <Route
             path="/dashboard/ambil-api"
             element={
               <ProtectedRoute>
@@ -365,7 +358,6 @@ function App() {
             }
           />
 
-
           {/* =================================================
               ADMIN
           ================================================= */}
@@ -384,10 +376,6 @@ function App() {
             }
           />
 
-          {/* SESI 8 (Poin 6): halaman PENUH untuk edit data dari
-              Dashboard Admin, menggantikan modal/pop-up lama.
-              :source = local | api-dataset | api-geoapp */}
-
           <Route
             path="/admin/edit/:source/:id"
             element={
@@ -401,7 +389,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
 
           {/* =================================================
               HOME
@@ -419,7 +406,6 @@ function App() {
             }
           />
 
-
           {/* =================================================
               KATALOG
           ================================================= */}
@@ -436,7 +422,6 @@ function App() {
             }
           />
 
-
           <Route
             path="/katalog/:id"
             element={
@@ -448,7 +433,6 @@ function App() {
               </PublicPage>
             }
           />
-
 
           {/* =================================================
               WEBGIS
@@ -471,7 +455,6 @@ function App() {
           <Route path="/dokumen" element={<PublicPage><Dokumen /></PublicPage>} />
           <Route path="/dokumen/:id" element={<PublicPage><DokumenDetail /></PublicPage>} />
 
-
           {/* =================================================
               APLIKASI
           ================================================= */}
@@ -488,7 +471,6 @@ function App() {
             }
           />
 
-
           <Route
             path="/aplikasi/:id"
             element={
@@ -500,7 +482,6 @@ function App() {
               </PublicPage>
             }
           />
-
 
           {/* =================================================
               JIGN
@@ -526,7 +507,6 @@ function App() {
               </PublicPage>
             }
           />
-
 
           {/* =================================================
               BERITA
@@ -556,7 +536,6 @@ function App() {
             }
           />
 
-
           {/* =================================================
               AGENDA
           ================================================= */}
@@ -572,7 +551,6 @@ function App() {
               </PublicPage>
             }
           />
-
 
           {/* =================================================
               PEMBERITAHUAN
@@ -609,6 +587,5 @@ function App() {
     </BrowserRouter>
   )
 }
-
 
 export default App

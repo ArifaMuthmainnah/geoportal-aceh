@@ -29,13 +29,11 @@ function FeatureInfoPanel({ info, onClose }) {
         </button>
       </div>
 
-      {/* NAMA LAYER */}
       <div className="feature-info-layer">
         <span className="feature-layer-icon">🗺️</span>
         <span>{layerName || 'Layer'}</span>
       </div>
 
-      {/* KOORDINAT */}
       {coordinates && (
         <div className="feature-info-coordinate">
           <span>📍</span>
@@ -48,7 +46,6 @@ function FeatureInfoPanel({ info, onClose }) {
         </div>
       )}
 
-      {/* ATRIBUT */}
       <div className="feature-info-body">
 
         {attributes.length > 0 ? (

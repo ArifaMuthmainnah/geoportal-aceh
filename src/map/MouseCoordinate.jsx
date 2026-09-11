@@ -10,7 +10,6 @@ function MouseCoordinate() {
     },
   })
 
-  // Format koordinat agar terlihat profesional (Derajat, Menit, Detik atau Desimal)
   const formatCoord = (c) => c.toFixed(5)
 
   return (

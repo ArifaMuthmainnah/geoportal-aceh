@@ -23,14 +23,10 @@ import {
 } from '../api/datasetApi'
 import FeatureInfoPanel from './FeatureInfoPanel'
 
-
-// --- KOMPONEN PEMBANTU UNTUK FLY TO (Pindah Lokasi Peta) ---
-// Komponen ini harus di dalam MapContainer agar bisa memakai useMap()
 function MapFlyTo({ destination }) {
   const map = useMap();
   useEffect(() => {
     if (destination) {
-      // Peta otomatis terbang ke koordinat dengan zoom 16
       map.flyTo(destination, 16, { duration: 2 });
     }
   }, [destination, map]);
@@ -39,21 +35,11 @@ function MapFlyTo({ destination }) {
 
 function MapView() {
   const center = [5.55, 95.32]
-  
-  // --- 1. STATE UNTUK KOORDINAT PENCARIAN ---
   const [targetCoords, setTargetCoords] = useState(null);
-
   const [selectedVillage, setSelectedVillage] = useState(null)
-
   const [selectedFeatureInfo, setSelectedFeatureInfo] = useState(null)
-
-  // --- 2. STATE UNTUK LAYER YANG AKTIF ---
-  const [layers, setLayers] =
-  useState([])
-
-  // --- 3. STATE UNTUK BASEMAP ---
+  const [layers, setLayers] = useState([])
   const [activeBasemap, setActiveBasemap] = useState("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png")
-  
   const basemapOptions = [
     { name: 'OSM Default', url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png' },
     { name: 'Esri - Dark Gray', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}' },
@@ -64,13 +50,10 @@ function MapView() {
     { name: 'Esri Imagery', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}' },
   ]
 
-  // --- 4. STATE KONTROL MODAL ---
   const [showBasemapModal, setShowBasemapModal] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showRemoveModal, setShowRemoveModal] = useState(false)
   const [showVillageSearch, setShowVillageSearch] = useState(false);
-
-  // --- 5. FUNGSI LOGIC ---
   const toggleLayer = (id) => {
 
     setLayers(prev =>
@@ -93,6 +76,7 @@ function MapView() {
     }
   
   }
+
   const handleAddLayer =
   async (newDataset) => {
 
@@ -111,7 +95,6 @@ function MapView() {
         return
       }
 
-
       if (
         layers.some(
           (layer) =>
@@ -127,25 +110,18 @@ function MapView() {
         return
       }
 
-
-      // Ambil detail dataset
       const response =
         await getDatasetDetail(
           datasetId
         )
 
-
-      // GeoNode bisa mengembalikan
-      // object langsung atau { dataset: {...} }
       const detail =
         response?.dataset ||
         response
 
-
       const alternate =
         detail?.alternate ||
         newDataset?.alternate
-
 
       if (!alternate) {
 
@@ -161,13 +137,10 @@ function MapView() {
         return
       }
 
-
-      // Ambil data spasial asli dari GeoServer WFS
       const geojson =
         await getDatasetFeatures(
           alternate
         )
-
 
         const layer = {
 
@@ -184,12 +157,8 @@ function MapView() {
             'Dataset',
         
           alternate,
-        
           visible: true,
-        
           geojson,
-        
-          // Template atribut dari Geoportal Aceh
           featureInfoTemplate:
             detail?.featureinfo_custom_template ||
             newDataset?.featureinfo_custom_template ||
@@ -234,7 +203,6 @@ function MapView() {
       return
     }
   
-  
     setLayers(previous => [
   
       ...previous,
@@ -242,7 +210,6 @@ function MapView() {
       fileLayer
   
     ])
-  
   
     setShowAddModal(false)
   
@@ -279,12 +246,7 @@ function MapView() {
     featureInfoTemplate = null
   ) => {
   
-    if (!properties) return []
-  
-    // --------------------------------------------------
-    // 1. COBA BACA FIELD DARI TEMPLATE RESMI GEONODE
-    // --------------------------------------------------
-  
+    if (!properties) return [] 
     if (featureInfoTemplate) {
   
       const regex =
@@ -324,7 +286,7 @@ function MapView() {
         }))
   
       }
-  
+
     }
 
     const handleSelectVillage = async (village) => {
@@ -370,19 +332,11 @@ function MapView() {
         )
       }
     }
-  
-  
-    // --------------------------------------------------
-    // 2. FALLBACK:
-    // Kalau dataset tidak mempunyai feature-info template,
-    // tampilkan seluruh properties GeoJSON
-    // --------------------------------------------------
-  
+ 
     return Object.entries(properties)
   
       .filter(([key]) => {
-  
-        // Field teknis boleh kita sembunyikan
+
         const hiddenFields = [
           'id',
           'fid',
@@ -530,7 +484,6 @@ function MapView() {
   ))
 }
 
-{/* POLYGON BATAS DESA HASIL PENCARIAN */}
 {selectedVillage?.path?.length > 0 && (
   <Polygon
     positions={selectedVillage.path[0]}
@@ -538,20 +491,14 @@ function MapView() {
     fillOpacity={0.2}
   />
 )}
-        
-        {/* Koordinat Live */}
+
         <MouseCoordinate />
-        
-        {/* Kontrol Zoom & Custom */}
         <ZoomControl position="topright" />
         <MapControls />
-
-        {/* LOGIC TERBANG KE LOKASI CARI */}
         <MapFlyTo destination={targetCoords} />
         
-        {/* SIDEBAR KIRI: Tempat LayerPanel & SearchPanel Bertumpuk */}
         <div className="webgis-sidebar-left">
-          {/* Panel Atas: Daftar Layer & Toolbar */}
+        
           <LayerPanel 
             layers={layers} 
             toggleLayer={toggleLayer} 
@@ -561,21 +508,19 @@ function MapView() {
             openVillageSearch={() => setShowVillageSearch(true)}
           />
 
-          {/* Panel Bawah: Pencarian Lokasi (Jarak diatur via CSS gap: 20px) */}
           <SearchPanel
-  onSelectLocation={(coords) => {
-    setSelectedVillage(null)
-    setTargetCoords(coords)
-  }}
-/>
+            onSelectLocation={(coords) => {
+              setSelectedVillage(null)
+              setTargetCoords(coords)
+            }}
+          />
         </div>
 
-        {/* Marker untuk lokasi yang dicari */}
         {targetCoords && !selectedVillage && (
-  <Marker position={targetCoords}>
-    <Popup>Lokasi ditemukan!</Popup>
-  </Marker>
-)}
+          <Marker position={targetCoords}>
+            <Popup>Lokasi ditemukan!</Popup>
+          </Marker>
+        )}
 
 {selectedVillage && (
   <Marker
@@ -624,7 +569,6 @@ function MapView() {
         
       </MapContainer>
 
-      {/* PANEL INFORMASI FEATURE */}
 {selectedFeatureInfo && (
 
 <FeatureInfoPanel
@@ -639,9 +583,6 @@ function MapView() {
 
 )}
 
-      {/* --- SEMUA MODAL/POP-UP --- */}
-
-      {/* MODAL BASEMAP */}
       {showBasemapModal && (
         <div className="modal-overlay" onClick={() => setShowBasemapModal(false)}>
           <div className="aceh-modal dark-theme" onClick={(e) => e.stopPropagation()}>
@@ -668,7 +609,6 @@ function MapView() {
         </div>
       )}
 
-      {/* MODAL TAMBAH PETA */}
       {showAddModal && (
 
 <AddLayerModal
@@ -685,7 +625,6 @@ function MapView() {
 
 )}
 
-      {/* MODAL HAPUS PETA */}
       {showRemoveModal && (
         <RemoveLayerModal 
           layers={layers}
@@ -694,7 +633,6 @@ function MapView() {
         />
       )}
 
-       {/* MODAL BASIS DESA */}
        {showVillageSearch && (
        <VillageSearchModal
        onClose={() =>

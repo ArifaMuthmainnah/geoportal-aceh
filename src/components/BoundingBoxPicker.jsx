@@ -8,20 +8,6 @@ import {
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// =====================================================
-// LOCATION PICKER — KLIK 2 TITIK DI PETA UNTUK BBOX
-// =====================================================
-//
-// Klik pertama = sudut 1, klik kedua = sudut 2.
-// Otomatis dihitung jadi bounding box (min/max lat/lon)
-// dan dikirim lewat onChange({ minLon, minLat, maxLon, maxLat }).
-// Klik ketiga akan mereset dan mulai ulang.
-//
-// Tidak butuh library tambahan (leaflet-draw dsb) — cukup
-// react-leaflet yang sudah dipakai di WebGIS.
-//
-// =====================================================
-
 function ClickCatcher({ onPick }) {
   useMapEvents({
     click(e) {
@@ -50,7 +36,6 @@ function BoundingBoxPicker({ initialBbox, onChange }) {
     return []
 
   })
-
 
   function handlePick(point) {
 
@@ -85,18 +70,15 @@ function BoundingBoxPicker({ initialBbox, onChange }) {
 
   }
 
-
   function handleReset() {
     setPoints([])
     onChange({ minLon: '', minLat: '', maxLon: '', maxLat: '' })
   }
 
-
   const rectangleBounds =
     points.length === 2
       ? [points[0], points[1]]
       : null
-
 
   return (
 

@@ -1,26 +1,11 @@
 const express = require('express')
-
 const db = require('../config/database')
-
 const {
   authenticateToken,
   requireAdmin
 } = require('../middleware/authMiddleware')
 
 const router = express.Router()
-
-
-// =====================================================
-// GET PROFIL INSTANSI (PUBLIK)
-// =====================================================
-//
-// #10: dipakai halaman detail JIGN (/jign/:username) untuk
-// menampilkan deskripsi + link website resmi instansi.
-// Data ini TIDAK berasal dari API Geoportal Aceh lama
-// (memang tidak tersedia di sana), jadi disimpan & dikelola
-// sendiri di tabel agency_profiles.
-//
-// =====================================================
 
 router.get('/:username', async (req, res) => {
 
@@ -51,20 +36,10 @@ router.get('/:username', async (req, res) => {
 
 })
 
-
-// =====================================================
-// SEMUA ROUTE DI BAWAH INI WAJIB ADMIN
-// =====================================================
-
 router.use(
   authenticateToken,
   requireAdmin
 )
-
-
-// =====================================================
-// SIMPAN / PERBARUI PROFIL INSTANSI (ADMIN ONLY)
-// =====================================================
 
 router.patch('/:username', async (req, res) => {
 
@@ -132,6 +107,5 @@ router.patch('/:username', async (req, res) => {
   }
 
 })
-
 
 module.exports = router

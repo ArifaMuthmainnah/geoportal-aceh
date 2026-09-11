@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-
 import { getMaps } from '../api/mapApi'
 import { getPublishedByType } from '../api/myDatasetApi'
 import { mergeResourceLists, sortByDateDesc } from '../utils/ownDataAdapter'
-
 import DatasetCard from './DatasetCard'
 
 function HomeMapsSection() {

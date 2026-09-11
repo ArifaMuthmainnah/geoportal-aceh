@@ -5,9 +5,6 @@ import 'leaflet/dist/leaflet.css'
 
 import { flattenVertices, applyVertexMove, countVertices } from '../utils/geojsonVertexEditor'
 
-// Batas jumlah titik yang masih wajar diedit satu-satu di peta.
-// Di atas ini, edit manual per titik dimatikan (disarankan upload
-// ulang file shapefile kalau perlu ubah banyak titik sekaligus).
 const MAX_EDITABLE_VERTICES = 1000
 
 const vertexIcon = L.divIcon({

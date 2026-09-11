@@ -20,7 +20,6 @@ function Berita() {
 
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-
   const [search, setSearch] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [sortOrder, setSortOrder] = useState('newest')
@@ -42,8 +41,6 @@ function Berita() {
             .map(adaptOwnResource)
 
         setItems(beritaItems)
-
-        // Tandai kategori "Berita" sudah dibaca (titik notifikasi navbar hilang)
         markInformasiSeenNow('berita')
 
       } catch (err) {

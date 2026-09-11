@@ -38,14 +38,11 @@ function Katalog() {
 
   const [datasets, setDatasets] = useState([])
   const [owners, setOwners] = useState([])
-
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('Semua')
   const [instansi, setInstansi] = useState('Semua')
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
 
   useEffect(() => {
 
@@ -141,13 +138,11 @@ function Katalog() {
 
   }, [])
 
-
   const ownerMap = useMemo(() => {
     return new Map(
       owners.map((owner) => [owner.pk || owner.id || owner.uuid, owner])
     )
   }, [owners])
-
 
   const categories = useMemo(() => {
 
@@ -163,11 +158,6 @@ function Katalog() {
     return ['Semua', ...Array.from(categorySet)]
 
   }, [datasets])
-
-
-  // ===================================================
-  // DAFTAR INSTANSI (UNTUK FILTER)
-  // ===================================================
 
   const instansiList = useMemo(() => {
 
@@ -185,7 +175,6 @@ function Katalog() {
 
   }, [owners])
 
-
   const filteredDatasets = useMemo(() => {
 
     const keyword = search.toLowerCase().trim()
@@ -194,10 +183,8 @@ function Katalog() {
 
       const title = String(dataset?.title || '').toLowerCase()
       const matchSearch = title.includes(keyword)
-
       const mappedCategory = mapCategory(dataset?.category?.identifier)
       const matchCategory = category === 'Semua' || mappedCategory === category
-
       const ownerName = getResourceOwnerName(dataset)
       const matchInstansi = instansi === 'Semua' || ownerName === instansi
 
@@ -206,7 +193,6 @@ function Katalog() {
     })
 
   }, [datasets, search, category, instansi])
-
 
   return (
 
@@ -221,7 +207,6 @@ function Katalog() {
           </div>
         </div>
       </section>
-
 
       <section className="container information-toolbar-wrapper">
 
@@ -273,7 +258,6 @@ function Katalog() {
 
       </section>
 
-
       <section className="container information-content">
 
         <div className="catalog-heading-layout">
@@ -301,20 +285,17 @@ function Katalog() {
 
         </div>
 
-
         {loading && (
           <div className="information-empty">
             <p>Memuat data...</p>
           </div>
         )}
 
-
         {!loading && error && (
           <div className="information-empty">
             <p>{error}</p>
           </div>
         )}
-
 
         {!loading && !error && filteredDatasets.length > 0 && (
           <div className="row g-4">
@@ -341,7 +322,6 @@ function Katalog() {
           </div>
         )}
 
-
         {!loading && !error && filteredDatasets.length === 0 && (
           <div className="information-empty">
             <h5>Dataset tidak ditemukan</h5>
@@ -355,6 +335,5 @@ function Katalog() {
 
   )
 }
-
 
 export default Katalog

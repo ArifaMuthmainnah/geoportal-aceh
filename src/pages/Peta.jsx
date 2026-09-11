@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-
 import { getAllMaps } from '../api/mapApi'
 import { getPublishedByType } from '../api/myDatasetApi'
 import { mergeResourceLists, sortByDateDesc, getResourceOwnerName } from '../utils/ownDataAdapter'
-
 import DatasetCard from '../components/DatasetCard'
 
 function Peta() {

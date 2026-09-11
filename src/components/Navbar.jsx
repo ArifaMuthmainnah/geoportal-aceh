@@ -12,10 +12,6 @@ function buildAvatarUrl(path) {
   return `${SERVER_BASE_URL}/uploads/${path}`
 }
 
-// =====================================================
-// STYLE UNTUK NAV LINK AKTIF (#1)
-// =====================================================
-
 function navLinkStyle({ isActive }) {
   return isActive
     ? {
@@ -51,11 +47,6 @@ function Navbar() {
     }
 
   }
-
-  // =====================================================
-  // SESI 5: CEK APAKAH ADA BERITA/AGENDA/PEMBERITAHUAN
-  // YANG BELUM DIBACA (titik notifikasi di dropdown)
-  // =====================================================
 
   useEffect(() => {
 
@@ -97,12 +88,6 @@ function Navbar() {
     return () => { active = false }
 
   }, [])
-
-
-  // =====================================================
-  // SESI 5: CEK APAKAH ADA BERITA/AGENDA/PEMBERITAHUAN
-  // YANG BELUM DIBACA (titik notifikasi di dropdown)
-  // =====================================================
 
   useEffect(() => {
 
@@ -147,7 +132,6 @@ function Navbar() {
 
   const anyUnread = unread.berita || unread.agenda || unread.pemberitahuan
 
-
   return (
     <header className="site-header">
 
@@ -168,7 +152,6 @@ function Navbar() {
             </NavLink>
 
           )}
-
 
           {currentUser && (
 
@@ -202,7 +185,6 @@ function Navbar() {
         </div>
 
       </div>
-
 
       <nav className="navbar navbar-expand-lg bg-white border-bottom">
 
@@ -241,7 +223,6 @@ function Navbar() {
             <NavLink className="nav-link" to="/jign" style={navLinkStyle}>
               JIGN
             </NavLink>
-
 
             <div className="nav-item dropdown" style={{ position: 'relative' }}>
 

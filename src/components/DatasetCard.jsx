@@ -41,23 +41,6 @@ function DatasetCard({ dataset, owner }) {
       )
     : '-'
 
-  // =====================================================
-  // TUJUAN LINK (fix #2)
-  // =====================================================
-  //
-  // Card ini dipakai untuk dataset MAUPUN dashboard/aplikasi
-  // (mis. di halaman detail JIGN yang menggabungkan semuanya).
-  // Sebelumnya selalu diarahkan ke /katalog/:id walau
-  // jenisnya dashboard, sehingga gagal diambil (endpoint
-  // dataset dipanggil untuk id geoapp). Sekarang dicek
-  // dulu resource_type-nya.
-  //
-  // #9 (Sesi 4): 'application' memakai halaman detail yang
-  // SAMA dengan 'dashboard' (/aplikasi/:id) — tidak ada
-  // halaman detail baru, cuma beda kategori & sumber iframe.
-  //
-  // =====================================================
-
   const linkTo =
     dataset.resource_type === 'dashboard' ? `/aplikasi/${dataset.pk}`
     : dataset.resource_type === 'application' ? `/aplikasi/${dataset.pk}`
@@ -72,9 +55,6 @@ function DatasetCard({ dataset, owner }) {
     >
       <article className="card katalog-card h-100">
 
-        {/* ================================
-            THUMBNAIL
-        ================================= */}
         <div className="katalog-card-image">
           {thumbnail ? (
             <img
@@ -98,10 +78,6 @@ function DatasetCard({ dataset, owner }) {
             <span>GIS</span>
           </div>
         </div>
-
-        {/* ================================
-            CONTENT
-        ================================= */}
         <div className="card-body katalog-card-body">
 
           {/* CATEGORY */}
@@ -109,7 +85,6 @@ function DatasetCard({ dataset, owner }) {
             {category}
           </span>
 
-          {/* TITLE */}
           <h5
             className="katalog-card-title"
             title={dataset.title || 'Tanpa judul'}
@@ -126,18 +101,13 @@ function DatasetCard({ dataset, owner }) {
             )}
           </h5>
 
-          {/* DESCRIPTION */}
           <p className="katalog-card-description">
             {description.slice(0, 150)}
             {description.length > 150 ? '...' : ''}
           </p>
 
-          {/* ================================
-              OWNER + DATE
-          ================================= */}
           <div className="katalog-card-meta">
 
-            {/* OWNER */}
             <div
               className="katalog-card-owner"
               title={ownerName}
@@ -158,8 +128,7 @@ function DatasetCard({ dataset, owner }) {
                 {ownerName}
               </span>
             </div>
-
-            {/* DATE */}
+            
             <small className="katalog-card-date">
               {formattedDate}
             </small>

@@ -1,19 +1,12 @@
 const express = require('express')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-
 const db = require('../config/database')
-
 const {
   authenticateToken
 } = require('../middleware/authMiddleware')
 
 const router = express.Router()
-
-
-// =====================================================
-// LOGIN
-// =====================================================
 
 router.post('/login', async (req, res) => {
 
@@ -24,7 +17,6 @@ router.post('/login', async (req, res) => {
       password
     } = req.body
 
-
     if (!username || !password) {
 
       return res.status(400).json({
@@ -34,7 +26,6 @@ router.post('/login', async (req, res) => {
       })
 
     }
-
 
     const user = await db
       .prepare(`
@@ -47,7 +38,6 @@ router.post('/login', async (req, res) => {
         username.trim()
       )
 
-
     if (!user) {
 
       return res.status(401).json({
@@ -58,13 +48,11 @@ router.post('/login', async (req, res) => {
 
     }
 
-
     const passwordValid =
       bcrypt.compareSync(
         password,
         user.password
       )
-
 
     if (!passwordValid) {
 
@@ -75,7 +63,6 @@ router.post('/login', async (req, res) => {
       })
 
     }
-
 
     const token =
       jwt.sign(
@@ -91,15 +78,10 @@ router.post('/login', async (req, res) => {
         }
       )
 
-
     return res.json({
       success: true,
       message: 'Login berhasil.',
       token,
-
-      // #4: avatar_url WAJIB disertakan, sebelumnya
-      // hilang sehingga sidebar/navbar tidak pernah
-      // tahu user punya foto profil.
       user: {
         id: user.id,
         username: user.username,
@@ -125,11 +107,6 @@ router.post('/login', async (req, res) => {
   }
 
 })
-
-
-// =====================================================
-// CURRENT USER
-// =====================================================
 
 router.get(
   '/me',

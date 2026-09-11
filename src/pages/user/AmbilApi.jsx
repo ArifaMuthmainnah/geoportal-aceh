@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-
 import { fetchExternalApiData } from '../../api/externalApi'
 import { uploadMyDataset } from '../../api/myDatasetApi'
 import { mapExternalApiResponse } from '../../utils/externalApiMapper'
 import { useAuth } from '../../context/AuthContext'
-
 import {
   RESOURCE_TYPE_OPTIONS,
   INFORMASI_SUBTYPE_OPTIONS,
@@ -16,21 +14,16 @@ import {
   buildExtraMetadata,
 } from '../../utils/resourceFields'
 
-
 function AmbilApi() {
 
   const navigate = useNavigate()
   const { currentUser, logout, isAdmin } = useAuth()
-
-  const [step, setStep] = useState('input') // input -> review -> success
-
+  const [step, setStep] = useState('input') 
   const [resourceType, setResourceType] = useState('dataset')
   const [subType, setSubType] = useState('pemberitahuan')
   const [endpoint, setEndpoint] = useState('')
-
   const [fetching, setFetching] = useState(false)
   const [fetchError, setFetchError] = useState('')
-
   const [title, setTitle] = useState('')
   const [abstract, setAbstract] = useState('')
   const [category, setCategory] = useState('')
@@ -38,7 +31,6 @@ function AmbilApi() {
   const [keywords, setKeywords] = useState('')
   const [sourceLink, setSourceLink] = useState('')
   const [thumbnailPreview, setThumbnailPreview] = useState('')
-
   const [region, setRegion] = useState('')
   const [language, setLanguage] = useState('')
   const [srid, setSrid] = useState('')
@@ -46,16 +38,13 @@ function AmbilApi() {
   const [purpose, setPurpose] = useState('')
   const [supplementalInformation, setSupplementalInformation] = useState('')
   const [bbox, setBbox] = useState({ minLon: '', minLat: '', maxLon: '', maxLat: '' })
-
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
-
 
   function handleLogout() {
     logout()
     navigate('/', { replace: true })
   }
-
 
   async function handleFetch(event) {
 
@@ -73,14 +62,11 @@ function AmbilApi() {
 
       const json = await fetchExternalApiData(endpoint.trim())
       const mapped = mapExternalApiResponse(json)
-
       setTitle(mapped.title)
       setAbstract(mapped.abstract)
-
       const isKnownCategory = CATEGORY_OPTIONS.includes(mapped.category)
       setCategory(isKnownCategory ? mapped.category : (mapped.category ? '__custom__' : ''))
       setCustomCategory(isKnownCategory ? '' : mapped.category)
-
       setKeywords(mapped.keywords)
       setSrid(mapped.srid || 'EPSG:4326')
       setLanguage(mapped.language || 'Indonesia')
@@ -97,7 +83,6 @@ function AmbilApi() {
 
       setSourceLink(mapped.sourceLink || endpoint.trim())
       setThumbnailPreview(mapped.thumbnailUrl || '')
-
       setStep('review')
 
     } catch (err) {
@@ -136,7 +121,6 @@ function AmbilApi() {
           supplementalInformation, constraintsOther: '', bbox, attributes: [],
         })
 
-      // SESI 6: catat sumber API-nya di extra_metadata untuk jejak asal data
       const metadataObj = extraMetadataString ? JSON.parse(extraMetadataString) : {}
       metadataObj.source_api = endpoint.trim()
       const finalExtraMetadata = JSON.stringify(metadataObj)
@@ -167,7 +151,6 @@ function AmbilApi() {
     }
 
   }
-
 
   return (
 
@@ -207,7 +190,6 @@ function AmbilApi() {
 
         </aside>
 
-
         <section className="admin-main">
 
           <header className="admin-header">
@@ -224,7 +206,7 @@ function AmbilApi() {
               <div className="admin-empty">
                 <div style={{ fontSize: '36px', marginBottom: '10px' }}>✓</div>
                 <strong>Data berhasil ditambahkan</strong>
-                <p>Data akan berstatus "Belum Publish" hingga disetujui admin — sama seperti data unggahan biasa.</p>
+                                <p>Data akan berstatus "Unpublished" hingga disetujui admin — sama seperti data unggahan biasa.</p>
                 <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
                   <Link to="/dashboard/datasets" className="admin-secondary-button">Lihat Data Saya</Link>
                   <button

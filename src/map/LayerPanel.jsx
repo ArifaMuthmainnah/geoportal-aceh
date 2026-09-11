@@ -7,7 +7,6 @@ function LayerPanel({ layers = [], toggleLayer, openBasemap, openAdd, openRemove
         <h6>Layer Peta</h6>
       </div>
       
-      {/* TOOLBAR ICON */}
       <div className="layer-toolbar">
         <button className="tool-box" onClick={openBasemap} title="Basemap"><span>🗺️</span></button>
         <button className="tool-box" onClick={openRemove} title="Hapus Peta"><span>🗑️</span></button>
@@ -15,7 +14,6 @@ function LayerPanel({ layers = [], toggleLayer, openBasemap, openAdd, openRemove
         <button className="tool-box" onClick={openVillageSearch} title="Pencarian Lokasi Desa"><span>📍</span></button>
       </div>
 
-      {/* LIST LAYER (BODY) */}
       <div className="layer-panel-body">
         {layers && layers.length > 0 ? (
           layers.map((layer) => (
