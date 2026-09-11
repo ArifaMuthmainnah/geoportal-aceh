@@ -17,9 +17,9 @@ Kedua sumber data ditampilkan secara terpadu di katalog, peta interaktif, dan da
 
 Program Studi Informatika, Fakultas MIPA, Universitas Syiah Kuala — Magang di UPTD Statistik, Diskominsa Provinsi Aceh.
 
-- Arifa
-- Thahira
-- Davina
+- Arifa Muthmainnah
+- Thahira Riska
+- Davina Aura
 
 ## Fitur Utama
 
