@@ -38,3 +38,16 @@ server/uploads/*
 *.njsproj
 *.sln
 *.sw?
+# --- jangan di-push ---
+node_modules/
+dist/
+.env
+server/.env
+*.dump
+server/uploads.zip
+server/geoportal.db
+server/uploads/*
+!server/uploads/.gitkeep
+!server/uploads/avatars/
+server/uploads/avatars/*
+!server/uploads/avatars/.gitkeep
